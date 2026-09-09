@@ -1,0 +1,308 @@
+# Codex WebUI
+
+[![GHCR](https://img.shields.io/badge/GHCR-codex--webui-blue?logo=github)](https://github.com/LimLLL/codex-webui/pkgs/container/codex-webui)
+[![Docker](https://img.shields.io/badge/docker-multi--arch-brightgreen?logo=docker)](../Dockerfile)
+
+A web frontend for [OpenAI Codex CLI](https://github.com/openai/codex). It brings the CLI experience into the browser with multi-thread concurrency, a file manager, a shared terminal, and plugin management.
+
+The backend (NestJS) talks to `codex app-server` over stdio JSON-RPC and pushes real-time events to a React frontend via Socket.IO.
+
+[简体中文](./codex-webui.md)
+
+![Main UI](../images/main-en.png)
+
+## Features
+
+**Chat & Threads**
+- Run multiple threads concurrently, grouped by workspace
+- Archive, fork, rename threads
+- Markdown rendering + Shiki syntax highlighting
+- `@` file mentions, image paste
+- Steer/stop running turns
+
+**Message-Level Branching**
+- Editing any past message creates a new version; switch between them like ChatGPT
+- Branch graph visualising the whole conversation tree, marking fork points, running state and pending approvals
+- Cascading delete: removing a branch takes its descendants with it, and the exact set to be destroyed is shown as both a graph and a list beforehand
+- Startup scan of rollout records adopts branch topology created outside the WebUI (e.g. by the CLI)
+
+**Approval Flow**
+- In-page cards for command execution and file change approvals
+- Security policy switching (sandbox levels)
+- Multi-device CAS conflict prevention
+
+**File Management & Preview**
+
+![File Management](../images/sidebar-file-en.png)
+
+- Tree browser with drag-and-drop (dnd-kit)
+- Monaco code editor + Git diff split view
+- File preview: PDF, images, video, audio, fonts, binary (hex dump)
+- Archive browsing: ZIP / TAR(.gz/.bz2/.xz) / RAR / 7z �?preview without extracting
+- Office editing: DOCX / XLSX / PPTX (via OnlyOffice Document Server, optional)
+- Upload / download / rename / copy / move / mkdir
+
+**Terminal**
+
+![Terminal](../images/sidebar-terminal-en.png)
+
+- Multi-tab shared terminal (node-pty + xterm.js)
+- Reconnect with no output loss
+- Headless VT replay
+
+**Integrations & Plugins**
+
+![Integrations](../images/side-integration-en.png)
+
+**Other**
+- JWT + API Key authentication
+- Plugin / MCP server management
+- Dark / light theme, i18n (en / zh-CN)
+- Responsive layout (mobile + tablet)
+- Docker deployment
+
+## Tech Stack
+
+```
+Browser
+  React 19 · Vite 8 · TanStack (Router + Query + Virtual)
+  Zustand · Socket.IO Client · Monaco Editor · xterm.js
+  Tailwind CSS 4 · shadcn/ui · Framer Motion · dnd-kit
+  React Flow (@xyflow/react) + d3-hierarchy (branch graph)
+     �? REST + WebSocket
+Server
+  NestJS 11 · Fastify 5 · Socket.IO · node-pty
+  SQLite (better-sqlite3 + Drizzle ORM) · Pino
+     �? stdio JSON-RPC
+  codex app-server (child process)
+
+Testing
+  Vitest (both ends) · SWC (backend decorator metadata)
+  jsdom + Testing Library (frontend components)
+```
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js >= 20
+- pnpm >= 9
+- [Codex CLI](https://github.com/openai/codex) installed and available in PATH
+
+### Docker Deployment (Recommended)
+
+Pull the pre-built multi-arch image from GHCR:
+
+```bash
+# Create .env
+cat <<EOF > .env
+WEBUI_API_KEY=your-secret-key
+OPENAI_API_KEY=sk-xxx
+EOF
+
+# Start (auto-pulls multi-arch image)
+docker compose up -d
+```
+
+Or run directly:
+
+```bash
+docker run -d --name codex-webui \
+  -p 8172:8172 \
+  -e WEBUI_API_KEY=your-secret-key \
+  -e OPENAI_API_KEY=sk-xxx \
+  -v codex_root:/root \
+  -v codex_workspaces:/workspaces \
+  ghcr.io/limlll/codex-webui:latest
+```
+
+The app runs at `http://localhost:8172`.
+
+> The `/root` volume persists codex/claude/MCP configs and the runtime toolchain. The built-in seed is automatically extracted on first start.
+
+### Local Development
+
+```bash
+git clone https://github.com/LimLLL/codex-webui.git
+cd codex-webui
+pnpm install
+
+cp .env.example .env
+# Edit .env �?at minimum set WEBUI_API_KEY
+
+# Start the backend (default port 8172)
+pnpm start:dev
+
+# In another terminal, start the frontend (port 5173, proxies to backend)
+cd web && pnpm dev
+```
+
+Open `http://localhost:5173`.
+
+## Environment Variables
+
+| Variable                       | Required | Default                        | Description                                    |
+| ------------------------------ | :------: | ------------------------------ | ---------------------------------------------- |
+| `WEBUI_API_KEY`                |   Yes    | �?                             | Login key; also derives JWT signing secret      |
+| `PORT`                         |    No    | `8172`                         | Backend listen port                            |
+| `OPENAI_API_KEY`               |    No    | �?                             | OpenAI API key used by Codex                   |
+| `CODEX_BIN`                    |    No    | `codex`                        | Path to codex CLI binary                       |
+| `CODEX_HOME`                   |    No    | `~/.codex`                     | Codex home directory                           |
+| `LOG_LEVEL`                    |    No    | `info`                         | Pino log level                                 |
+| `WEBUI_DB_PATH`                |    No    | `CODEX_HOME/codex-webui.sqlite`| SQLite database path                           |
+
+### Runtime Settings
+
+`security.workspaceRoots`, `files.uploadMaxBytes`, `terminal.defaultCwd`, `terminal.maxSessions`, `terminal.graceMs`, and `terminal.scrollback` now live in SQLite runtime settings and can be changed from Settings or `/api/settings`; the legacy env vars still work as fallbacks when no DB value is set.
+Docker Compose keeps `WORKSPACE_ROOTS=/workspaces` as a bootstrap fallback for the mounted `/workspaces` volume on first startup.
+
+## Project Structure
+
+```
+├── src/                  # NestJS backend
+�?  ├── codex/            # Process manager, JSON-RPC client
+�?  ├── threads/          # Thread CRUD, WebSocket gateway
+�?  ├── files/            # File ops, path security
+�?  ├── terminal/         # Multi-tab terminal (node-pty)
+�?  ├── auth/             # JWT + API Key auth
+�?  ├── database/         # SQLite + Drizzle ORM
+�?  └── ...               # Other modules
+├── web/                  # React frontend
+�?  └── src/
+�?      ├── routes/       # TanStack Router pages
+�?      ├── components/   # UI components
+�?      ├── stores/       # Zustand state management
+�?      ├── hooks/        # Custom hooks
+�?      └── generated/    # Hey API SDK (auto-generated)
+├── Dockerfile            # Multi-stage build + seed root
+└── docker-compose.yml
+```
+
+## Commands
+
+```bash
+pnpm start:dev          # Backend dev server
+pnpm build              # Compile backend
+pnpm test               # Backend tests (Vitest)
+pnpm test:cov           # Backend tests with coverage
+pnpm lint               # ESLint (frontend included)
+pnpm db:generate        # Generate DB migration
+pnpm db:migrate         # Run migrations
+cd web && pnpm dev      # Frontend dev server
+cd web && pnpm build    # Build frontend (outputs to public/)
+cd web && pnpm test     # Frontend tests (Vitest + jsdom)
+```
+
+## HTTPS / Reverse Proxy
+
+Codex WebUI listens on plain HTTP (default `0.0.0.0:8172`). Use a reverse proxy to terminate HTTPS in production.
+
+> **Note**: `WEBUI_API_KEY` is transmitted in cleartext over HTTP. Always enable HTTPS for public-facing deployments.
+
+### Nginx
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name codex.example.com;
+
+    ssl_certificate     /etc/ssl/certs/codex.pem;
+    ssl_certificate_key /etc/ssl/private/codex.key;
+
+    client_max_body_size 200m;  # match file upload limit
+
+    location / {
+        proxy_pass http://127.0.0.1:8172;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+    }
+
+    # Socket.IO WebSocket upgrade
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:8172;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_read_timeout 300s;
+    }
+}
+
+server {
+    listen 80;
+    server_name codex.example.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+When using Docker Compose, change `proxy_pass` to `http://codex-webui:8172` and replace `ports` with `expose`.
+
+### Deploying under a subpath
+
+The same image can serve both a domain root and a proxy subpath (for example, `https://cc.example.com/codex/`) without rebuilding for each path. A subpath proxy must use `X-Forwarded-Prefix` to tell the WebUI its browser-facing public path:
+
+```bash
+docker build \
+  --build-arg CODEX_CLI_VERSION=0.153.2 \
+  -t codex-webui:0.153.2 .
+```
+
+Nginx must retain `/codex/` in browser-facing URLs and strip it when proxying to the backend. The trailing slashes on both `location` and `proxy_pass` are required:
+
+```nginx
+location = /codex {
+    return 301 /codex/;
+}
+
+location /codex/ {
+    proxy_pass http://127.0.0.1:8172/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_set_header X-Forwarded-Prefix /codex;
+    proxy_read_timeout 300s;
+}
+```
+
+A root proxy does not need `X-Forwarded-Prefix`. The WebUI dynamically generates the correct base for static assets, frontend routes, REST APIs, and Socket.IO on every request, so one image can serve both proxy styles. For OnlyOffice, set `general.publicBaseUrl` to the full URL including the subpath, for example `https://cc.example.com/codex`.
+
+### Caddy
+
+Caddy auto-provisions Let's Encrypt certificates and handles WebSocket upgrades automatically:
+
+```caddyfile
+codex.example.com {
+    reverse_proxy 127.0.0.1:8172
+}
+```
+
+### OnlyOffice Note
+
+Behind a reverse proxy, OnlyOffice needs the public URL for save callbacks. Either ensure your proxy forwards `X-Forwarded-Proto` / `X-Forwarded-Host` correctly (auto-detected), or set `general.publicBaseUrl` explicitly in Settings �?General.
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.en.md](../CONTRIBUTING.en.md) for development setup, code conventions, testing requirements and the PR process.
+
+Before filing a bug, please confirm it reproduces in the WebUI rather than in the Codex CLI itself. The [bug template](../.github/ISSUE_TEMPLATE/bug_report.yml) walks you through exporting a diagnostics bundle from the Diagnostics page.
+
+**Please do not report security issues publicly** �?use the private channel described in [SECURITY.md](../SECURITY.md).
+
+## License
+
+Copyright (C) 2026 LimLLL
+
+Licensed under the [GNU Affero General Public License v3.0 or later](../LICENSE) (`AGPL-3.0-or-later`).
+
+Note the AGPL network clause: if you modify this project and offer it as a network service, you must provide the complete modified source to its users.

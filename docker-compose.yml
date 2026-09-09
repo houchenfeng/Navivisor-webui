@@ -1,0 +1,30 @@
+services:
+  codex-webui:
+    image: ghcr.io/limlll/codex-webui:latest
+    # To build locally instead of pulling from GHCR:
+    # build:
+    #   context: .
+    #   args:
+    #     CODEX_CLI_VERSION: "0.153.2"
+    ports:
+      - "${PORT:-8172}:8172"
+    environment:
+      NODE_ENV: production
+      PORT: 8172
+      WEBUI_API_KEY: ${WEBUI_API_KEY:?Set WEBUI_API_KEY in .env}
+      WORKSPACE_ROOTS: /workspaces
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - root_home:/root
+      - workspaces:/workspaces
+    # Codex sandbox (bubblewrap) needs user namespaces + mount capabilities
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    restart: unless-stopped
+
+volumes:
+  root_home:
+  workspaces:

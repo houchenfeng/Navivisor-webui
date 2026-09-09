@@ -1,0 +1,307 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100dvh;
+  /* Safe-area insets for notch/home-bar devices */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ══════════════════════════════════════════════════════
+   LIGHT THEME — subtle blue-tinted OKLCH palette
+   ══════════════════════════════════════════════════════ */
+:root {
+  --background: oklch(0.985 0.002 240);
+  --foreground: oklch(0.16 0.01 248);
+  --card: oklch(0.997 0.002 245);
+  --card-foreground: oklch(0.16 0.01 248);
+  --popover: oklch(0.997 0.002 245);
+  --popover-foreground: oklch(0.16 0.01 248);
+  --primary: oklch(0.22 0.03 255);
+  --primary-foreground: oklch(0.985 0.002 240);
+  --secondary: oklch(0.96 0.004 245);
+  --secondary-foreground: oklch(0.22 0.01 248);
+  --muted: oklch(0.96 0.004 245);
+  --muted-foreground: oklch(0.55 0.01 250);
+  --accent: oklch(0.96 0.004 245);
+  --accent-foreground: oklch(0.22 0.01 248);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.90 0.008 246);
+  --input: oklch(0.90 0.008 246);
+  --ring: oklch(0.60 0.04 255);
+  --chart-1: oklch(0.87 0.01 245);
+  --chart-2: oklch(0.556 0.01 248);
+  --chart-3: oklch(0.439 0.01 250);
+  --chart-4: oklch(0.371 0.01 250);
+  --chart-5: oklch(0.269 0.01 250);
+  --radius: 0.875rem;
+  --sidebar: oklch(0.98 0.003 245);
+  --sidebar-foreground: oklch(0.16 0.01 248);
+  --sidebar-primary: oklch(0.22 0.03 255);
+  --sidebar-primary-foreground: oklch(0.985 0.002 240);
+  --sidebar-accent: oklch(0.96 0.004 245);
+  --sidebar-accent-foreground: oklch(0.22 0.01 248);
+  --sidebar-border: oklch(0.90 0.008 246);
+  --sidebar-ring: oklch(0.60 0.04 255);
+
+  /* ── Glass tokens (light) ─────────────────────────── */
+  /* A white tint reads as "glass" only over a darker or coloured backdrop. This
+     theme's page is already near-white (0.985), so a lightly tinted white pane
+     is indistinguishable from the page behind it and the surfaces below are
+     opaque enough to separate a panel from what it covers. The border does the
+     rest of the work — see --glass-border. */
+  --glass-1-surface: rgba(255, 255, 255, 0.40);
+  --glass-1-blur: 8px;
+  --glass-2-surface: rgba(255, 255, 255, 0.50);
+  --glass-2-blur: 12px;
+  --glass-3-surface: rgba(255, 255, 255, 0.60);
+  --glass-3-blur: 16px;
+  --glass-4-surface: rgba(255, 255, 255, 0.70);
+  --glass-4-blur: 24px;
+  --glass-5-surface: rgba(255, 255, 255, 0.80);
+  --glass-5-blur: 40px;
+  /* Modal surfaces sit on the black scrim, which darkens whatever shows through
+     the panel, so they stay a step more opaque than `glass-5` even now that the
+     level surfaces above are themselves fairly opaque. See .glass-modal. */
+  --glass-modal-surface: rgba(255, 255, 255, 0.92);
+  /* Dark, not white: a white hairline on a near-white page is invisible, which
+     left every light-theme glass panel with no perceptible edge at all. The
+     hue matches the palette's blue-tinted neutrals. */
+  --glass-border: rgba(23, 27, 38, 0.14);
+  --glass-border-subtle: rgba(23, 27, 38, 0.08);
+  --glass-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --glass-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  --glass-saturate: 180%;
+}
+
+/* ══════════════════════════════════════════════════════
+   DARK THEME — deeper blue-tinted palette
+   ══════════════════════════════════════════════════════ */
+.dark {
+  --background: oklch(0.14 0.01 250);
+  --foreground: oklch(0.95 0.01 247);
+  --card: oklch(0.20 0.012 250);
+  --card-foreground: oklch(0.95 0.01 247);
+  --popover: oklch(0.20 0.012 250);
+  --popover-foreground: oklch(0.95 0.01 247);
+  --primary: oklch(0.80 0.06 255);
+  --primary-foreground: oklch(0.14 0.01 250);
+  --secondary: oklch(0.26 0.012 250);
+  --secondary-foreground: oklch(0.95 0.01 247);
+  --muted: oklch(0.26 0.012 250);
+  --muted-foreground: oklch(0.68 0.015 250);
+  --accent: oklch(0.26 0.012 250);
+  --accent-foreground: oklch(0.95 0.01 247);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.60 0.06 255);
+  --chart-1: oklch(0.87 0.01 250);
+  --chart-2: oklch(0.556 0.015 250);
+  --chart-3: oklch(0.439 0.015 250);
+  --chart-4: oklch(0.371 0.015 250);
+  --chart-5: oklch(0.269 0.015 250);
+  --sidebar: oklch(0.18 0.012 250);
+  --sidebar-foreground: oklch(0.95 0.01 247);
+  --sidebar-primary: oklch(0.70 0.12 260);
+  --sidebar-primary-foreground: oklch(0.95 0.01 247);
+  --sidebar-accent: oklch(0.26 0.012 250);
+  --sidebar-accent-foreground: oklch(0.95 0.01 247);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.60 0.06 255);
+
+  /* ── Glass tokens (dark) ──────────────────────────── */
+  --glass-1-surface: rgba(255, 255, 255, 0.04);
+  --glass-1-blur: 8px;
+  --glass-2-surface: rgba(255, 255, 255, 0.06);
+  --glass-2-blur: 12px;
+  --glass-3-surface: rgba(255, 255, 255, 0.08);
+  --glass-3-blur: 16px;
+  --glass-4-surface: rgba(255, 255, 255, 0.12);
+  --glass-4-blur: 24px;
+  --glass-5-surface: rgba(255, 255, 255, 0.16);
+  --glass-5-blur: 40px;
+  /* Scrim and surface both darken here, so the plain glass tint already reads
+     correctly and modals need no special case. */
+  --glass-modal-surface: var(--glass-5-surface);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-subtle: rgba(255, 255, 255, 0.06);
+  --glass-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.20);
+  --glass-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.16);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.36), 0 4px 8px rgba(0, 0, 0, 0.20);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.10), inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+  --glass-refraction-top: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.20), transparent);
+  --glass-saturate: 200%;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   GLASS UTILITY CLASSES — 5 elevation levels
+   ══════════════════════════════════════════════════════ */
+
+/*
+ * Lightning CSS minifier merges duplicate properties and keeps the LAST one.
+ * -webkit- MUST come BEFORE unprefixed so the unprefixed version survives.
+ * See: https://github.com/parcel-bundler/lightningcss/issues/1229
+ */
+
+/* Level 2 — sidebar, subtle panels */
+.glass {
+  background: var(--glass-3-surface);
+  -webkit-backdrop-filter: blur(var(--glass-3-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-3-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-sm), var(--glass-inset);
+}
+
+.glass-1 {
+  background: var(--glass-1-surface);
+  -webkit-backdrop-filter: blur(var(--glass-1-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-1-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.glass-2 {
+  background: var(--glass-2-surface);
+  -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-2-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow: var(--glass-shadow-sm), var(--glass-inset);
+}
+
+.glass-3 {
+  background: var(--glass-3-surface);
+  -webkit-backdrop-filter: blur(var(--glass-3-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-3-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md), var(--glass-inset);
+}
+
+.glass-4 {
+  background: var(--glass-4-surface);
+  -webkit-backdrop-filter: blur(var(--glass-4-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-4-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md), var(--glass-inset);
+}
+
+.glass-5 {
+  background: var(--glass-5-surface);
+  -webkit-backdrop-filter: blur(var(--glass-5-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-5-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset);
+}
+
+/* Full-bleed bar (header). The levels above describe *panels*: a box border on
+   all four sides and a shadow cast by something floating above the page. A bar
+   that spans the viewport has no sides to outline — its side borders land on
+   the viewport edge or double up with the sidebar divider — and it is attached
+   to the page, not floating over it. So: one bottom hairline, and only enough
+   shadow to separate it from content scrolling underneath. */
+.glass-bar {
+  background: var(--glass-4-surface);
+  -webkit-backdrop-filter: blur(var(--glass-4-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-4-blur)) saturate(var(--glass-saturate));
+  border: none;
+  border-bottom: 1px solid var(--glass-border-subtle);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+/* Glass level 5 for panels layered over a modal scrim. Identical to .glass-5
+   except for the surface tint, which the scrim would otherwise wash out. */
+.glass-modal {
+  background: var(--glass-modal-surface);
+  -webkit-backdrop-filter: blur(var(--glass-5-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-5-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset);
+}
+
+
+/* ── Glass divider ───────────────────────────────────── */
+.glass-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--glass-border), transparent);
+  border: none;
+}
+
+/* ── GPU hint for heavy glass ────────────────────────── */
+.glass-gpu {
+  will-change: backdrop-filter, transform, opacity;
+}
+

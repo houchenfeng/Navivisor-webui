@@ -1,0 +1,399 @@
+/**
+ * Plugins tab: marketplace browser with search, featured strip, install/uninstall.
+ */
+import { useMemo, useState } from 'react';
+import { AlertCircle, Loader2, RefreshCw, Search, Star, X } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  appsListAppsQueryKey,
+  mcpServersListServersQueryKey,
+  pluginsListPluginsOptions,
+  pluginsListPluginsQueryKey,
+  pluginsReadPluginQueryKey,
+  pluginsInstallPluginMutation,
+  pluginsReconcilePluginMutation,
+  pluginsUninstallPluginMutation,
+} from '@/generated/api/@tanstack/react-query.gen';
+import { pluginsListPlugins } from '@/generated/api/sdk.gen';
+import type {
+  PluginMarketplaceEntryDto,
+  PluginReconcileResponseDto,
+  PluginSummaryDto,
+} from '@/generated/api/types.gen';
+import { showSnackbar } from '@/stores/snackbar-store';
+import { getApiErrorMessage } from '@/lib/api-error';
+import { queryHasId } from '@/lib/query-invalidation';
+import { PluginCard } from './plugin-card';
+import { PluginDetailSheet, type PluginKey } from './plugin-detail-sheet';
+
+export function PluginsTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [selectedPlugin, setSelectedPlugin] = useState<PluginKey | null>(null);
+  const [lastReconcile, setLastReconcile] =
+    useState<PluginReconcileResponseDto | null>(null);
+
+  // --- Data ---
+  const { data, isLoading, isError } = useQuery({
+    ...pluginsListPluginsOptions(),
+    staleTime: 60_000,
+  });
+
+  const marketplaces = useMemo(() => data?.marketplaces ?? [], [data]);
+  const loadErrors = data?.marketplaceLoadErrors ?? [];
+  const remoteSyncError = data?.remoteSyncError ?? null;
+  const featuredIds = useMemo(() => new Set(data?.featuredPluginIds ?? []), [data]);
+
+  // Flatten all plugins for search/featured
+  const allPlugins = useMemo(() => {
+    const result: Array<{ plugin: PluginSummaryDto; marketplace: PluginMarketplaceEntryDto }> = [];
+    for (const mp of marketplaces) {
+      for (const p of mp.plugins) result.push({ plugin: p, marketplace: mp });
+    }
+    return result;
+  }, [marketplaces]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return null;
+    const q = search.toLowerCase();
+    return allPlugins.filter(
+      ({ plugin }) =>
+        plugin.name.toLowerCase().includes(q) ||
+        plugin.interface?.displayName?.toLowerCase().includes(q) ||
+        plugin.interface?.shortDescription?.toLowerCase().includes(q),
+    );
+  }, [search, allPlugins]);
+
+  const featured = useMemo(
+    () => allPlugins.filter(({ plugin }) => featuredIds.has(plugin.id)),
+    [allPlugins, featuredIds],
+  );
+  const installed = useMemo(
+    () => allPlugins.filter(({ plugin }) => plugin.installed),
+    [allPlugins],
+  );
+
+  // --- Mutations ---
+  const invalidateAll = () => {
+    void queryClient.invalidateQueries({ queryKey: pluginsListPluginsQueryKey() });
+    void queryClient.invalidateQueries({ predicate: (q) => queryHasId(q, 'pluginsReadPlugin') });
+    void queryClient.invalidateQueries({ queryKey: appsListAppsQueryKey() });
+    void queryClient.invalidateQueries({ predicate: (q) => queryHasId(q, 'skillsListSkills') });
+    void queryClient.invalidateQueries({ queryKey: mcpServersListServersQueryKey() });
+  };
+
+  const installMutation = useMutation({
+    ...pluginsInstallPluginMutation(),
+    onSuccess: (res) => {
+      invalidateAll();
+      const needsAuth = res.appsNeedingAuth?.length ?? 0;
+      showSnackbar(
+        needsAuth > 0
+          ? t('Plugin installed. {{count}} app(s) need authentication.', { count: needsAuth })
+          : t('Plugin installed'),
+        'success',
+      );
+    },
+    onError: (err) => showSnackbar(getApiErrorMessage(err), 'error'),
+  });
+
+  const uninstallMutation = useMutation({
+    ...pluginsUninstallPluginMutation(),
+    onSuccess: () => {
+      invalidateAll();
+      showSnackbar(t('Plugin uninstalled'), 'success');
+    },
+    onError: (err) => showSnackbar(getApiErrorMessage(err), 'error'),
+  });
+
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await pluginsListPlugins({
+        query: { forceRefetch: true },
+        throwOnError: true,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: pluginsListPluginsQueryKey() });
+      showSnackbar(t('Marketplace refreshed'), 'success');
+    },
+    onError: (err) => showSnackbar(getApiErrorMessage(err), 'error'),
+  });
+
+  const reconcileMutation = useMutation({
+    ...pluginsReconcilePluginMutation(),
+    onSuccess: (res) => {
+      invalidateAfterReconcile(queryClient, res, allPlugins);
+      setLastReconcile(res);
+      const failures =
+        res.failedRemotePluginIds.length +
+        res.failedMaterializationRemotePluginIds.length;
+      if (failures > 0) {
+        showSnackbar(t('Plugin sync completed with warnings'), 'warning', 5000);
+      } else if (res.changedPlugins.length > 0) {
+        showSnackbar(
+          t('Plugin sync completed: {{count}} changed', {
+            count: res.changedPlugins.length,
+          }),
+          'success',
+        );
+      } else {
+        showSnackbar(t('Plugin sync completed: no changes'), 'success');
+      }
+    },
+    onError: (err) => showSnackbar(getApiErrorMessage(err), 'error'),
+  });
+
+  const mutating = installMutation.isPending || uninstallMutation.isPending;
+
+  const makeCardProps = (plugin: PluginSummaryDto, mp: PluginMarketplaceEntryDto) => ({
+    plugin,
+    marketplacePath: mp.path,
+    featured: featuredIds.has(plugin.id),
+    disabled: mutating,
+    onSelect: setSelectedPlugin,
+    onInstall: () =>
+      installMutation.mutate({ body: { marketplacePath: mp.path, pluginName: plugin.name } }),
+    onUninstall: () => uninstallMutation.mutate({ body: { pluginId: plugin.id } }),
+  });
+
+  // --- Loading / Error ---
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
+  if (isError) {
+    return <ErrorBanner message={t('Failed to load plugins')} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Search + Refresh */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('Search plugins...')}
+            className="pl-9"
+          />
+          {search && (
+            <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-7 w-7" onClick={() => setSearch('')}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+        <Button variant="outline" size="sm" className="gap-1.5" disabled={refreshMutation.isPending} onClick={() => refreshMutation.mutate()}>
+          {refreshMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          {t('Refresh')}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={reconcileMutation.isPending}
+          onClick={() => reconcileMutation.mutate({ body: { reason: 'user' } })}
+        >
+          {reconcileMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          {t('Sync installed')}
+        </Button>
+      </div>
+
+      {/* Error banners */}
+      {remoteSyncError && <ErrorBanner message={t('Remote sync failed: {{msg}}', { msg: remoteSyncError })} />}
+      {loadErrors.map((err) => (
+        <ErrorBanner key={err.marketplacePath} message={`${err.marketplacePath}: ${err.message}`} />
+      ))}
+      {lastReconcile && <ReconcileWarnings result={lastReconcile} />}
+
+      {/* Search results */}
+      {filtered !== null ? (
+        <div className="space-y-2">
+          <h3 className="text-xs font-medium text-muted-foreground">
+            {t('{{count}} result(s)', { count: filtered.length })}
+          </h3>
+          {filtered.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">{t('No matching plugins')}</p>
+          ) : (
+            filtered.map(({ plugin, marketplace }) => (
+              <PluginCard key={`${marketplace.path}::${plugin.name}`} {...makeCardProps(plugin, marketplace)} />
+            ))
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Featured */}
+          {featured.length > 0 && (
+            <section>
+              <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Star className="h-3 w-3" /> {t('Featured')}
+              </h3>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {featured.map(({ plugin, marketplace }) => (
+                  <PluginCard key={`${marketplace.path}::${plugin.name}`} {...makeCardProps(plugin, marketplace)} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Installed */}
+          {installed.length > 0 && (
+            <section>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+                {t('Installed')} ({installed.length})
+              </h3>
+              <div className="space-y-2">
+                {installed.map(({ plugin, marketplace }) => (
+                  <PluginCard key={`${marketplace.path}::${plugin.name}`} {...makeCardProps(plugin, marketplace)} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Marketplace groups (uninstalled only) */}
+          {marketplaces.map((mp) => {
+            const uninstalled = mp.plugins.filter((p) => !p.installed);
+            if (uninstalled.length === 0) return null;
+            return (
+              <section key={mp.path}>
+                <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+                  {mp.interface?.displayName ?? mp.name}
+                </h3>
+                <div className="space-y-2">
+                  {uninstalled.map((plugin) => (
+                    <PluginCard key={`${mp.path}::${plugin.name}`} {...makeCardProps(plugin, mp)} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+
+          {allPlugins.length === 0 && (
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('No plugins available')}</p>
+          )}
+        </>
+      )}
+
+      <PluginDetailSheet
+        pluginKey={selectedPlugin}
+        onClose={() => setSelectedPlugin(null)}
+        onInstall={(mp, name) => installMutation.mutate({ body: { marketplacePath: mp, pluginName: name } })}
+        onUninstall={(id) => uninstallMutation.mutate({ body: { pluginId: id } })}
+        mutating={mutating}
+      />
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function ReconcileWarnings({ result }: { result: PluginReconcileResponseDto }) {
+  const { t } = useTranslation();
+  if (
+    result.failedRemotePluginIds.length === 0 &&
+    result.failedMaterializationRemotePluginIds.length === 0
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+      <div className="flex items-start gap-2">
+        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>{t('Plugin sync completed with warnings')}</span>
+      </div>
+      {result.failedRemotePluginIds.length > 0 && (
+        <FailureList
+          title={t('Update failures')}
+          ids={result.failedRemotePluginIds}
+        />
+      )}
+      {result.failedMaterializationRemotePluginIds.length > 0 && (
+        <FailureList
+          title={t('Bundle materialization failures')}
+          ids={result.failedMaterializationRemotePluginIds}
+        />
+      )}
+    </div>
+  );
+}
+
+function FailureList({ title, ids }: { title: string; ids: string[] }) {
+  return (
+    <div className="pl-5">
+      <div className="font-medium">{title}</div>
+      <div className="break-all text-muted-foreground">{ids.join(', ')}</div>
+    </div>
+  );
+}
+
+function invalidateAfterReconcile(
+  queryClient: ReturnType<typeof useQueryClient>,
+  result: PluginReconcileResponseDto,
+  plugins: Array<{
+    plugin: PluginSummaryDto;
+    marketplace: PluginMarketplaceEntryDto;
+  }>,
+) {
+  const changedIds = new Set(result.changedPlugins.map((plugin) => plugin.id));
+  const failedIds = new Set([
+    ...result.failedRemotePluginIds,
+    ...result.failedMaterializationRemotePluginIds,
+  ]);
+  const pluginIds = new Set([...changedIds, ...failedIds]);
+  if (pluginIds.size > 0) {
+    void queryClient.invalidateQueries({ queryKey: pluginsListPluginsQueryKey() });
+  }
+
+  for (const { plugin, marketplace } of plugins) {
+    if (!pluginIds.has(plugin.id)) continue;
+    void queryClient.invalidateQueries({
+      queryKey: pluginsReadPluginQueryKey({
+        query: {
+          marketplacePath: marketplace.path,
+          pluginName: plugin.name,
+        },
+      }),
+    });
+  }
+
+  const changedPlugins = result.changedPlugins;
+  if (changedPlugins.some((plugin) => plugin.hasApps)) {
+    void queryClient.invalidateQueries({ queryKey: appsListAppsQueryKey() });
+    void queryClient.invalidateQueries({
+      predicate: (query) => queryHasId(query, 'appsReadApps'),
+    });
+  }
+  if (changedPlugins.some((plugin) => plugin.hasMcps)) {
+    void queryClient.invalidateQueries({ queryKey: mcpServersListServersQueryKey() });
+  }
+  if (changedPlugins.some((plugin) => plugin.hasSkills)) {
+    void queryClient.invalidateQueries({
+      predicate: (query) => queryHasId(query, 'skillsListSkills'),
+    });
+  }
+}
+
