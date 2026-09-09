@@ -1,16 +1,18 @@
 /** PDF viewer using react-pdf with a locally bundled pdf.js worker. */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ChevronLeft, ChevronRight, FileText, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { buildPreviewUrl, fetchPreviewBlob, type PreviewSource } from './preview-source';
+import { fetchPreviewBlob, type PreviewSource } from './preview-source';
 
+// Resolve against <base href> so a relative Vite asset still loads on /files.
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
+  pdfWorkerSrc,
+  document.baseURI,
 ).toString();
 
 interface Props {
@@ -36,11 +38,7 @@ export function PdfViewer({ source }: Props) {
     setBlobUrl(null);
   }
 
-  const file = useMemo(() => blobUrl ?? (source.kind === 'file' ? buildPreviewUrl(source) : null), [blobUrl, source]);
-
-  // Fetch blob URL for archive sources
   useEffect(() => {
-    if (source.kind === 'file') return;
     let cancelled = false;
     let revokedUrl: string | null = null;
     void fetchPreviewBlob(source)
@@ -82,9 +80,9 @@ export function PdfViewer({ source }: Props) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto bg-muted/20 p-4">
-        {file ? (
+        {blobUrl ? (
           <Document
-            file={file}
+            file={blobUrl}
             loading={<PdfMessage icon={<Loader2 className="h-4 w-4 animate-spin" />} message={t('Loading...')} />}
             onLoadSuccess={(pdf) => setNumPages(pdf.numPages)}
             onLoadError={() => setError(t('Failed to load PDF'))}
