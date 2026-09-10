@@ -22,6 +22,7 @@ import { ExperimentDemo } from '@/components/research-experiment/experiment-demo
 import { SettingsPage } from '@/components/settings/settings-page';
 import { IntegrationsPage } from '@/components/integrations/integrations-page';
 import { BASE_PATH } from '@/base-path';
+import { WritingPage } from '@/components/research-writing/writing-page';
 
 export type LoginSearch = { redirect: string };
 export type IntegrationsSearch = { tab: 'plugins' | 'apps' | 'mcps' };
@@ -131,7 +132,7 @@ const experimentResultsRoute = createRoute({ getParentRoute: () => authenticated
 const writingRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/research/paper',
-  component: () => <ResearchModuleRoute moduleName="论文" />,
+  component: WritingPage,
 });
 
 const submissionRoute = createRoute({
