@@ -4,6 +4,10 @@ GitHub 个人分支：`feat/research-topic`。固定入口：`/research/topic`�
 
 来源方案总说明：[`research-tools/README.md`](../../../../research-tools/README.md)。
 
+## 参考与兼容性
+
+实际参考的分支与文件：`origin/main` 的 `web/src/routes/router.tsx`、`web/src/routes/research-module-route.tsx`、`web/src/routes/authenticated-layout.tsx`、`web/src/index.css` 和 `web/src/components/ui/button.tsx`；`origin/feat/research-writing` 的 `web/src/components/research-writing/writing-page.tsx` 与 `web/src/routes/router.tsx`。借鉴原则是：页面独立目录、顶层组件明确导出、保留 `min-h-0 flex-1 overflow-auto`、复用现有 UI、只替换自己负责路由的 component。未复制其他模块的业务实现；投稿页面目录在该远程分支中未找到。
+
 本目录只负责开题五个学习节点：研究兴趣与边界、检索策略与试搜、证据与研究空白、三个候选方向、用户修改并确认方向。不要把写作、投稿、实验逻辑或全局布局放进这里。
 
 ## 运行与验证
