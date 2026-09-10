@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TanStack Router configuration with code-based route tree.
  * Auth guard on the root layout redirects unauthenticated users to /login.
  */
@@ -18,6 +18,7 @@ import { FilesRoute } from './files-route';
 import { TerminalRoute } from './terminal-route';
 import { DiagnosticsRoute } from './diagnostics-route';
 import { ResearchModuleRoute } from './research-module-route';
+import { SubmissionPage } from '@/components/research-submission/submission-page';
 import { ExperimentDemo } from '@/components/research-experiment/experiment-demo';
 import { SettingsPage } from '@/components/settings/settings-page';
 import { IntegrationsPage } from '@/components/integrations/integrations-page';
@@ -137,7 +138,7 @@ const writingRoute = createRoute({
 const submissionRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/research/submit',
-  component: () => <ResearchModuleRoute moduleName="投稿" />,
+  component: SubmissionPage,
 });
 
 /** Diagnostics panel. */
