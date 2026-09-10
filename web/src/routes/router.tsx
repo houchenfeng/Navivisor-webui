@@ -18,6 +18,7 @@ import { FilesRoute } from './files-route';
 import { TerminalRoute } from './terminal-route';
 import { DiagnosticsRoute } from './diagnostics-route';
 import { ResearchModuleRoute } from './research-module-route';
+import { ExperimentDemo } from '@/components/research-experiment/experiment-demo';
 import { SettingsPage } from '@/components/settings/settings-page';
 import { IntegrationsPage } from '@/components/integrations/integrations-page';
 import { BASE_PATH } from '@/base-path';
@@ -110,25 +111,32 @@ const terminalRoute = createRoute({
 /** Navivisor research workflow modules. */
 const proposalRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
-  path: '/proposal',
+  path: '/research/topic',
   component: () => <ResearchModuleRoute moduleName="开题" />,
 });
 
 const experimentRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
-  path: '/experiment',
-  component: () => <ResearchModuleRoute moduleName="实验" />,
+  path: '/research/experiment',
+  beforeLoad: () => { throw redirect({ to: '/research/experiment/intake' }); },
 });
+
+const experimentIntakeRoute = createRoute({ getParentRoute: () => authenticatedRoute, path: '/research/experiment/intake', component: ExperimentDemo });
+const experimentPlanRoute = createRoute({ getParentRoute: () => authenticatedRoute, path: '/research/experiment/plan', component: ExperimentDemo });
+const experimentModeRoute = createRoute({ getParentRoute: () => authenticatedRoute, path: '/research/experiment/mode', component: ExperimentDemo });
+const experimentSimulateRoute = createRoute({ getParentRoute: () => authenticatedRoute, path: '/research/experiment/simulate', component: ExperimentDemo });
+const experimentRunRoute = createRoute({ getParentRoute: () => authenticatedRoute, path: '/research/experiment/run', component: ExperimentDemo });
+const experimentResultsRoute = createRoute({ getParentRoute: () => authenticatedRoute, path: '/research/experiment/results', component: ExperimentDemo });
 
 const writingRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
-  path: '/writing',
-  component: () => <ResearchModuleRoute moduleName="写作" />,
+  path: '/research/paper',
+  component: () => <ResearchModuleRoute moduleName="论文" />,
 });
 
 const submissionRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
-  path: '/submission',
+  path: '/research/submit',
   component: () => <ResearchModuleRoute moduleName="投稿" />,
 });
 
@@ -165,6 +173,12 @@ const routeTree = rootRoute.addChildren([
     experimentRoute,
     writingRoute,
     submissionRoute,
+    experimentIntakeRoute,
+    experimentPlanRoute,
+    experimentModeRoute,
+    experimentSimulateRoute,
+    experimentRunRoute,
+    experimentResultsRoute,
     diagnosticsRoute,
     settingsRoute,
     integrationsRoute,

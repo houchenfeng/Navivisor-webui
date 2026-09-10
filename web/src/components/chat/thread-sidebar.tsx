@@ -69,10 +69,10 @@ function useActiveView(): 'chat' | 'files' | 'terminal' | 'diagnostics' | 'setti
   if (pathname.startsWith('/diagnostics')) return 'diagnostics';
   if (pathname.startsWith('/integrations')) return 'integrations';
   if (pathname.startsWith('/settings')) return 'settings';
-  if (pathname.startsWith('/proposal')) return 'proposal';
-  if (pathname.startsWith('/experiment')) return 'experiment';
-  if (pathname.startsWith('/writing')) return 'writing';
-  if (pathname.startsWith('/submission')) return 'submission';
+  if (pathname.startsWith('/research/topic')) return 'proposal';
+  if (pathname.startsWith('/research/experiment')) return 'experiment';
+  if (pathname.startsWith('/research/paper')) return 'writing';
+  if (pathname.startsWith('/research/submit')) return 'submission';
   if (pathname === '/' || pathname.startsWith('/t/')) return 'chat';
   return 'other';
 }
@@ -455,7 +455,7 @@ export function ThreadSidebar() {
       <div className="space-y-0.5 px-2 py-2">
         <button
           type="button"
-          onClick={() => void navigate({ to: '/proposal' })}
+          onClick={() => void navigate({ to: '/research/topic' })}
           className={cn(
             'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
             activeView === 'proposal'
@@ -468,7 +468,7 @@ export function ThreadSidebar() {
         </button>
         <button
           type="button"
-          onClick={() => void navigate({ to: '/experiment' })}
+          onClick={() => void navigate({ to: '/research/experiment' })}
           className={cn(
             'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
             activeView === 'experiment'
@@ -481,7 +481,7 @@ export function ThreadSidebar() {
         </button>
         <button
           type="button"
-          onClick={() => void navigate({ to: '/writing' })}
+          onClick={() => void navigate({ to: '/research/paper' })}
           className={cn(
             'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
             activeView === 'writing'
@@ -490,11 +490,11 @@ export function ThreadSidebar() {
           )}
         >
           <PenLine className="h-4 w-4 shrink-0" />
-          写作
+          论文
         </button>
         <button
           type="button"
-          onClick={() => void navigate({ to: '/submission' })}
+          onClick={() => void navigate({ to: '/research/submit' })}
           className={cn(
             'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
             activeView === 'submission'
