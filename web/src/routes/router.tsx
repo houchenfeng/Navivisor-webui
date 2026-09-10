@@ -17,6 +17,7 @@ import { ThreadView } from './thread-view';
 import { FilesRoute } from './files-route';
 import { TerminalRoute } from './terminal-route';
 import { DiagnosticsRoute } from './diagnostics-route';
+import { ResearchModuleRoute } from './research-module-route';
 import { SettingsPage } from '@/components/settings/settings-page';
 import { IntegrationsPage } from '@/components/integrations/integrations-page';
 import { BASE_PATH } from '@/base-path';
@@ -106,6 +107,31 @@ const terminalRoute = createRoute({
   component: TerminalRoute,
 });
 
+/** Navivisor research workflow modules. */
+const proposalRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/proposal',
+  component: () => <ResearchModuleRoute moduleName="开题" />,
+});
+
+const experimentRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/experiment',
+  component: () => <ResearchModuleRoute moduleName="实验" />,
+});
+
+const writingRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/writing',
+  component: () => <ResearchModuleRoute moduleName="写作" />,
+});
+
+const submissionRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/submission',
+  component: () => <ResearchModuleRoute moduleName="投稿" />,
+});
+
 /** Diagnostics panel. */
 const diagnosticsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -135,6 +161,10 @@ const routeTree = rootRoute.addChildren([
     threadRoute,
     filesRoute,
     terminalRoute,
+    proposalRoute,
+    experimentRoute,
+    writingRoute,
+    submissionRoute,
     diagnosticsRoute,
     settingsRoute,
     integrationsRoute,
