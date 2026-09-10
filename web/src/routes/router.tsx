@@ -19,6 +19,7 @@ import { TerminalRoute } from './terminal-route';
 import { DiagnosticsRoute } from './diagnostics-route';
 import { ResearchModuleRoute } from './research-module-route';
 import { ExperimentDemo } from '@/components/research-experiment/experiment-demo';
+import { TopicPage } from '@/components/research-topic/topic-page';
 import { SettingsPage } from '@/components/settings/settings-page';
 import { IntegrationsPage } from '@/components/integrations/integrations-page';
 import { BASE_PATH } from '@/base-path';
@@ -112,7 +113,7 @@ const terminalRoute = createRoute({
 const proposalRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/research/topic',
-  component: () => <ResearchModuleRoute moduleName="开题" />,
+  component: TopicPage,
 });
 
 const experimentRoute = createRoute({
