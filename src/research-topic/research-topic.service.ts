@@ -13,7 +13,11 @@ const OPENALEX_WORKS_URL = 'https://api.openalex.org/works';
 const OUTPUT_ROOT = join(process.cwd(), 'work', 'research-topic', 'runs');
 const MAX_INTEREST_LENGTH = 2000;
 const MAX_CONTEXT_LENGTH = 4000;
-const MAX_ITEMS = 50;
+const DEFAULT_TARGET_COUNT = 300;
+const MIN_TARGET_COUNT = 300;
+const MAX_TARGET_COUNT = 800;
+const PREVIEW_COUNT = 20;
+const PAGE_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 15000;
 const MAX_ATTEMPTS = 3;
 const SELECT = 'id,doi,title,publication_year,authorships,primary_location,abstract_inverted_index,cited_by_count';
@@ -36,7 +40,7 @@ export class ResearchTopicService {
       files: [],
       errors: [],
       papers: [],
-      counts: { papers: 0 },
+      counts: { papers: 0, requested: input.targetCount, returned: 0, deduplicated: 0, previewed: 0, targetReached: false },
       createdAt: now,
       updatedAt: now,
       cancelRequested: false,
@@ -64,34 +68,52 @@ export class ResearchTopicService {
     task.updatedAt = new Date().toISOString();
     const sourceQueries: Array<Record<string, unknown>> = [];
     try {
-      const params = new URLSearchParams({
-        search: input.researchInterest.trim(),
-        'per-page': String(Math.min(input.maxItems ?? 20, MAX_ITEMS)),
-        select: SELECT,
-        cursor: '*',
-      });
+      let cursor = '*';
+      let nextCursor: string | null | undefined = cursor;
+      const seenKeys = new Set<string>();
+      const papers: ResearchTopicPaper[] = [];
+      let dateFilter: string | undefined;
       if (input.yearRange?.from || input.yearRange?.to) {
         const from = input.yearRange.from ?? 1900;
         const to = input.yearRange.to ?? new Date().getUTCFullYear();
-        params.set('filter', `from_publication_date:${from}-01-01,to_publication_date:${to}-12-31`);
+        dateFilter = `from_publication_date:${from}-01-01,to_publication_date:${to}-12-31`;
       }
-      const url = `${OPENALEX_WORKS_URL}?${params.toString()}`;
-      sourceQueries.push({ source: 'OpenAlex', endpoint: OPENALEX_WORKS_URL, search: input.researchInterest.trim(), yearRange: input.yearRange ?? null, maxItems: input.maxItems ?? 20, request: 'GET', status: 'started' });
-      const payload = await this.request(url);
-      if (task.cancelRequested) {
-        task.status = 'cancelled';
-      } else {
-        task.papers = (payload.results ?? []).slice(0, input.maxItems ?? 20).map(normalizeWork).filter((paper) => paper.title && paper.openalexId);
-        task.counts.papers = task.papers.length;
+      while (nextCursor && papers.length < input.targetCount) {
+        if (task.cancelRequested) {
+          task.status = 'cancelled';
+          break;
+        }
+        cursor = nextCursor;
+        const params = new URLSearchParams({ search: input.researchInterest.trim(), 'per-page': String(PAGE_SIZE), select: SELECT, cursor });
+        if (dateFilter) params.set('filter', dateFilter);
+        const payload = await this.request(`${OPENALEX_WORKS_URL}?${params.toString()}`);
+        const rawResults = payload.results ?? [];
+        task.counts.returned += rawResults.length;
+        for (const rawWork of rawResults) {
+          const paper = normalizeWork(rawWork);
+          if (!paper.title || !paper.openalexId) continue;
+          const key = deduplicationKey(paper);
+          if (seenKeys.has(key)) continue;
+          seenKeys.add(key);
+          papers.push(paper);
+          if (papers.length >= input.targetCount) break;
+        }
+        sourceQueries.push({ source: 'OpenAlex', endpoint: OPENALEX_WORKS_URL, search: input.researchInterest.trim(), yearRange: input.yearRange ?? null, targetCount: input.targetCount, perPage: PAGE_SIZE, cursor, returned: rawResults.length, deduplicated: papers.length, status: 'completed' });
+        nextCursor = payload.meta?.next_cursor;
+        if (!nextCursor || nextCursor === cursor || rawResults.length === 0) break;
+      }
+      task.papers = papers;
+      task.counts.papers = papers.length;
+      task.counts.deduplicated = papers.length;
+      task.counts.previewed = Math.min(papers.length, PREVIEW_COUNT);
+      task.counts.targetReached = papers.length >= input.targetCount;
+      if (task.status !== 'cancelled') {
         task.status = 'completed';
-        sourceQueries[0].status = 'completed';
-        sourceQueries[0].returned = task.papers.length;
-        sourceQueries[0].matched = payload.meta?.count ?? null;
       }
     } catch (error) {
       task.status = task.cancelRequested ? 'cancelled' : 'failed';
       task.errors = [{ code: 'OPENALEX_REQUEST_FAILED', message: safeErrorMessage(error) }];
-      if (sourceQueries[0]) sourceQueries[0].status = 'failed';
+      sourceQueries.push({ source: 'OpenAlex', endpoint: OPENALEX_WORKS_URL, search: input.researchInterest.trim(), targetCount: input.targetCount, status: 'failed' });
     }
     task.updatedAt = new Date().toISOString();
     await this.persist(task, sourceQueries);
@@ -118,17 +140,18 @@ export class ResearchTopicService {
   }
 
   private async persist(task: ResearchTopicTask, sourceQueries: Array<Record<string, unknown>>) {
-    const directory = join(OUTPUT_ROOT, task.runId);
+    const directory = join(OUTPUT_ROOT, task.runId, 'first-search');
     const manifest: ResearchTopicManifest = {
       runId: task.runId,
       stage: 'first-search',
-      status: task.status,
+      status: task.status === 'completed' ? 'completed' : 'failed',
       files: [
         { name: 'first-search-papers.csv', path: 'first-search-papers.csv', kind: 'csv' },
         { name: 'manifest.json', path: 'manifest.json', kind: 'manifest' },
       ],
       counts: task.counts,
       errors: task.errors,
+      warnings: task.status === 'cancelled' ? ['任务已取消，结果不完整。'] : task.counts.targetReached ? [] : [`结果不足：去重后仅返回 ${task.counts.deduplicated} 条，未达到 ${task.counts.requested} 条目标。`],
       sourceQueries,
       createdAt: task.createdAt,
     };
@@ -140,7 +163,7 @@ export class ResearchTopicService {
 
   private publicTask(task: ResearchTopicTask): ResearchTopicTask {
     const { cancelRequested: _cancelRequested, ...publicTask } = task;
-    return { ...publicTask, cancelRequested: false };
+    return { ...publicTask, papers: task.papers.slice(0, PREVIEW_COUNT), cancelRequested: false };
   }
 }
 
@@ -196,11 +219,11 @@ function safeErrorMessage(error: unknown): string {
 export function validateFirstSearchInput(value: unknown): FirstSearchInput {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('INVALID_INPUT');
   const input = value as Record<string, unknown>;
-  const allowed = new Set(['researchInterest', 'context', 'yearRange', 'maxItems']);
+  const allowed = new Set(['researchInterest', 'context', 'yearRange', 'targetCount']);
   if (Object.keys(input).some((key) => !allowed.has(key))) throw new Error('INVALID_INPUT');
   if (typeof input.researchInterest !== 'string' || input.researchInterest.trim().length < 3 || input.researchInterest.length > MAX_INTEREST_LENGTH) throw new Error('INVALID_INTEREST');
   if (input.context !== undefined && (typeof input.context !== 'string' || input.context.length > MAX_CONTEXT_LENGTH)) throw new Error('INVALID_CONTEXT');
-  if (input.maxItems !== undefined && (typeof input.maxItems !== 'number' || !Number.isInteger(input.maxItems) || input.maxItems < 1 || input.maxItems > MAX_ITEMS)) throw new Error('INVALID_LIMIT');
+  if (input.targetCount !== undefined && (typeof input.targetCount !== 'number' || !Number.isInteger(input.targetCount) || input.targetCount < MIN_TARGET_COUNT || input.targetCount > MAX_TARGET_COUNT)) throw new Error('INVALID_LIMIT');
   let yearRange: FirstSearchInput['yearRange'];
   if (input.yearRange !== undefined) {
     if (!input.yearRange || typeof input.yearRange !== 'object' || Array.isArray(input.yearRange)) throw new Error('INVALID_YEAR_RANGE');
@@ -211,5 +234,10 @@ export function validateFirstSearchInput(value: unknown): FirstSearchInput {
     if ((from !== undefined && (!Number.isInteger(from) || from < 1900 || from > 2100)) || (to !== undefined && (!Number.isInteger(to) || to < 1900 || to > 2100)) || (from !== undefined && to !== undefined && from > to)) throw new Error('INVALID_YEAR_RANGE');
     yearRange = { from, to };
   }
-  return { researchInterest: input.researchInterest.trim(), context: typeof input.context === 'string' ? input.context.trim() : undefined, yearRange, maxItems: typeof input.maxItems === 'number' ? input.maxItems : 20 };
+  return { researchInterest: input.researchInterest.trim(), context: typeof input.context === 'string' ? input.context.trim() : undefined, yearRange, targetCount: typeof input.targetCount === 'number' ? input.targetCount : DEFAULT_TARGET_COUNT };
+}
+
+function deduplicationKey(paper: ResearchTopicPaper): string {
+  const doi = paper.doi.trim().toLowerCase().replace(/^https?:\/\/doi\.org\//, '');
+  return doi ? `doi:${doi}` : `openalex:${paper.openalexId.toLowerCase()}`;
 }

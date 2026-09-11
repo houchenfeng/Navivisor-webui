@@ -25,7 +25,7 @@ cd web
 pnpm dev
 ```
 
-打开 `/research/topic`，在第一步输入研究方向，点击“开始试检索”。后端接口为 `POST /api/research/topic/first-search`、`GET /api/research/topic/tasks/:runId` 和 `DELETE /api/research/topic/tasks/:runId`。真实输出写入相对目录 `work/research-topic/runs/<runId>/`，当前只包含 `first-search-papers.csv` 与 `manifest.json`。
+打开 `/research/topic`，在第一步输入研究方向，点击“开始试检索”。后端接口为 `POST /api/research/topic/first-search`、`GET /api/research/topic/tasks/:runId` 和 `DELETE /api/research/topic/tasks/:runId`。服务端默认目标为 300 条，允许范围 300–800，前端不展示高级数量输入。真实输出写入相对目录 `work/research-topic/runs/<firstSearchRunId>/first-search/`，当前只包含 `first-search-papers.csv` 与 `manifest.json`；页面只预览前 20 条，并显示原始返回、去重后总数和目标完成状态。
 
 验证应运行：根目录 `pnpm build`、`pnpm test`，以及 `web/` 内 `pnpm build`、`pnpm test`。页面须检查第一步输入、加载、取消、完成、空结果和失败重试；论文必须显示标题、年份、作者/来源、摘要节选、DOI/OpenAlex 链接及“真实元数据 · 待核验”。
 

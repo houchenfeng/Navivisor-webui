@@ -28,10 +28,11 @@ export type ResearchTopicFile = {
 export type ResearchTopicManifest = {
   runId: string;
   stage: 'first-search';
-  status: ResearchTopicTaskStatus;
+  status: 'completed' | 'failed';
   files: ResearchTopicFile[];
-  counts: { papers: number };
+  counts: ResearchTopicCounts;
   errors: Array<{ code?: string; message: string }>;
+  warnings?: string[];
   sourceQueries: Array<Record<string, unknown>>;
   createdAt: string;
 };
@@ -40,7 +41,16 @@ export type FirstSearchInput = {
   researchInterest: string;
   context?: string;
   yearRange?: { from?: number; to?: number };
-  maxItems?: number;
+  targetCount: number;
+};
+
+export type ResearchTopicCounts = {
+  papers: number;
+  requested: number;
+  returned: number;
+  deduplicated: number;
+  previewed: number;
+  targetReached: boolean;
 };
 
 export type ResearchTopicTask = {
@@ -49,7 +59,7 @@ export type ResearchTopicTask = {
   files: ResearchTopicFile[];
   errors: Array<{ code?: string; message: string }>;
   papers: ResearchTopicPaper[];
-  counts: { papers: number };
+  counts: ResearchTopicCounts;
   createdAt: string;
   updatedAt: string;
   cancelRequested: boolean;

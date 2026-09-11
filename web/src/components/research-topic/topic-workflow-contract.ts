@@ -31,7 +31,14 @@ export interface ResearchTaskSnapshot {
     landingUrl: string;
     sourceStatus: 'openalex_public_api';
   }>;
-  counts?: { papers: number };
+  counts?: {
+    papers: number;
+    requested?: number;
+    returned?: number;
+    deduplicated?: number;
+    previewed?: number;
+    targetReached?: boolean;
+  };
 }
 
 export interface TopicWorkflowClient {
