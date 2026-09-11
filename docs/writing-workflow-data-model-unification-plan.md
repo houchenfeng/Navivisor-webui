@@ -251,7 +251,7 @@ source-manifest.json       # 每个文件 sha256、来源 artifactId、生成/�
 
 ### W3：建立共享前端 Workflow 层
 
-状态：未开始
+状态：进行中
 
 任务：
 
@@ -408,6 +408,8 @@ test(research): cover four-module artifact handoff
 - 当前 Codex 账户的内置 `image_gen` 能力探测已成功，不需要 `OPENAI_API_KEY`。探测生成了 `docs/assets/writing-workflow-imagegen-capability-probe.png`（970080 bytes），指定的五个英文标签均正确，未包含指标、引用或额外科研结论。内置工具本次未返回底层模型名称，因此只能记录“账户内置 image_gen 成功”，不能声称实际模型就是 `gpt-image-2`。
 - 上述成功证明当前交互式 Codex 账户可生图，但不等于 `ResearchCodexBridgeService` 创建的后台 app-server thread 已继承同一工具。W7 下一步仍是从该后台 thread 发起同样的最小 run，并验证图片能落入 run temp、通过 validator、固化为 `paper-figure`。
 - skill-creator 的 `quick_validate.py` 因宿主 Python 缺少 PyYAML 未执行；未向项目添加无关 Python 依赖。`research-writing` frontmatter、目录名和正文已人工检查，Research Workflow 定向测试 4/4 通过，根后端构建通过。
+- W1 第二批已完成：新增 stage -> 允许输出 role 矩阵；validator 会拒绝当前 stage 不允许的 artifact role；artifact metadata 已写入数据库 `metadata_json`、manifest 和 API 返回；新增 Drizzle migration `0011_vengeful_clea.sql`。定向测试增加到 5/5 通过，后端构建通过。必需输入 role 矩阵仍待补齐，所以 W1 保持进行中。
+- W3 已建立首个共享前端层：`research-workflow-types.ts` 定义 Project/Run/Artifact DTO，`research-workflow-client.ts` 集中封装生成 SDK 的 project、run、artifact、agent-run 和 cancel 调用。前端生产构建通过。project hook、artifact picker、事件订阅和四模块替换尚未完成，所以 W3 保持进行中。
 
 ### 8.2 后续结果记录模板
 

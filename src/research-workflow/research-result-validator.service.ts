@@ -3,6 +3,7 @@ import { lstat, readFile, realpath } from 'node:fs/promises';
 import { isAbsolute, relative, resolve } from 'node:path';
 import {
   isResearchArtifactRole,
+  isOutputRoleAllowedForStage,
   type ResearchAgentResult,
   type ResearchAgentResultOutput,
   type ResearchStage,
@@ -135,6 +136,13 @@ export class ResearchResultValidatorService {
     const outputs = value.outputs.map((item, index) =>
       this.parseOutput(item, index),
     );
+    for (const output of outputs) {
+      if (!isOutputRoleAllowedForStage(stage, output.role)) {
+        throw new BadRequestException(
+          `Artifact role ${output.role} is not allowed for stage ${stage}`,
+        );
+      }
+    }
     return {
       schemaVersion: 1,
       runId,

@@ -1,0 +1,1 @@
+ALTER TABLE `research_artifacts` ADD `metadata_json` text;

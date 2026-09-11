@@ -160,6 +160,7 @@ export const researchArtifacts = sqliteTable(
     size: integer('size').notNull(),
     sha256: text('sha256').notNull(),
     simulated: integer('simulated', { mode: 'boolean' }).notNull(),
+    metadataJson: text('metadata_json'),
     createdAt: integer('created_at').notNull(),
   },
   (table) => [

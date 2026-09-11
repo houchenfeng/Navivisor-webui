@@ -229,6 +229,7 @@ export class ResearchWorkflowService {
             output.mediaType,
             await readFile(output.absolutePath),
             output.simulated,
+            output.metadata,
           ),
         );
       }
@@ -267,7 +268,8 @@ export class ResearchWorkflowService {
       .from(researchArtifacts)
       .where(eq(researchArtifacts.projectId, projectId))
       .orderBy(desc(researchArtifacts.createdAt))
-      .all();
+      .all()
+      .map((row) => this.publicArtifact(row));
   }
 
   getArtifact(projectId: string, artifactId: string) {
@@ -278,7 +280,7 @@ export class ResearchWorkflowService {
       .get();
     if (!row || row.projectId !== projectId)
       throw new NotFoundException('Research artifact not found');
-    return row;
+    return this.publicArtifact(row);
   }
 
   async createArtifact(
@@ -288,6 +290,7 @@ export class ResearchWorkflowService {
     mediaType: string,
     content: Buffer | string,
     simulated: boolean,
+    metadata?: Record<string, unknown>,
   ): Promise<ResearchArtifact> {
     const run = this.getRun(runId);
     const safeName = basename(name);
@@ -319,11 +322,22 @@ export class ResearchWorkflowService {
       size: bytes.byteLength,
       sha256: createHash('sha256').update(bytes).digest('hex'),
       simulated,
+      metadataJson: metadata ? JSON.stringify(metadata) : null,
       createdAt,
     };
     this.db.insert(researchArtifacts).values(row).run();
     const artifact: ResearchArtifact = {
-      ...row,
+      artifactId: row.artifactId,
+      projectId: row.projectId,
+      runId: row.runId,
+      role,
+      name: row.name,
+      path: row.path,
+      mediaType: row.mediaType,
+      size: row.size,
+      sha256: row.sha256,
+      simulated,
+      ...(metadata && { metadata }),
       createdAt: new Date(createdAt).toISOString(),
     };
     const manifest = await this.readManifest(run.projectId, runId);
@@ -378,5 +392,19 @@ export class ResearchWorkflowService {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
+  }
+
+  private publicArtifact(row: typeof researchArtifacts.$inferSelect) {
+    let metadata: Record<string, unknown> | undefined;
+    if (row.metadataJson) {
+      try {
+        metadata = JSON.parse(row.metadataJson) as Record<string, unknown>;
+      } catch {
+        metadata = { invalidMetadata: true };
+      }
+    }
+    const { metadataJson: _metadataJson, ...artifact } = row;
+    void _metadataJson;
+    return { ...artifact, ...(metadata && { metadata }) };
   }
 }

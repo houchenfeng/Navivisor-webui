@@ -75,7 +75,33 @@ export interface ResearchArtifact {
   size: number;
   sha256: string;
   simulated: boolean;
+  metadata?: Record<string, unknown>;
   createdAt: string;
+}
+
+export const RESEARCH_STAGE_OUTPUT_ROLES: Record<
+  ResearchStage,
+  readonly ResearchArtifactRole[]
+> = {
+  'topic.first-search': ['candidate-papers', 'diagnostics'],
+  'topic.core-literature': ['candidate-topics', 'core-references', 'diagnostics'],
+  'topic.confirmation': ['confirmed-topic', 'literature-handoff', 'diagnostics'],
+  'experiment.plan': ['experiment-plan', 'experiment-config', 'diagnostics'],
+  'experiment.run': ['experiment-results', 'method-architecture', 'dataset-manifest', 'diagnostics'],
+  'writing.outline': ['paper-outline', 'diagnostics'],
+  'writing.draft': ['paper-source', 'paper-metadata', 'paper-figure', 'paper-translation', 'diagnostics'],
+  'writing.final': ['paper-source', 'paper-metadata', 'paper-figure', 'paper-translation', 'paper-pdf', 'diagnostics'],
+  'submission.prepare': ['submission-package', 'diagnostics'],
+  'submission.review.round1': ['review-round1', 'diagnostics'],
+  'submission.rebuttal': ['rebuttal', 'diagnostics'],
+  'submission.decision': ['submission-decision', 'diagnostics'],
+};
+
+export function isOutputRoleAllowedForStage(
+  stage: ResearchStage,
+  role: ResearchArtifactRole,
+): boolean {
+  return RESEARCH_STAGE_OUTPUT_ROLES[stage].includes(role);
 }
 
 export interface ResearchRunManifest {
