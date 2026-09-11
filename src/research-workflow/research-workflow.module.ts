@@ -6,6 +6,8 @@ import { ThreadsModule } from '../threads/threads.module';
 import { ResearchAgentSessionService } from './research-agent-session.service';
 import { ResearchCodexBridgeService } from './research-codex-bridge.service';
 import { ResearchPathsService } from './research-paths.service';
+import { ResearchResultValidatorService } from './research-result-validator.service';
+import { ResearchRunEventsService } from './research-run-events.service';
 import { ResearchSkillRegistryService } from './research-skill-registry.service';
 import { ResearchWorkflowController } from './research-workflow.controller';
 import { ResearchWorkflowService } from './research-workflow.service';
@@ -15,6 +17,8 @@ import { ResearchWorkflowService } from './research-workflow.service';
   controllers: [ResearchWorkflowController],
   providers: [
     ResearchPathsService,
+    ResearchResultValidatorService,
+    ResearchRunEventsService,
     ResearchAgentSessionService,
     ResearchCodexBridgeService,
     ResearchSkillRegistryService,
@@ -22,6 +26,7 @@ import { ResearchWorkflowService } from './research-workflow.service';
   ],
   exports: [
     ResearchPathsService,
+    ResearchResultValidatorService,
     ResearchAgentSessionService,
     ResearchCodexBridgeService,
     ResearchSkillRegistryService,

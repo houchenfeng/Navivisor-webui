@@ -94,6 +94,23 @@ export interface ResearchRunManifest {
   provenance: Record<string, unknown>;
 }
 
+export interface ResearchAgentResultOutput {
+  path: string;
+  role: ResearchArtifactRole;
+  mediaType: string;
+  simulated: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ResearchAgentResult {
+  schemaVersion: 1;
+  runId: string;
+  stage: ResearchStage;
+  status: 'completed';
+  outputs: ResearchAgentResultOutput[];
+  warnings: string[];
+}
+
 export function moduleForStage(stage: ResearchStage): ResearchModule {
   return stage.split('.')[0] as ResearchModule;
 }

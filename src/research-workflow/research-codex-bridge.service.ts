@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
 import { DRIZZLE_DB, type AppDatabase } from '../database/database.constants';
-import { researchAgentInvocations, researchRuns } from '../database/schema';
+import { eq } from 'drizzle-orm';
+import { researchAgentInvocations } from '../database/schema';
 import { ThreadsService } from '../threads/threads.service';
 import type { ResearchRunMode, ResearchStage } from './research-contracts';
 import { ResearchAgentSessionService } from './research-agent-session.service';
@@ -19,6 +19,7 @@ export interface StartResearchAgentRunOptions {
   instructions: string;
   model?: string;
   effort?: 'low' | 'medium' | 'high' | 'xhigh';
+  retryOfRunId?: string;
 }
 
 @Injectable()
@@ -38,6 +39,7 @@ export class ResearchCodexBridgeService {
       options.stage,
       options.mode,
       options.inputArtifactIds,
+      options.retryOfRunId ?? null,
     );
     const session = await this.sessions.getOrCreate(
       options.projectId,
@@ -80,24 +82,76 @@ export class ResearchCodexBridgeService {
           createdAt: now,
         })
         .run();
-      this.db
-        .update(researchRuns)
-        .set({ status: 'running', updatedAt: now })
-        .where(eq(researchRuns.runId, run.runId))
-        .run();
+      await this.workflow.transitionRun(run.runId, 'running', {
+        provenance: {
+          threadId: session.threadId,
+          turnId: response.turn.id,
+          model: options.model ?? null,
+          effort: options.effort ?? null,
+          skillName: skill.name,
+          skillPath: String(skill.path),
+          skillSha256: skill.sha256,
+          promptVersion: PROMPT_VERSION,
+        },
+      });
       return {
         runId: run.runId,
         threadId: session.threadId,
         turnId: response.turn.id,
       };
     } catch (error) {
-      this.db
-        .update(researchRuns)
-        .set({ status: 'failed', updatedAt: Date.now() })
-        .where(eq(researchRuns.runId, run.runId))
-        .run();
+      await this.workflow.transitionRun(run.runId, 'failed', {
+        error: {
+          code: 'CODEX_TURN_START_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      });
       throw error;
     }
+  }
+
+  async cancel(runId: string): Promise<void> {
+    const run = this.workflow.getRun(runId);
+    if (
+      ![
+        'queued',
+        'running',
+        'waiting_for_approval',
+        'waiting_for_input',
+      ].includes(run.status)
+    ) {
+      throw new Error(`Research run cannot be cancelled from ${run.status}`);
+    }
+    const invocation = this.db
+      .select()
+      .from(researchAgentInvocations)
+      .where(eq(researchAgentInvocations.runId, runId))
+      .get();
+    if (invocation && run.status !== 'queued') {
+      await this.threads.interruptTurn(invocation.threadId, invocation.turnId);
+    }
+    await this.workflow.transitionRun(runId, 'cancelled');
+  }
+
+  async retry(
+    runId: string,
+    instructions: string,
+    overrides: Pick<StartResearchAgentRunOptions, 'model' | 'effort'> = {},
+  ) {
+    const previous = this.workflow.getRun(runId);
+    const manifest = await this.workflow.readManifest(
+      previous.projectId,
+      runId,
+    );
+    return this.start({
+      projectId: previous.projectId,
+      stage: previous.stage as ResearchStage,
+      mode: previous.mode as ResearchRunMode,
+      inputArtifactIds: manifest.inputs.map((input) => input.artifactId),
+      instructions,
+      retryOfRunId: runId,
+      ...overrides,
+    });
   }
 
   private buildPrompt(

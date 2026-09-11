@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID, createHash } from 'node:crypto';
-import { mkdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { desc, eq } from 'drizzle-orm';
 import { DRIZZLE_DB, type AppDatabase } from '../database/database.constants';
@@ -14,16 +14,40 @@ import type {
   ResearchArtifactRole,
   ResearchRunManifest,
   ResearchRunMode,
+  ResearchRunStatus,
   ResearchStage,
 } from './research-contracts';
 import { moduleForStage } from './research-contracts';
 import { ResearchPathsService } from './research-paths.service';
+import { ResearchResultValidatorService } from './research-result-validator.service';
+
+const ALLOWED_TRANSITIONS: Record<ResearchRunStatus, ResearchRunStatus[]> = {
+  queued: ['running', 'cancelled', 'unavailable', 'failed'],
+  running: [
+    'waiting_for_approval',
+    'waiting_for_input',
+    'validating',
+    'cancelled',
+    'unavailable',
+    'needs_credentials',
+    'failed',
+  ],
+  waiting_for_approval: ['running', 'cancelled', 'unavailable', 'failed'],
+  waiting_for_input: ['running', 'cancelled', 'unavailable', 'failed'],
+  validating: ['completed', 'failed'],
+  completed: [],
+  failed: [],
+  cancelled: [],
+  unavailable: ['running', 'cancelled', 'failed'],
+  needs_credentials: ['running', 'cancelled', 'failed'],
+};
 
 @Injectable()
 export class ResearchWorkflowService {
   constructor(
     @Inject(DRIZZLE_DB) private readonly db: AppDatabase,
     private readonly paths: ResearchPathsService,
+    private readonly resultValidator: ResearchResultValidatorService,
   ) {}
 
   async createProject(name: string) {
@@ -67,6 +91,7 @@ export class ResearchWorkflowService {
     stage: ResearchStage,
     mode: ResearchRunMode,
     inputArtifactIds: string[] = [],
+    retryOfRunId: string | null = null,
   ) {
     this.getProject(projectId);
     const inputs = inputArtifactIds.map((artifactId) => {
@@ -98,7 +123,7 @@ export class ResearchWorkflowService {
       status: 'queued',
       mode,
       manifestPath,
-      retryOfRunId: null,
+      retryOfRunId,
       createdAt: now,
       updatedAt: now,
     };
@@ -132,6 +157,97 @@ export class ResearchWorkflowService {
       .get();
     if (!row) throw new NotFoundException('Research run not found');
     return row;
+  }
+
+  async retryRun(runId: string) {
+    const previous = this.getRun(runId);
+    const manifest = await this.readManifest(previous.projectId, runId);
+    return this.createRun(
+      previous.projectId,
+      previous.stage as ResearchStage,
+      previous.mode as ResearchRunMode,
+      manifest.inputs.map((input) => input.artifactId),
+      runId,
+    );
+  }
+
+  async transitionRun(
+    runId: string,
+    next: ResearchRunStatus,
+    options: {
+      warning?: string;
+      error?: { code: string; message: string };
+      provenance?: Record<string, unknown>;
+    } = {},
+  ) {
+    const run = this.getRun(runId);
+    const current = run.status as ResearchRunStatus;
+    if (!ALLOWED_TRANSITIONS[current]?.includes(next)) {
+      throw new Error(`Invalid research run transition: ${current} -> ${next}`);
+    }
+    const now = Date.now();
+    const manifest = await this.readManifest(run.projectId, runId);
+    await this.writeManifest({
+      ...manifest,
+      status: next,
+      updatedAt: new Date(now).toISOString(),
+      warnings: options.warning
+        ? [...manifest.warnings, options.warning]
+        : manifest.warnings,
+      errors: options.error
+        ? [...manifest.errors, options.error]
+        : manifest.errors,
+      provenance: { ...manifest.provenance, ...options.provenance },
+    });
+    this.db
+      .update(researchRuns)
+      .set({ status: next, updatedAt: now })
+      .where(eq(researchRuns.runId, runId))
+      .run();
+    return { ...run, status: next, updatedAt: now };
+  }
+
+  async finalizeAgentResult(runId: string): Promise<ResearchArtifact[]> {
+    const run = this.getRun(runId);
+    if (run.status !== 'running') {
+      throw new Error('Only a running research run can be finalized');
+    }
+    await this.transitionRun(runId, 'validating');
+    try {
+      const validated = await this.resultValidator.validate(
+        run.projectId,
+        runId,
+        run.stage as ResearchStage,
+      );
+      const artifacts: ResearchArtifact[] = [];
+      for (const output of validated.outputs) {
+        artifacts.push(
+          await this.createArtifact(
+            runId,
+            output.role,
+            basename(output.path),
+            output.mediaType,
+            await readFile(output.absolutePath),
+            output.simulated,
+          ),
+        );
+      }
+      await this.transitionRun(runId, 'completed', {
+        provenance: { resultSchemaVersion: validated.result.schemaVersion },
+        ...(validated.result.warnings.length > 0 && {
+          warning: validated.result.warnings.join('\n'),
+        }),
+      });
+      return artifacts;
+    } catch (error) {
+      await this.transitionRun(runId, 'failed', {
+        error: {
+          code: 'RESULT_VALIDATION_FAILED',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      });
+      throw error;
+    }
   }
 
   listRuns(projectId: string) {
@@ -206,10 +322,17 @@ export class ResearchWorkflowService {
       createdAt,
     };
     this.db.insert(researchArtifacts).values(row).run();
-    return {
+    const artifact: ResearchArtifact = {
       ...row,
       createdAt: new Date(createdAt).toISOString(),
     };
+    const manifest = await this.readManifest(run.projectId, runId);
+    await this.writeManifest({
+      ...manifest,
+      updatedAt: new Date(createdAt).toISOString(),
+      artifacts: [...manifest.artifacts, artifact],
+    });
+    return artifact;
   }
 
   artifactAbsolutePath(projectId: string, artifactId: string): string {
@@ -224,6 +347,19 @@ export class ResearchWorkflowService {
       this.paths.manifest(manifest.projectId, manifest.runId),
       manifest,
     );
+  }
+
+  async readManifest(
+    projectId: string,
+    runId: string,
+  ): Promise<ResearchRunManifest> {
+    const value = JSON.parse(
+      await readFile(this.paths.manifest(projectId, runId), 'utf8'),
+    ) as ResearchRunManifest;
+    if (value.projectId !== projectId || value.runId !== runId) {
+      throw new Error('Research manifest identity mismatch');
+    }
+    return value;
   }
 
   private async atomicJson(path: string, value: unknown): Promise<void> {

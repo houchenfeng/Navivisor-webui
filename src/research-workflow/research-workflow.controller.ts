@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -12,12 +13,8 @@ import {
   ApiPropertyOptional,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  isResearchRunMode,
-  isResearchStage,
-  RESEARCH_ARTIFACT_ROLES,
-  type ResearchArtifactRole,
-} from './research-contracts';
+import { createReadStream } from 'node:fs';
+import { isResearchRunMode, isResearchStage } from './research-contracts';
 import { ResearchCodexBridgeService } from './research-codex-bridge.service';
 import { ResearchWorkflowService } from './research-workflow.service';
 
@@ -31,15 +28,14 @@ class CreateResearchRunDto {
   @ApiPropertyOptional({ type: [String] }) inputArtifactIds?: string[];
 }
 
-class CreateTextArtifactDto {
-  @ApiProperty({ enum: RESEARCH_ARTIFACT_ROLES }) role!: ResearchArtifactRole;
-  @ApiProperty() name!: string;
-  @ApiProperty() mediaType!: string;
-  @ApiProperty() content!: string;
-  @ApiProperty() simulated!: boolean;
+class StartResearchAgentRunDto extends CreateResearchRunDto {
+  @ApiProperty() instructions!: string;
+  @ApiPropertyOptional() model?: string;
+  @ApiPropertyOptional({ enum: ['low', 'medium', 'high', 'xhigh'] })
+  effort?: 'low' | 'medium' | 'high' | 'xhigh';
 }
 
-class StartResearchAgentRunDto extends CreateResearchRunDto {
+class RetryResearchAgentRunDto {
   @ApiProperty() instructions!: string;
   @ApiPropertyOptional() model?: string;
   @ApiPropertyOptional({ enum: ['low', 'medium', 'high', 'xhigh'] })
@@ -73,6 +69,15 @@ export class ResearchWorkflowController {
   @Get(':projectId/runs') listRuns(@Param('projectId') projectId: string) {
     return this.workflow.listRuns(projectId);
   }
+  @Get(':projectId/runs/:runId') getRun(
+    @Param('projectId') projectId: string,
+    @Param('runId') runId: string,
+  ) {
+    const run = this.workflow.getRun(runId);
+    if (run.projectId !== projectId)
+      throw new BadRequestException('Run does not belong to project');
+    return run;
+  }
   @Get(':projectId/artifacts') listArtifacts(
     @Param('projectId') projectId: string,
   ) {
@@ -83,6 +88,22 @@ export class ResearchWorkflowController {
     @Param('artifactId') artifactId: string,
   ) {
     return this.workflow.getArtifact(projectId, artifactId);
+  }
+  @Get(':projectId/artifacts/:artifactId/content') getArtifactContent(
+    @Param('projectId') projectId: string,
+    @Param('artifactId') artifactId: string,
+  ) {
+    const artifact = this.workflow.getArtifact(projectId, artifactId);
+    return new StreamableFile(
+      createReadStream(
+        this.workflow.artifactAbsolutePath(projectId, artifactId),
+      ),
+      {
+        type: artifact.mediaType,
+        disposition: `attachment; filename="${encodeURIComponent(artifact.name)}"`,
+        length: artifact.size,
+      },
+    );
   }
 
   @Post(':projectId/runs') createRun(
@@ -126,27 +147,35 @@ export class ResearchWorkflowController {
     });
   }
 
-  @Post(':projectId/runs/:runId/artifacts/text') createTextArtifact(
+  @Post(':projectId/runs/:runId/cancel') async cancelRun(
     @Param('projectId') projectId: string,
     @Param('runId') runId: string,
-    @Body() body: CreateTextArtifactDto,
   ) {
+    this.assertRunProject(projectId, runId);
+    await this.codexBridge.cancel(runId);
+    return { ok: true };
+  }
+
+  @Post(':projectId/runs/:runId/retry') retryRun(
+    @Param('projectId') projectId: string,
+    @Param('runId') runId: string,
+    @Body() body: RetryResearchAgentRunDto,
+  ) {
+    this.assertRunProject(projectId, runId);
+    const instructions = body.instructions?.trim();
+    if (!instructions || instructions.length > 20_000)
+      throw new BadRequestException(
+        'Instructions are required and must not exceed 20000 characters',
+      );
+    return this.codexBridge.retry(runId, instructions, {
+      model: body.model,
+      effort: body.effort,
+    });
+  }
+
+  private assertRunProject(projectId: string, runId: string): void {
     const run = this.workflow.getRun(runId);
     if (run.projectId !== projectId)
       throw new BadRequestException('Run does not belong to project');
-    if (
-      !(RESEARCH_ARTIFACT_ROLES as readonly string[]).includes(body.role) ||
-      typeof body.content !== 'string' ||
-      typeof body.simulated !== 'boolean'
-    )
-      throw new BadRequestException('Invalid artifact');
-    return this.workflow.createArtifact(
-      runId,
-      body.role,
-      body.name,
-      body.mediaType,
-      body.content,
-      body.simulated,
-    );
   }
 }
