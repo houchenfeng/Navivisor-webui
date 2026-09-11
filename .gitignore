@@ -53,6 +53,12 @@ pids
 *.seed
 *.pid.lock
 
+# Research-agent generated data: never commit user literature, PDFs, fixtures, or run manifests.
+/work/research-topic/runs/
+
+# Python bytecode generated while validating research tools.
+__pycache__/
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
