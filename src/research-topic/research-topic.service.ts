@@ -107,16 +107,16 @@ export class ResearchTopicService {
       task.counts.deduplicated = papers.length;
       task.counts.previewed = Math.min(papers.length, PREVIEW_COUNT);
       task.counts.targetReached = papers.length >= input.targetCount;
-      if (task.status !== 'cancelled') {
-        task.status = 'completed';
-      }
     } catch (error) {
       task.status = task.cancelRequested ? 'cancelled' : 'failed';
       task.errors = [{ code: 'OPENALEX_REQUEST_FAILED', message: safeErrorMessage(error) }];
       sourceQueries.push({ source: 'OpenAlex', endpoint: OPENALEX_WORKS_URL, search: input.researchInterest.trim(), targetCount: input.targetCount, status: 'failed' });
     }
-    task.updatedAt = new Date().toISOString();
     await this.persist(task, sourceQueries);
+    if (task.status === 'running') {
+      task.status = 'completed';
+    }
+    task.updatedAt = new Date().toISOString();
   }
 
   private async request(url: string): Promise<OpenAlexPayload> {
@@ -144,7 +144,7 @@ export class ResearchTopicService {
     const manifest: ResearchTopicManifest = {
       runId: task.runId,
       stage: 'first-search',
-      status: task.status === 'completed' ? 'completed' : 'failed',
+      status: task.status === 'failed' || task.status === 'cancelled' ? 'failed' : 'completed',
       files: [
         { name: 'first-search-papers.csv', path: 'first-search-papers.csv', kind: 'csv' },
         { name: 'manifest.json', path: 'manifest.json', kind: 'manifest' },
