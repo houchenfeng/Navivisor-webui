@@ -36,23 +36,86 @@
 
 ## 快速开始
 
-需要 Node.js ≥ 20、pnpm ≥ 9，以及已安装的 Codex CLI。
+### 需要先安装 / 下载的东西
+
+| 项 | 用途 | 说明 |
+|---|---|---|
+| [Node.js](https://nodejs.org/) ≥ 20 | 跑前后端 | 建议 LTS |
+| [pnpm](https://pnpm.io/) ≥ 9 | 包管理 | `npm i -g pnpm` |
+| 本仓库依赖 | 后端 Nest + 前端 Vite/React + 内置 Codex CLI 包 | `pnpm install`（根目录与 `web/`）各装一次 |
+| ChatGPT 账号（可选但推荐） | 让 Codex 真正对话 / 写作 AI | 首次在 WebUI **设置 → 账户** 里设备登录；也可用 `OPENAI_API_KEY` |
+
+前端开发一般**不用**单独配 `.env`：Vite 已把 `/api`、`/socket.io` 代理到后端 `8172`。  
+后端必须有根目录 `.env`（可由首次启动自动生成）。
+
+### 前后端配置
+
+**后端（仓库根目录 `.env`）**
+
+| 变量 | 是否必须 | 说明 |
+|---|---|---|
+| `WEBUI_API_KEY` | 是 | Web 登录密钥（**不是** ChatGPT 密码）。首次运行会自动生成随机值并写入 `.env` |
+| `PORT` | 否 | 默认 `8172` |
+| `CODEX_BIN` | 建议 | Codex 可执行文件路径；Windows 可指向 `pnpm install` 后的 `node_modules/@openai/codex-win32-x64/.../codex.exe` |
+| `OPENAI_API_KEY` | 否 | 不用 ChatGPT 登录、改走 API Key 时再填 |
+| `CODEX_HOME` / `WEBUI_DB_PATH` | 否 | 默认在用户目录下的 Codex/SQLite 路径 |
+| `NAVIVISOR_RESEARCH_WORK_ROOT` | 否 | 科研托管项目根目录；默认 `~/.codex/research-projects` |
+
+**前端（`web/`，可选）**
+
+| 变量 | 是否必须 | 说明 |
+|---|---|---|
+| （无） | — | 本地 `pnpm dev` 默认代理到 `http://localhost:8172` |
+| `VITE_SUBMISSION_API_BASE_URL` | 否 | 仅当投稿模块要打远程 API 时设置；不设则用本地 mock |
+
+### 首次运行会生成随机密钥
+
+第一次执行 `pnpm start:dev`（或 `pnpm ensure:env`）时：
+
+1. 若还没有 `.env`，会从 `.env.example` 复制一份；
+2. 若 `WEBUI_API_KEY` 仍是占位符 `change-me-to-a-random-secret`，会换成**随机密钥**并写回 `.env`；
+3. 终端会打印一次，例如：
+
+```text
+============================================================
+First run: created .env and generated WEBUI_API_KEY
+WEBUI_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+Use this value to log in to the Web UI.
+============================================================
+```
+
+请用这个值在浏览器登录页登录，并自行保管（不要提交到 Git）。之后再启动不会重新生成，除非你删掉 `.env` 或把密钥改回占位符。
+
+### 命令步骤
 
 ```bash
+# 1) 安装依赖（根目录 = 后端；web = 前端）
 pnpm install
 cd web && pnpm install && cd ..
 
-cp .env.example .env
-# 编辑 .env，至少设置 WEBUI_API_KEY（Web 登录密钥，不是 ChatGPT 账号）
-# Windows 建议设置 CODEX_BIN 指向本机 codex.exe
+# 2) 准备环境变量（也可直接 start:dev，会自动 ensure:env）
+pnpm ensure:env
+# 需要时编辑 .env：Windows 建议设置 CODEX_BIN
 
-pnpm start:dev          # 后端，默认 8172
-cd web && pnpm dev      # 前端，常见 http://localhost:5173 或 5174
+# 3) 开两个终端
+pnpm start:dev          # 后端 → http://localhost:8172
+cd web && pnpm dev      # 前端 → http://localhost:5173（或 5174）
 ```
 
-打开前端地址，用 `.env` 里的 `WEBUI_API_KEY` 登录。
+打开前端地址，用 `.env` 里打印/保存的 `WEBUI_API_KEY` 登录。
 
 要用 GPT 账号跑 Codex：进入 **设置 → 账户**，选择 **ChatGPT**，完成设备登录授权。
+
+### 第一次跑通：最短清单
+
+1. 安装 Node.js ≥ 20、pnpm ≥ 9  
+2. `pnpm install` + `cd web && pnpm install`  
+3. `pnpm start:dev`（记下终端里生成的 `WEBUI_API_KEY`）  
+4. 另开终端：`cd web && pnpm dev`  
+5. 浏览器打开前端，用该密钥登录  
+6. （可选）设置里用 ChatGPT 登录 Codex；Windows 可在 `.env` 配好 `CODEX_BIN`  
+
+工作目录 Demo 示例包在 `demo-packages/camera-vad-scene-memory/`（需落在 Files 服务允许的 workspace 根目录内再注册）。
 
 ## 简要使用说明
 
@@ -73,7 +136,7 @@ cd web && pnpm dev      # 前端，常见 http://localhost:5173 或 5174
 
 ## 产物如何衔接
 
-最新工作目录设计：一篇论文对应一个用户在首页选择的工作目录，四模块共享该目录中的 `topic/`、`experiment/`、`writing/`、`submission/`。对话窗口显示项目简述和产物链接；统一“从工作目录载入 Demo”按钮读取目录中的示例文件。此能力尚待实现，文件格式、视频异常检测示例与实施清单见 [TODO 第 14–18 节](./docs/four-module-workflow-migration-todo.md#14-最新产品决定一篇论文一个工作目录)。
+最新工作目录设计：一篇论文对应一个用户在首页选择的工作目录，四模块共享该目录中的 `topic/`、`experiment/`、`writing/`、`submission/`。对话窗口显示项目简述和产物链接；统一「从工作目录载入 Demo」读取目录中的示例文件。契约与进度见 [TODO 第 14–18 节](./docs/four-module-workflow-migration-todo.md#14-最新产品决定一篇论文一个工作目录)。
 
 - 同一项研究始终使用同一个 `projectId`。
 - 每次检索、生成、实验、写作或审稿都是一个独立 `runId`，失败重试也创建新 run。
