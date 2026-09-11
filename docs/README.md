@@ -7,6 +7,7 @@
 | 文档 | 用途 |
 |---|---|
 | [demo-data-format.md](./demo-data-format.md) | CameraVAD Demo 逐文件字段、实际示例、导入关系和缺失状态 |
+| [project-bug-test-report.md](./project-bug-test-report.md) | 全项目测试与 Bug 记录（含复现与简要改法） |
 | [research-modules-gap-report.md](./research-modules-gap-report.md) | 四模块已修问题与未实装缺口清单 |
 | [sam-experiment-demo-guide.md](./sam-experiment-demo-guide.md) | 实验模块 SAM Demo 演示步骤 |
 | [four-module-workflow-migration-todo.md](./four-module-workflow-migration-todo.md) | 唯一执行 TODO；包含四模块产物链、显式存储、统一 Demo 导入和进度回写规则 |
