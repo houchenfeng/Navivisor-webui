@@ -19,7 +19,7 @@ import {
 
 const steps: Array<{ id: ExperimentStep; label: string }> = [
   { id: 'intake', label: '课题与文献' }, { id: 'plan', label: '方案确认' },
-  { id: 'mode', label: '模式选择' }, { id: 'simulate', label: '模拟配置' },
+  { id: 'mode', label: '模式选择' }, { id: 'simulate', label: '实验配置' },
   { id: 'run', label: '实验执行' }, { id: 'results', label: '成果交付' },
 ];
 
@@ -27,6 +27,10 @@ const stepPath = (step: ExperimentStep) => `/research/experiment/${step}` as con
 
 function SimulatedBadge() {
   return <Badge className="border-amber-300 bg-amber-100 text-amber-800">模拟</Badge>;
+}
+
+function RealBadge() {
+  return <Badge className="border-emerald-300 bg-emerald-100 text-emerald-800">真实运行</Badge>;
 }
 
 function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
@@ -90,19 +94,410 @@ function PlanPage({ go }: { go: (step: ExperimentStep) => void }) {
 
 function ModePage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
-  return <div className="mx-auto max-w-4xl"><h2 className="text-2xl font-semibold text-[#10204A]">选择运行模式</h2><div className="mt-6 grid gap-4 md:grid-cols-2"><button className="rounded-2xl border-2 border-[#1F4DCB] bg-white p-6 text-left shadow-sm"><FlaskConical className="size-8 text-[#1F4DCB]" /><h3 className="mt-4 text-lg font-semibold">模拟实验结果</h3><p className="mt-2 text-sm text-muted-foreground">基于论文锚点、领域合理区间和模型推断生成保守模拟数据。</p></button><button disabled className="rounded-2xl border bg-white/60 p-6 text-left opacity-60"><Play className="size-8" /><div className="mt-4 flex items-center gap-2"><h3 className="text-lg font-semibold">本地真实运行</h3><Badge variant="secondary">后续版本</Badge></div></button></div><label className="mt-6 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm"><input type="checkbox" className="mt-1" checked={state.disclaimerAccepted} onChange={(e) => state.setFields({ disclaimerAccepted: e.target.checked })} /><span>我理解模拟结果仅用于 Demo 和方案比较，不能作为真实论文证据。</span></label><div className="mt-6 flex justify-end"><Button disabled={!state.disclaimerAccepted} onClick={() => go('simulate')}>继续配置<ChevronRight data-icon="inline-end" /></Button></div></div>;
+  const selected = state.runMode;
+  return (
+    <div className="mx-auto max-w-4xl">
+      <h2 className="text-2xl font-semibold text-[#10204A]">选择运行模式</h2>
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => state.setFields({ runMode: 'simulated' })}
+          className={cn(
+            'rounded-2xl border-2 bg-white p-6 text-left shadow-sm transition',
+            selected === 'simulated' ? 'border-[#1F4DCB]' : 'border-transparent hover:border-[#1F4DCB]/40',
+          )}
+        >
+          <FlaskConical className="size-8 text-[#1F4DCB]" />
+          <h3 className="mt-4 text-lg font-semibold">模拟实验结果</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            基于论文锚点、领域合理区间和模型推断生成保守模拟数据。
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => state.setFields({ runMode: 'real' })}
+          className={cn(
+            'rounded-2xl border-2 bg-white p-6 text-left shadow-sm transition',
+            selected === 'real' ? 'border-[#1F4DCB]' : 'border-transparent hover:border-[#1F4DCB]/40',
+          )}
+        >
+          <Play className="size-8 text-[#1F4DCB]" />
+          <h3 className="mt-4 text-lg font-semibold">真实运行</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            连接本机或 SSH 服务器，配置算力、工作目录与可选 API 后执行实验。
+          </p>
+        </button>
+      </div>
+      <label className="mt-6 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={state.disclaimerAccepted}
+          onChange={(e) => state.setFields({ disclaimerAccepted: e.target.checked })}
+        />
+        <span>
+          {selected === 'simulated'
+            ? '我理解模拟结果仅用于 Demo 和方案比较，不能作为真实论文证据。'
+            : '我理解真实运行会在所选机器上执行命令并占用 GPU/磁盘；需自行核对路径、权限与数据许可，产出需带执行证据才可写入论文。'}
+        </span>
+      </label>
+      <div className="mt-6 flex justify-end">
+        <Button disabled={!state.disclaimerAccepted} onClick={() => go('simulate')}>
+          继续配置
+          <ChevronRight data-icon="inline-end" />
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function ConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
-  return <div className="mx-auto max-w-3xl rounded-2xl bg-white/90 p-6"><div className="flex items-center gap-3"><h2 className="text-xl font-semibold">模拟配置</h2><SimulatedBadge /></div><div className="mt-6 grid gap-5 sm:grid-cols-2"><label className="flex flex-col gap-2 text-sm font-medium">随机种子<Input type="number" value={state.seed} onChange={(e) => state.setFields({ seed: Number(e.target.value) })} /></label><label className="flex flex-col gap-2 text-sm font-medium">重复次数<Input type="number" min={1} max={10} value={state.repeatCount} onChange={(e) => state.setFields({ repeatCount: Number(e.target.value) })} /></label><label className="flex flex-col gap-2 text-sm font-medium">提升幅度<Input value="Baseline -2% ～ +8%" disabled /></label><label className="flex flex-col gap-2 text-sm font-medium">失败方案<Input value="允许 1–2 个 Idea 失败" disabled /></label></div><div className="mt-6 rounded-xl bg-blue-50 p-4 text-sm text-[#10204A]">模拟依据：论文公开报告值作为锚点；缺失值使用领域合理区间；组合收益由保守模型推断。</div><div className="mt-6 flex justify-end"><Button onClick={() => go('run')}><Play data-icon="inline-start" />开始模拟</Button></div></div>;
+  if (state.runMode === 'real') {
+    return <RealRuntimeConfigPage go={go} />;
+  }
+  return (
+    <div className="mx-auto max-w-3xl rounded-2xl bg-white/90 p-6">
+      <div className="flex items-center gap-3">
+        <h2 className="text-xl font-semibold">实验配置</h2>
+        <SimulatedBadge />
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">当前为模拟实验：沿用随机种子与重复次数等 Demo 参数。</p>
+      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          随机种子
+          <Input type="number" value={state.seed} onChange={(e) => state.setFields({ seed: Number(e.target.value) })} />
+        </label>
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          重复次数
+          <Input
+            type="number"
+            min={1}
+            max={10}
+            value={state.repeatCount}
+            onChange={(e) => state.setFields({ repeatCount: Number(e.target.value) })}
+          />
+        </label>
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          提升幅度
+          <Input value="Baseline -2% ～ +8%" disabled />
+        </label>
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          失败方案
+          <Input value="允许 1–2 个 Idea 失败" disabled />
+        </label>
+      </div>
+      <div className="mt-6 rounded-xl bg-blue-50 p-4 text-sm text-[#10204A]">
+        模拟依据：论文公开报告值作为锚点；缺失值使用领域合理区间；组合收益由保守模型推断。
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Button onClick={() => go('run')}>
+          <Play data-icon="inline-start" />
+          开始模拟
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
+  const state = useExperimentStore();
+  const runtime = state.realRuntime;
+  const patch = (fields: Partial<typeof runtime>) =>
+    state.setFields({ realRuntime: { ...runtime, ...fields } });
+
+  const canContinue =
+    Boolean(runtime.codeDir.trim() && runtime.dataDir.trim() && runtime.resultsDir.trim()) &&
+    (runtime.target === 'local' ||
+      Boolean(runtime.sshHost.trim() && runtime.sshUser.trim() && runtime.sshPort.trim()));
+
+  return (
+    <div className="mx-auto flex max-w-4xl flex-col gap-5">
+      <section className="rounded-2xl bg-white/90 p-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-xl font-semibold">实验配置</h2>
+          <RealBadge />
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          选择本机或 SSH 远端，并确认算力与工作目录。当前先保存配置；真正拉起训练/SSH 会话仍按后续能力接入。
+        </p>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => patch({ target: 'local' })}
+            className={cn(
+              'rounded-xl border-2 p-4 text-left',
+              runtime.target === 'local' ? 'border-[#1F4DCB] bg-blue-50/60' : 'border-[#e4eefc]',
+            )}
+          >
+            <h3 className="font-semibold">本地运行</h3>
+            <p className="mt-1 text-sm text-muted-foreground">使用本机进程与已配置的 workspace 路径执行。</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => patch({ target: 'ssh' })}
+            className={cn(
+              'rounded-xl border-2 p-4 text-left',
+              runtime.target === 'ssh' ? 'border-[#1F4DCB] bg-blue-50/60' : 'border-[#e4eefc]',
+            )}
+          >
+            <h3 className="font-semibold">链接 SSH 服务器</h3>
+            <p className="mt-1 text-sm text-muted-foreground">填写主机、端口与用户，在远端执行实验。</p>
+          </button>
+        </div>
+
+        {runtime.target === 'ssh' ? (
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <label className="flex flex-col gap-2 text-sm font-medium sm:col-span-2">
+              SSH 主机
+              <Input
+                value={runtime.sshHost}
+                onChange={(e) => patch({ sshHost: e.target.value })}
+                placeholder="例如 gpu.lab.example.edu"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium">
+              端口
+              <Input value={runtime.sshPort} onChange={(e) => patch({ sshPort: e.target.value })} />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium sm:col-span-3">
+              用户名
+              <Input
+                value={runtime.sshUser}
+                onChange={(e) => patch({ sshUser: e.target.value })}
+                placeholder="例如 researcher"
+              />
+            </label>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-2xl bg-white/90 p-6">
+        <h3 className="font-semibold text-[#10204A]">服务器配置</h3>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            CPU 核数
+            <Input value={runtime.cpuCores} onChange={(e) => patch({ cpuCores: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            GPU 数量
+            <Input value={runtime.gpuCount} onChange={(e) => patch({ gpuCount: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            GPU 型号
+            <Input value={runtime.gpuModel} onChange={(e) => patch({ gpuModel: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            内存 (GB)
+            <Input value={runtime.memoryGb} onChange={(e) => patch({ memoryGb: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            硬盘 (GB)
+            <Input value={runtime.diskGb} onChange={(e) => patch({ diskGb: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            使用的 GPU 编号
+            <Input
+              value={runtime.selectedGpus}
+              onChange={(e) => patch({ selectedGpus: e.target.value })}
+              placeholder="例如 0 或 0,1"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-2xl bg-white/90 p-6">
+        <h3 className="font-semibold text-[#10204A]">工作目录</h3>
+        <div className="mt-4 grid gap-4">
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            代码目录
+            <Input
+              value={runtime.codeDir}
+              onChange={(e) => patch({ codeDir: e.target.value })}
+              placeholder="代码所在文件夹"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            数据集目录
+            <Input
+              value={runtime.dataDir}
+              onChange={(e) => patch({ dataDir: e.target.value })}
+              placeholder="数据集存放文件夹"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            结果目录
+            <Input
+              value={runtime.resultsDir}
+              onChange={(e) => patch({ resultsDir: e.target.value })}
+              placeholder="日志、指标与产物输出文件夹"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-2xl bg-white/90 p-6">
+        <h3 className="font-semibold text-[#10204A]">可选 API</h3>
+        <p className="mt-1 text-sm text-muted-foreground">不需要可留空；密钥不会写入论文目录。</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            API Endpoint
+            <Input
+              value={runtime.apiEndpoint}
+              onChange={(e) => patch({ apiEndpoint: e.target.value })}
+              placeholder="例如 https://api.openai.com/v1"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            API Key 备注（勿填真实密钥）
+            <Input
+              value={runtime.apiKeyHint}
+              onChange={(e) => patch({ apiKeyHint: e.target.value })}
+              placeholder="例如：使用本机环境变量 OPENAI_API_KEY"
+            />
+          </label>
+        </div>
+      </section>
+
+      <div className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">
+        配置将保存在浏览器状态中，供后续真实 runner / SSH 适配器读取。尚未建立远端会话前，请勿把模拟指标当作真实结果。
+      </div>
+
+      <div className="flex justify-end">
+        <Button disabled={!canContinue} onClick={() => go('run')}>
+          <Play data-icon="inline-start" />
+          确认配置并进入执行
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
-  const state = useExperimentStore(); const [progress, setProgress] = useState(state.completed ? 100 : 0);
-  useEffect(() => { if (progress >= 100) return; const timer = window.setInterval(() => setProgress((v) => Math.min(100, v + 10)), 280); return () => window.clearInterval(timer); }, [progress]);
-  useEffect(() => { if (progress === 100) state.setFields({ completed: true }); }, [progress]);
-  return <div className="flex flex-col gap-5"><div className="rounded-2xl bg-white/90 p-6"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><h2 className="text-xl font-semibold">模拟执行</h2><SimulatedBadge /></div><strong>{progress}%</strong></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#1F4DCB] transition-all" style={{ width: `${progress}%` }} /></div><p className="mt-3 text-sm text-muted-foreground">正在播放预生成模拟结果，不代表模型训练或 GPU 运行。</p></div><div className="grid gap-3 lg:grid-cols-2">{state.ideas.map((idea, index) => { const visible = progress >= (index + 1) * 16; return <article key={idea.id} className="rounded-xl bg-white/90 p-4"><div className="flex items-center justify-between"><h3 className="font-semibold">{idea.name}</h3>{visible ? <Badge variant={idea.status === '成功' ? 'default' : 'secondary'}>{idea.status} · 模拟</Badge> : <Badge variant="outline"><Loader2 className="animate-spin" />等待</Badge>}</div>{visible ? <p className="mt-2 text-sm text-muted-foreground">模拟评分 {idea.score} · 预计变化 {idea.gain}{idea.status !== '成功' ? ' · 收益不稳定或计算成本过高' : ''}</p> : null}</article>; })}</div>{progress === 100 ? <div className="flex justify-end"><Button onClick={() => go('results')}>查看成果<ChevronRight data-icon="inline-end" /></Button></div> : null}</div>;
+  const state = useExperimentStore();
+  const isReal = state.runMode === 'real';
+  const [progress, setProgress] = useState(state.completed ? 100 : 0);
+  useEffect(() => {
+    if (isReal) return;
+    if (progress >= 100) return;
+    const timer = window.setInterval(() => setProgress((v) => Math.min(100, v + 10)), 280);
+    return () => window.clearInterval(timer);
+  }, [progress, isReal]);
+  useEffect(() => {
+    if (!isReal && progress === 100) state.setFields({ completed: true });
+  }, [progress, isReal]);
+
+  if (isReal) {
+    const runtime = state.realRuntime;
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col gap-5">
+        <section className="rounded-2xl bg-white/90 p-6">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold">真实运行 · 配置已确认</h2>
+            <RealBadge />
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            已记录运行目标与资源；自动 SSH/本地训练 runner 尚未接入，因此本步不播放模拟进度条。
+          </p>
+          <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+            <div className="rounded-xl bg-muted/60 p-3">
+              <dt className="font-semibold">目标</dt>
+              <dd className="mt-1 text-muted-foreground">
+                {runtime.target === 'local'
+                  ? '本地运行'
+                  : `SSH ${runtime.sshUser}@${runtime.sshHost}:${runtime.sshPort}`}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-muted/60 p-3">
+              <dt className="font-semibold">算力</dt>
+              <dd className="mt-1 text-muted-foreground">
+                CPU {runtime.cpuCores} · GPU {runtime.gpuCount}×{runtime.gpuModel} · 选用 {runtime.selectedGpus}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-muted/60 p-3 sm:col-span-2">
+              <dt className="font-semibold">目录</dt>
+              <dd className="mt-1 space-y-1 text-muted-foreground">
+                <p>代码：{runtime.codeDir}</p>
+                <p>数据：{runtime.dataDir}</p>
+                <p>结果：{runtime.resultsDir}</p>
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-5 rounded-xl bg-amber-50 p-4 text-sm">
+            请在确认路径与 GPU 空闲后，由后续真实 runner 启动任务；当前可先查看成果页中的模板交付物。
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={() => {
+                state.setFields({ completed: true });
+                go('results');
+              }}
+            >
+              查看成果模板
+              <ChevronRight data-icon="inline-end" />
+            </Button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="rounded-2xl bg-white/90 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold">模拟执行</h2>
+            <SimulatedBadge />
+          </div>
+          <strong>{progress}%</strong>
+        </div>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-blue-100">
+          <div className="h-full bg-[#1F4DCB] transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          正在播放预生成模拟结果，不代表模型训练或 GPU 运行。
+        </p>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {state.ideas.map((idea, index) => {
+          const visible = progress >= (index + 1) * 16;
+          return (
+            <article key={idea.id} className="rounded-xl bg-white/90 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">{idea.name}</h3>
+                {visible ? (
+                  <Badge variant={idea.status === '成功' ? 'default' : 'secondary'}>
+                    {idea.status} · 模拟
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">
+                    <Loader2 className="animate-spin" />
+                    等待
+                  </Badge>
+                )}
+              </div>
+              {visible ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  模拟评分 {idea.score} · 预计变化 {idea.gain}
+                  {idea.status !== '成功' ? ' · 收益不稳定或计算成本过高' : ''}
+                </p>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
+      {progress === 100 ? (
+        <div className="flex justify-end">
+          <Button onClick={() => go('results')}>
+            查看成果
+            <ChevronRight data-icon="inline-end" />
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function downloadMarkdown(content: string, filename: string) {
@@ -139,7 +534,7 @@ function ResultsPage({ go }: { go: (step: ExperimentStep) => void }) {
     <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">模块消融实验</h3><p className="mt-1 text-xs text-muted-foreground">DLA：低秩领域适配；BED：边界增强解码；CMP：粗到细多尺度提示</p><table className="mt-3 w-full min-w-[680px] text-sm"><thead><tr className="border-b">{['DLA','BED','CMP','mIoU ↑','Dice ↑','Boundary-F1 ↑','延迟 ms'].map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{ablationRows.map((row,index) => <tr key={index} className="border-b text-center last:border-0">{row.map((cell, cellIndex) => <td key={`${index}-${cellIndex}`} className={cn('p-2', index === ablationRows.length - 1 && 'font-semibold text-[#1F4DCB]')}>{cell}</td>)}</tr>)}</tbody></table></section>
     <QualitativeFigure />
     <div className="rounded-xl bg-amber-50 p-4 text-sm"><AlertTriangle className="mr-2 inline size-4 text-amber-700"/>以上数据与效果图均为明确标注的 Demo 模拟结果；工程规格可实施，但尚未真实训练，不能作为投稿证据。</div>
-    <div className="flex flex-wrap justify-between gap-3"><Button variant="outline" onClick={() => go('simulate')}><RotateCcw data-icon="inline-start"/>重新模拟</Button><Button onClick={() => downloadMarkdown(resultsDocument, 'CrackSAM-MVE_完整交付.md')}><Download data-icon="inline-start"/>下载完整结果</Button></div>
+    <div className="flex flex-wrap justify-between gap-3"><Button variant="outline" onClick={() => go('simulate')}><RotateCcw data-icon="inline-start"/>重新配置</Button><Button onClick={() => downloadMarkdown(resultsDocument, 'CrackSAM-MVE_完整交付.md')}><Download data-icon="inline-start"/>下载完整结果</Button></div>
     <Dialog open={document !== null} onOpenChange={(open) => { if (!open) setDocument(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"><DialogHeader><DialogTitle>{document === 'architecture' ? '算法完整详细架构.md' : '实验结果报告.md'}</DialogTitle><DialogDescription>论文级 Demo 交付文件，可浏览或下载保存。</DialogDescription></DialogHeader><pre className="whitespace-pre-wrap rounded-xl bg-muted p-5 font-sans text-sm leading-7">{activeDocument}</pre></DialogContent></Dialog>
   </div>;
 }

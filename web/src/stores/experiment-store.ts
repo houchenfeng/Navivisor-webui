@@ -23,6 +23,27 @@ export interface ExperimentIdea {
   references: string[];
 }
 
+export type ExperimentRunMode = 'simulated' | 'real';
+export type ExperimentRuntimeTarget = 'local' | 'ssh';
+
+export interface ExperimentRealRuntimeConfig {
+  target: ExperimentRuntimeTarget;
+  sshHost: string;
+  sshPort: string;
+  sshUser: string;
+  cpuCores: string;
+  gpuCount: string;
+  gpuModel: string;
+  memoryGb: string;
+  diskGb: string;
+  codeDir: string;
+  dataDir: string;
+  resultsDir: string;
+  selectedGpus: string;
+  apiEndpoint: string;
+  apiKeyHint: string;
+}
+
 interface ExperimentState {
   projectName: string;
   researchTopic: string;
@@ -30,8 +51,10 @@ interface ExperimentState {
   paperCount: number;
   planConfirmed: boolean;
   disclaimerAccepted: boolean;
+  runMode: ExperimentRunMode;
   seed: number;
   repeatCount: number;
+  realRuntime: ExperimentRealRuntimeConfig;
   completed: boolean;
   ideas: ExperimentIdea[];
   setFields: (fields: Partial<ExperimentState>) => void;
@@ -103,9 +126,28 @@ const demoIdeas: ExperimentIdea[] = [
   },
 ];
 
+const defaultRealRuntime: ExperimentRealRuntimeConfig = {
+  target: 'local',
+  sshHost: '',
+  sshPort: '22',
+  sshUser: '',
+  cpuCores: '16',
+  gpuCount: '1',
+  gpuModel: 'NVIDIA RTX 4090 24GB',
+  memoryGb: '64',
+  diskGb: '1024',
+  codeDir: './experiment/code',
+  dataDir: './experiment/datasets',
+  resultsDir: './experiment/results',
+  selectedGpus: '0',
+  apiEndpoint: '',
+  apiKeyHint: '',
+};
+
 const initial = {
   projectName: '', researchTopic: '', researchGoal: '', paperCount: 0,
-  planConfirmed: false, disclaimerAccepted: false, seed: 42, repeatCount: 3,
+  planConfirmed: false, disclaimerAccepted: false, runMode: 'simulated' as ExperimentRunMode,
+  seed: 42, repeatCount: 3, realRuntime: defaultRealRuntime,
   completed: false, ideas: demoIdeas,
 };
 
@@ -121,6 +163,8 @@ export const useExperimentStore = create<ExperimentState>()(
         paperCount: 1,
         planConfirmed: false,
         disclaimerAccepted: false,
+        runMode: 'simulated',
+        realRuntime: defaultRealRuntime,
         completed: false,
         ideas: demoIdeas,
       }),
