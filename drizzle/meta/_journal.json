@@ -78,6 +78,13 @@
       "when": 1789100202124,
       "tag": "0010_eminent_chameleon",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1789123310501,
+      "tag": "0011_vengeful_clea",
+      "breakpoints": true
     }
   ]
 }

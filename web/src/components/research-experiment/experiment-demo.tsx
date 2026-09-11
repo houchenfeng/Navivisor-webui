@@ -9,8 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { type ExperimentStep, useExperimentStore } from '@/stores/experiment-store';
-import architectureDocument from '../../../../docs/demo/sam-algorithm-architecture.md?raw';
-import resultsDocument from '../../../../docs/demo/sam-experiment-results.md?raw';
+import {
+  DEMO_ABLATION_ROWS as ablationRows,
+  DEMO_ARCHITECTURE_MARKDOWN as architectureDocument,
+  DEMO_COMPARISON_ROWS as comparisonRows,
+  DEMO_RESULTS_MARKDOWN as resultsDocument,
+} from '@/components/research-experiment/demo-artifacts';
 
 const steps: Array<{ id: ExperimentStep; label: string }> = [
   { id: 'intake', label: '课题与文献' }, { id: 'plan', label: '方案确认' },
@@ -100,19 +104,6 @@ function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
   return <div className="flex flex-col gap-5"><div className="rounded-2xl bg-white/90 p-6"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><h2 className="text-xl font-semibold">模拟执行</h2><SimulatedBadge /></div><strong>{progress}%</strong></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#1F4DCB] transition-all" style={{ width: `${progress}%` }} /></div><p className="mt-3 text-sm text-muted-foreground">正在播放预生成模拟结果，不代表模型训练或 GPU 运行。</p></div><div className="grid gap-3 lg:grid-cols-2">{state.ideas.map((idea, index) => { const visible = progress >= (index + 1) * 16; return <article key={idea.id} className="rounded-xl bg-white/90 p-4"><div className="flex items-center justify-between"><h3 className="font-semibold">{idea.name}</h3>{visible ? <Badge variant={idea.status === '成功' ? 'default' : 'secondary'}>{idea.status} · 模拟</Badge> : <Badge variant="outline"><Loader2 className="animate-spin" />等待</Badge>}</div>{visible ? <p className="mt-2 text-sm text-muted-foreground">模拟评分 {idea.score} · 预计变化 {idea.gain}{idea.status !== '成功' ? ' · 收益不稳定或计算成本过高' : ''}</p> : null}</article>; })}</div>{progress === 100 ? <div className="flex justify-end"><Button onClick={() => go('results')}>查看成果<ChevronRight data-icon="inline-end" /></Button></div> : null}</div>;
 }
 
-const comparisonRows = [
-  ['U-Net', '65.8±0.5', '78.7±0.4', '62.4±0.7', '80.3±0.6', '18 ms'],
-  ['DeepLabV3+', '67.3±0.4', '79.9±0.3', '64.8±0.6', '81.2±0.5', '27 ms'],
-  ['SAM Baseline', '68.4±0.4', '80.9±0.3', '66.1±0.6', '81.8±0.5', '42 ms'],
-  ['CrackSAM-MVE', '72.1±0.3', '83.8±0.2', '71.4±0.4', '85.6±0.3', '53 ms'],
-];
-
-const ablationRows = [
-  ['—', '—', '—', '68.4', '80.9', '66.1', '42'], ['✓', '—', '—', '70.2', '82.1', '67.5', '45'],
-  ['—', '✓', '—', '69.8', '81.8', '69.0', '43'], ['—', '—', '✓', '70.0', '81.9', '68.2', '52'],
-  ['✓', '✓', '—', '71.2', '83.0', '70.2', '46'], ['✓', '✓', '✓', '72.1', '83.8', '71.4', '53'],
-];
-
 function downloadMarkdown(content: string, filename: string) {
   const url = URL.createObjectURL(new Blob([content], { type: 'text/markdown;charset=utf-8' }));
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url);
@@ -144,7 +135,7 @@ function ResultsPage({ go }: { go: (step: ExperimentStep) => void }) {
     <ArchitectureFigure />
     <section className="rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">统一实验设置与计算资源</h3><div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">{[['数据集','Crack500 250/50/200；DeepCrack 537 外测'],['训练','50 epoch · batch 2×累积4 · seeds 42/3407/2026'],['优化','AdamW · LoRA 1e-4 · Decoder 5e-4 · WD 1e-2'],['环境','RTX 4090 24GB · i9-13900K · RAM 64GB · PyTorch 2.2']].map(([label,value]) => <div key={label} className="rounded-xl bg-muted/60 p-3"><strong>{label}</strong><p className="mt-1 text-muted-foreground">{value}</p></div>)}</div></section>
     <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">主实验结果 · Crack500 测试集</h3><p className="mt-1 text-xs text-muted-foreground">mean±std，3 seeds；↑ 越高越好，延迟越低越好</p><table className="mt-3 w-full min-w-[760px] text-sm"><thead><tr className="border-b text-left">{['方法','mIoU ↑','Dice ↑','Boundary-F1 ↑','Recall ↑','延迟 ↓'].map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{comparisonRows.map((row) => <tr key={row[0]} className="border-b last:border-0">{row.map((cell,index) => <td key={cell} className={cn('p-2', row[0] === 'CrackSAM-MVE' && 'font-semibold text-[#1F4DCB]', index === 0 && 'whitespace-nowrap')}>{cell}</td>)}</tr>)}</tbody></table></section>
-    <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">模块消融实验</h3><p className="mt-1 text-xs text-muted-foreground">DLA：低秩领域适配；BED：边界增强解码；CMP：粗到细多尺度提示</p><table className="mt-3 w-full min-w-[680px] text-sm"><thead><tr className="border-b">{['DLA','BED','CMP','mIoU ↑','Dice ↑','Boundary-F1 ↑','延迟 ms'].map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{ablationRows.map((row,index) => <tr key={index} className="border-b text-center last:border-0">{row.map((cell) => <td key={cell + index} className={cn('p-2', index === ablationRows.length - 1 && 'font-semibold text-[#1F4DCB]')}>{cell}</td>)}</tr>)}</tbody></table></section>
+    <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">模块消融实验</h3><p className="mt-1 text-xs text-muted-foreground">DLA：低秩领域适配；BED：边界增强解码；CMP：粗到细多尺度提示</p><table className="mt-3 w-full min-w-[680px] text-sm"><thead><tr className="border-b">{['DLA','BED','CMP','mIoU ↑','Dice ↑','Boundary-F1 ↑','延迟 ms'].map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{ablationRows.map((row,index) => <tr key={index} className="border-b text-center last:border-0">{row.map((cell, cellIndex) => <td key={`${index}-${cellIndex}`} className={cn('p-2', index === ablationRows.length - 1 && 'font-semibold text-[#1F4DCB]')}>{cell}</td>)}</tr>)}</tbody></table></section>
     <QualitativeFigure />
     <div className="rounded-xl bg-amber-50 p-4 text-sm"><AlertTriangle className="mr-2 inline size-4 text-amber-700"/>以上数据与效果图均为明确标注的 Demo 模拟结果；工程规格可实施，但尚未真实训练，不能作为投稿证据。</div>
     <div className="flex flex-wrap justify-between gap-3"><Button variant="outline" onClick={() => go('simulate')}><RotateCcw data-icon="inline-start"/>重新模拟</Button><Button onClick={() => downloadMarkdown(resultsDocument, 'CrackSAM-MVE_完整交付.md')}><Download data-icon="inline-start"/>下载完整结果</Button></div>
@@ -158,5 +149,5 @@ export function ExperimentDemo() {
   const index = Math.max(0, steps.findIndex((step) => step.id === activeStep));
   const go = (step: ExperimentStep) => void navigate({ to: stepPath(step) });
   const pages = { intake: <IntakePage go={go}/>, plan: <PlanPage go={go}/>, mode: <ModePage go={go}/>, simulate: <ConfigPage go={go}/>, run: <RunPage go={go}/>, results: <ResultsPage go={go}/> };
-  return <main className="min-h-0 flex-1 overflow-auto bg-[#A6C7FF] p-4 text-[#10204A] sm:p-6"><div className="mx-auto max-w-7xl"><header className="mb-4 flex items-center justify-between"><div><h1 className="text-2xl font-semibold">实验智能体</h1><p className="text-sm text-[#10204A]/70">从核心文献到可复现方案，一站式模拟实验规划</p></div><Badge className="bg-[#1F4DCB] text-white">Demo · 离线模拟</Badge></header><nav className="mb-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/70 p-3 lg:grid-cols-6">{steps.map((step, i) => <button key={step.id} onClick={() => i <= index || (i === index + 1) ? go(step.id) : undefined} className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm', i === index ? 'bg-[#1F4DCB] text-white' : i < index ? 'bg-white text-[#1F4DCB]' : 'text-[#10204A]/55')}><span className="flex size-6 shrink-0 items-center justify-center rounded-full border text-xs">{i < index ? <Check className="size-3"/> : i + 1}</span>{step.label}</button>)}</nav>{pages[activeStep] ?? pages.intake}<footer className="mt-5 flex justify-between">{index > 0 ? <Button variant="outline" onClick={() => go(steps[index - 1].id)}><ChevronLeft data-icon="inline-start" />上一步</Button> : <span/>}{index < steps.length - 1 ? <Button variant="ghost" onClick={() => go(steps[index + 1].id)}>下一步<ChevronRight data-icon="inline-end" /></Button> : null}</footer></div></main>;
+  return <main className="navivisor-module scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 text-[#10204A] sm:p-6"><div className="mx-auto max-w-7xl"><header className="mb-4 flex items-center justify-between"><div><h1 className="text-2xl font-semibold">实验智能体</h1><p className="text-sm text-[#10204A]/70">从核心文献到可复现方案，一站式模拟实验规划</p></div><Badge className="bg-[#1F4DCB] text-white">Demo · 离线模拟</Badge></header><nav className="mb-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/70 p-3 lg:grid-cols-6">{steps.map((step, i) => <button key={step.id} onClick={() => i <= index || (i === index + 1) ? go(step.id) : undefined} className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm', i === index ? 'bg-[#1F4DCB] text-white' : i < index ? 'bg-white text-[#1F4DCB]' : 'text-[#10204A]/55')}><span className="flex size-6 shrink-0 items-center justify-center rounded-full border text-xs">{i < index ? <Check className="size-3"/> : i + 1}</span>{step.label}</button>)}</nav>{pages[activeStep] ?? pages.intake}<footer className="mt-5 flex justify-between">{index > 0 ? <Button variant="outline" onClick={() => go(steps[index - 1].id)}><ChevronLeft data-icon="inline-start" />上一步</Button> : <span/>}{index < steps.length - 1 ? <Button variant="ghost" onClick={() => go(steps[index + 1].id)}>下一步<ChevronRight data-icon="inline-end" /></Button> : null}</footer></div></main>;
 }

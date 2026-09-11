@@ -31,7 +31,7 @@ export default function Step2TitleAbstract({ data, onChange }: Props) {
       }
       onChange({ abstract: raw });
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }

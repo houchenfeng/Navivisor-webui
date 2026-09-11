@@ -19,7 +19,7 @@ export default function TranslateButton({ text, onApply }: Props) {
       const t = await translateText(text, direction);
       setResult(t);
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(null);
     }

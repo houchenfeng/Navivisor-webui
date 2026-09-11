@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
-import { generateWithQwen } from "@/components/research-writing/lib/qwen";
+import { generateWithQwen, generateWritingFigure } from "@/components/research-writing/lib/qwen";
 import WordCounter from "./WordCounter";
 import TranslateButton from "./TranslateButton";
 
@@ -46,7 +46,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       const text = await generateWithQwen("algorithm", data);
       onChange({ algorithm: text });
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -63,10 +63,10 @@ export default function Step5Algorithm({ data, onChange }: Props) {
         (kind === "algorithmFlowImage" ? promptFlow : promptIllust).trim() ||
         buildDefaultPrompt(kind, data.topic);
 
-      void prompt;
-      throw new Error("图片生成尚未接入统一 Research Workflow/Codex，已阻止旧 localhost 接口调用");
+      const imageUrl = await generateWritingFigure(prompt, kind);
+      onChange({ [kind]: imageUrl } as Partial<WritingData>);
     } catch (e) {
-      setImgError(String(e));
+      setImgError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoadingState(false);
     }

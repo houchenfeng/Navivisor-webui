@@ -1,5 +1,7 @@
 # 开题模块协作说明
 
+> **用途**：开题三步页面边界、试检索约定与协作说明。  
+
 GitHub 个人分支：`feat/research-topic`。固定入口：`/research/topic`。
 
 ## 当前权威规格

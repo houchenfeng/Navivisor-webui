@@ -2,6 +2,7 @@
 import { useSimulation } from '../../context/SimulationContext';
 import { MOCK_NEWS, MOCK_ACTIVE_VENUES, MOCK_OPEN_VENUES, MOCK_ALL_VENUES } from '../../data/mockData';
 import GuideBubble from '../../components/GuideBubble';
+import { SubmissionPrimerDialog } from '../../components/SubmissionPrimerDialog';
 import { Clock } from 'lucide-react';
 
 export default function Step1OpenReviewHome() {
@@ -10,6 +11,13 @@ export default function Step1OpenReviewHome() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded border border-[#e0d6c8] bg-[#fff8ef] px-3 py-2.5">
+        <p className="text-sm font-medium leading-6 text-[#5c4033]">
+          我们会模拟 CVPR 顶会的投稿全流程，请和 AI 一起体验一下会议投稿吧~！
+        </p>
+        <SubmissionPrimerDialog />
+      </div>
+
       {/* News section */}
       <div className="mb-8 border border-[#ccc] bg-white">
         <div className="flex items-center justify-between border-b border-[#ccc] px-3 py-2">
@@ -44,9 +52,9 @@ export default function Step1OpenReviewHome() {
           <h2 className="mb-2 border-b border-[#999] pb-1 text-xl font-bold text-[#333]">{t.openForSubmissions}</h2>
           <ul className="space-y-2">
             {MOCK_OPEN_VENUES.map((venue) => (
-              <li key={venue.id} className={`relative ${venue.highlight ? 'rounded bg-[#fef3c7]/40 p-1 -ml-1' : ''}`}>
+              <li key={venue.id} className={`relative ${venue.highlight ? 'rounded-xl bg-[#fef3c7]/70 p-2 -ml-1 ring-2 ring-[#f59e0b]/50' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <button type="button" onClick={() => venue.highlight && goToStep(2)} className={`text-left text-[#336699] hover:underline ${venue.highlight ? 'font-bold' : ''}`}>
+                  <button type="button" onClick={() => venue.highlight && goToStep(2)} className={`text-left text-[#336699] hover:underline ${venue.highlight ? 'text-lg font-extrabold' : ''}`}>
                     {venue.name}
                   </button>
                   {venue.highlight && <GuideBubble text={t.guideClickVenue} position="left" className="-left-1" />}

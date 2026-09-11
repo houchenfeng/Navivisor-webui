@@ -111,6 +111,33 @@ describe('ResearchResultValidatorService', () => {
     );
   });
 
+  it('rejects a valid role that does not belong to the current stage', async () => {
+    await writeFile(
+      join(paths.temp(PROJECT_ID, RUN_ID), 'review.json'),
+      '{}',
+      'utf8',
+    );
+    await writeResult({
+      schemaVersion: 1,
+      runId: RUN_ID,
+      stage: STAGE,
+      status: 'completed',
+      outputs: [
+        {
+          path: 'review.json',
+          role: 'review-round1',
+          mediaType: 'application/json',
+          simulated: false,
+        },
+      ],
+      warnings: [],
+    });
+
+    await expect(validator.validate(PROJECT_ID, RUN_ID, STAGE)).rejects.toThrow(
+      'is not allowed for stage',
+    );
+  });
+
   it('rejects a result belonging to another run', async () => {
     await writeResult({
       schemaVersion: 1,

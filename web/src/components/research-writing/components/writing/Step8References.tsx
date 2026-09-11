@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
 
 interface Props {
@@ -6,10 +6,8 @@ interface Props {
   onChange: (patch: Partial<WritingData>) => void;
 }
 
-// 极简 BibTeX 解析器：把 .bib 拆成 { key, text } 列表
 function parseBib(bib: string): { key: string; text: string }[] {
   const entries: { key: string; text: string }[] = [];
-  // 匹配 @type{key, ... }
   const regex = /@(\w+)\s*\{\s*([^,]+)\s*,([\s\S]*?)\n\}/g;
   let match: RegExpExecArray | null;
 
@@ -18,7 +16,6 @@ function parseBib(bib: string): { key: string; text: string }[] {
     const key = match[2].trim();
     const body = match[3];
 
-    // 解析字段
     const fields: Record<string, string> = {};
     const fieldRegex = /(\w+)\s*=\s*[{"]([\s\S]*?)[}"]\s*,?/g;
     let fm: RegExpExecArray | null;
@@ -45,13 +42,12 @@ function parseBib(bib: string): { key: string; text: string }[] {
 export default function Step8References({ data, onChange }: Props) {
   const parsed = useMemo(() => parseBib(data.bibContent), [data.bibContent]);
 
-  // 当 bib 内容变化时，把解析结果同步到 data.references（如果还没同步过）
-  useMemo(() => {
+  useEffect(() => {
     if (parsed.length > 0 && data.references.length !== parsed.length) {
       onChange({ references: parsed });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsed.length]);
+  }, [parsed.length, data.bibContent]);
 
   const removeRef = (idx: number) => {
     onChange({ references: data.references.filter((_, i) => i !== idx) });
@@ -74,7 +70,6 @@ export default function Step8References({ data, onChange }: Props) {
         </p>
       </header>
 
-      {/* 状态 */}
       <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-[#f7faff] px-4 py-3 text-sm">
         <span className="text-xl">📚</span>
         <span className="text-ink-sub">
@@ -87,11 +82,10 @@ export default function Step8References({ data, onChange }: Props) {
         )}
       </div>
 
-      {/* 列表 */}
       <div className="flex flex-col gap-2">
         {data.references.map((ref, idx) => (
           <div
-            key={idx}
+            key={ref.key || idx}
             className="flex items-start gap-3 rounded-lg border border-blue-100 bg-white p-3"
           >
             <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-500">
