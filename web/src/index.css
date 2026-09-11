@@ -221,6 +221,18 @@ body {
   background: linear-gradient(108deg, #f5f6f5 0%, #e5f0fd 51%, #bfdcff 100%);
 }
 
+/* Keep scrolling, hide the visible scrollbar rail on research surfaces. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Sidebar: same blue family as modules, but flatter/cooler so content stays primary. */
 .navivisor-sidebar {
   background: linear-gradient(180deg, #eef4fc 0%, #e3edf9 48%, #d9e7f7 100%);
@@ -373,17 +385,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .brand-enter, .brand-orb, .journey-card { animation: none; }
   .journey-card, .navivisor-logo { transition: none; }
-  .home-journey-path { animation: none; stroke-dasharray: none; }
-}
-
-.home-journey-path {
-  stroke-dasharray: 12 10;
-  animation: home-journey-flow 1.8s linear infinite;
-}
-
-@keyframes home-journey-flow {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -44; }
+  .home-journey-arrow { display: none; }
 }
 
 @media (max-width: 420px) {

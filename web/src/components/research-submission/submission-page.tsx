@@ -8,7 +8,7 @@ import SimulationPage from './pages/SimulationPage/SimulationPage';
  */
 export function SubmissionPage() {
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div className="scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
       <I18nProvider>
         <SimulationProvider>
           <SimulationPage />

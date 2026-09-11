@@ -46,7 +46,7 @@ export default function EditorPage() {
   };
 
   return (
-    <main className="navivisor-module flex min-h-0 flex-1 flex-col p-4">
+    <main className="navivisor-module flex min-h-0 flex-1 flex-col overflow-x-hidden p-4">
       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/60 shadow-lg backdrop-blur">
         <header className="flex items-center gap-4 border-b border-blue-100 bg-white/70 px-6 py-3">
           <Button
@@ -117,7 +117,7 @@ export default function EditorPage() {
         </div>
 
         {/* 内容区 */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-8">
+        <div className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-8">
           <div className="mx-auto flex w-full max-w-[1100px] min-h-0 flex-1 flex-col">
             {currentStep.key === "upload" && (
               <Step1Upload data={data} onChange={handleChange} />
