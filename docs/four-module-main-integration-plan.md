@@ -1220,3 +1220,4 @@ git merge --no-ff origin/feat/research-topic
 - TASK-2.2：完成安全修复。普通 thread/turn REST 入口不再只做 Skill 字符串形状校验，而是读取 thread cwd，并要求 name/path 与该 cwd 下 `skills/list` 返回的 enabled Skill 完全一致；新增伪造路径拒绝测试。
 - TASK-2.3：完成核心 Codex bridge。每个 project/module 复用一个 Codex thread；每个 agent run 创建一个 turn；调用同时发送 `$skill-name` 文本和 `type: skill` 输入；持久化 run/thread/turn/model/effort/Skill path/digest/promptVersion。四模块不得新增独立模型 SDK 或模型 URL。
 - Skill/Codex 阶段验证：根目录 `pnpm build` 通过；相关 ESLint 通过；`threads.controller.spec.ts` 为 17/17 通过。Skill Creator 的 `quick_validate.py` 因当前系统 Python 缺少 `PyYAML` 未能运行，构建及 Markdown frontmatter 人工检查通过；这不是 Skill 内容校验失败，后续 CI 应安装 validator 依赖后补跑。
+- 增量同步记录：2026-09-11 fetch 发现 `origin/feat/research-topic` 从 `fe5cd2e` 更新到 `425687a`，已用 `--no-ff` 合入并保留 ancestry。该增量仅新增平行的 `MERGE_GUIDE.md`；其有效验收和交接要求已由本文第 8、9、11 节覆盖，因此按“不要额外中间文件”的交付约束删除该重复文件，后续只维护本文。
