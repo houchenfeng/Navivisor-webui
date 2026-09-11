@@ -1,0 +1,5 @@
+dataset,method,auroc_percent,ap_percent,f1_percent,vlm_call_percent,mean_latency_ms,simulated
+camera-demo,Lightweight,81.2,57.8,61.4,0,18,true
+camera-demo,VLM-all,85.9,64.1,66.2,100,680,true
+camera-demo,FastSlow-I1,84.8,62.5,65.1,18,137,true
+camera-demo,MemoryFastSlow-I1I2I3,87.1,67.2,68.0,12,99,true

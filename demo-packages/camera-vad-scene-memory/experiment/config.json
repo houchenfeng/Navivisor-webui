@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "mode": "simulated",
+  "datasetId": "camera-demo",
+  "clipFrames": 16,
+  "sampleFps": 4,
+  "seeds": [
+    11,
+    23,
+    47
+  ],
+  "trigger": {
+    "scoreThreshold": 0.65,
+    "uncertaintyThreshold": 0.2
+  },
+  "memory": {
+    "topK": 5,
+    "maxEntries": 10000,
+    "excludeTestLabels": true
+  },
+  "fusion": {
+    "fastWeight": 0.4,
+    "memoryWeight": 0.2,
+    "vlmWeight": 0.4
+  },
+  "selectedInnovations": [
+    "I1",
+    "I2",
+    "I3"
+  ]
+}

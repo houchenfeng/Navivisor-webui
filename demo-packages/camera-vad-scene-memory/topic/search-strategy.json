@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "draftScopusQuery": "TITLE-ABS-KEY((\"video anomaly detection\" OR \"video abnormality detection\") AND (\"large language model\" OR \"vision language model\" OR \"LLM\" OR \"VLM\") AND (\"surveillance\" OR \"camera\" OR \"CCTV\")) AND NOT TITLE(\"medical\" OR \"biomedical\") AND PUBYEAR > 2021",
+  "openAlexAdapterNote": "Scopus TITLE-ABS-KEY must be converted by adapter; do not send verbatim to OpenAlex.",
+  "providers": [
+    "openalex",
+    "demo"
+  ]
+}

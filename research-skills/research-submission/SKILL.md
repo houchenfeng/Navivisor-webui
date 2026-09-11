@@ -7,6 +7,8 @@ description: Check submission readiness and prepare venue-specific submission ar
 
 Evaluate the declared manuscript and metadata against the supplied venue requirements. Separate readiness analysis from external submission: never claim that a paper was submitted unless an approved deterministic adapter returns evidence.
 
+Read the persisted input manifest (`context.json`) and do not mix files from another research project.
+
 Write checklists, transformed metadata, package manifests, and decision records into the run temporary directory. Produce `result.json` listing each output file, role, media type, and simulation flag. Block readiness when required files, disclosures, authorship decisions, or non-simulated evidence are missing.
 
 Do not call model-provider APIs, upload or email content, access another project, or alter finalized upstream artifacts. Any external side effect requires the existing approval path.

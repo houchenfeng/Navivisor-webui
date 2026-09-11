@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "projectId": "b845db02-b48e-40eb-8bf1-978e2546ee4e",
+  "title": "场景记忆与大模型按需复核的视频异常检测",
+  "description": "面向固定摄像头，使用轻量筛查、场景记忆和视觉语言大模型复核异常片段。",
+  "language": "zh-CN",
+  "directories": {
+    "topic": "topic",
+    "experiment": "experiment",
+    "writing": "writing",
+    "submission": "submission"
+  },
+  "demo": {
+    "id": "camera-vad-scene-memory",
+    "version": "1.0.0",
+    "simulated": true
+  },
+  "createdAt": "2026-09-11T12:00:00Z"
+}

@@ -1,0 +1,5 @@
+variant,I1,I2,I3,auroc_percent,ap_percent,mean_latency_ms,simulated
+baseline,false,false,false,81.2,57.8,18,true
+trigger,true,false,false,84.8,62.5,137,true
+trigger-memory,true,true,false,85.6,64.3,103,true
+full,true,true,true,87.1,67.2,99,true

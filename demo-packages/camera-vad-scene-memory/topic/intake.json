@@ -1,0 +1,29 @@
+{
+  "researchDirection": "视频异常检测",
+  "researchGoal": "结合视觉语言大模型，对固定摄像头视频低成本定位并解释异常",
+  "scenarios": [
+    "校园走廊",
+    "停车场",
+    "楼宇入口"
+  ],
+  "constraints": {
+    "excludeDomains": [
+      "生物医学"
+    ],
+    "fromYear": 2022,
+    "targetPaperCount": {
+      "min": 200,
+      "preferred": 300,
+      "max": 800
+    }
+  },
+  "coreLiteratureWindow": {
+    "from": "2023-09-11",
+    "to": "2026-09-11"
+  },
+  "resources": {
+    "gpuBudget": "单卡原型",
+    "latencyGoalMs": 100,
+    "vlmBudget": "只复核候选片段"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "primary": {
+    "id": "camera-demo",
+    "type": "synthetic",
+    "bundled": true,
+    "note": "Teaching clips only"
+  },
+  "externalCandidates": [
+    {
+      "id": "UCF-Crime",
+      "bundled": false,
+      "status": "not_verified"
+    },
+    {
+      "id": "XD-Violence",
+      "bundled": false,
+      "status": "not_verified"
+    },
+    {
+      "id": "ShanghaiTech",
+      "bundled": false,
+      "status": "not_verified"
+    },
+    {
+      "id": "UBnormal",
+      "bundled": false,
+      "status": "not_verified"
+    }
+  ]
+}

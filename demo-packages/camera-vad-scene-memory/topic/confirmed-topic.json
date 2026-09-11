@@ -1,0 +1,27 @@
+{
+  "selectedCandidateId": "cand-balanced",
+  "title": "基于场景记忆与大模型复核的快慢双通路视频异常检测",
+  "question": "场景记忆能否在固定预算下改善疑难片段识别和解释？",
+  "methodSteps": [
+    "筛查",
+    "记忆检索",
+    "VLM按需复核",
+    "校准融合",
+    "阈值验证",
+    "失败分析"
+  ],
+  "innovations": [
+    "不确定性触发",
+    "场景正常记忆",
+    "证据化复核与校准融合"
+  ],
+  "evidencePaperIds": [
+    "DEMO-001",
+    "DEMO-002",
+    "DEMO-003"
+  ],
+  "selectionReason": "Balances cost and explanation for teaching demo",
+  "confirmedAt": "2026-09-11T12:20:00Z",
+  "feasibilityLimits": "Simulated only; no verified lift claimed",
+  "simulated": true
+}

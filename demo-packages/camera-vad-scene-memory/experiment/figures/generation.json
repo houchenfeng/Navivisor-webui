@@ -1,0 +1,26 @@
+{
+  "comparison": {
+    "prompt": "CameraVAD teaching Demo comparison figure; SIMULATED DEMO title; use main.csv values only.",
+    "tool": "placeholder",
+    "model": null,
+    "generatedAt": "2026-09-11T12:30:00Z",
+    "inputArtifactRefs": [
+      "experiment/metrics/main.csv"
+    ],
+    "outputSha256": "c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77",
+    "verification": "placeholder_png_not_gpt_generated",
+    "status": "placeholder"
+  },
+  "architecture": {
+    "prompt": "Framework: camera->sample->fast score->uncertainty->memory->VLM->fusion; mark I1/I2/I3.",
+    "tool": "placeholder",
+    "model": null,
+    "generatedAt": "2026-09-11T12:31:00Z",
+    "inputArtifactRefs": [
+      "experiment/algorithm-details.md"
+    ],
+    "outputSha256": "c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77",
+    "verification": "placeholder_png_not_gpt_generated",
+    "status": "placeholder"
+  }
+}

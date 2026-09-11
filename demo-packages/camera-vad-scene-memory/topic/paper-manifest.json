@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "papers": [
+    {
+      "paperId": "DEMO-001",
+      "citationKey": "demo_fast_screening",
+      "sourceUrl": null,
+      "license": "synthetic",
+      "downloadStatus": "missing",
+      "reason": "demo_pdf_not_provided",
+      "artifactRef": null
+    },
+    {
+      "paperId": "DEMO-002",
+      "citationKey": "demo_memory_retrieval",
+      "sourceUrl": null,
+      "license": "synthetic",
+      "downloadStatus": "missing",
+      "reason": "demo_pdf_not_provided",
+      "artifactRef": null
+    },
+    {
+      "paperId": "DEMO-003",
+      "citationKey": "demo_vlm_verify",
+      "sourceUrl": null,
+      "license": "synthetic",
+      "downloadStatus": "missing",
+      "reason": "demo_pdf_not_provided",
+      "artifactRef": null
+    }
+  ]
+}

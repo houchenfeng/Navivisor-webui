@@ -1,18 +1,23 @@
 /**
  * Navivisor research home — journey hub for the four workflow modules.
  */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   BookOpenText,
   Compass,
   FileText,
   FlaskConical,
+  FolderInput,
   Newspaper,
   PenLine,
   Rocket,
   Sparkles,
 } from 'lucide-react';
+import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
+import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
+import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
+import { useResearchProjectStore } from '@/stores/research-project-store';
 import { useTimelineStore } from '@/stores/timeline-store';
 import { cn } from '@/lib/utils';
 
@@ -181,10 +186,50 @@ export function ResearchHomePage() {
   const navigate = useNavigate();
   const threadId = useTimelineStore((s) => s.threadId);
   const selectThread = useTimelineStore((s) => s.selectThread);
+  const project = useResearchProjectStore((s) => s.project);
+  const setProject = useResearchProjectStore((s) => s.setProject);
+  const [workspacePath, setWorkspacePath] = useState(project?.rootPath ?? '');
+  const [workspaceTitle, setWorkspaceTitle] = useState(project?.title ?? '');
+  const [registerBusy, setRegisterBusy] = useState(false);
+  const [registerMessage, setRegisterMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (threadId) selectThread(null);
   }, [threadId, selectThread]);
+
+  async function registerWorkspace() {
+    const absolutePath = workspacePath.trim();
+    if (!absolutePath) {
+      setRegisterMessage('请填写服务端可访问的绝对目录路径');
+      return;
+    }
+    setRegisterBusy(true);
+    setRegisterMessage(null);
+    try {
+      const workspace = await researchWorkflowClient.registerWorkspace({
+        absolutePath,
+        title: workspaceTitle.trim() || undefined,
+        createIfMissing: true,
+      });
+      setProject({
+        projectId: workspace.projectId,
+        title: workspace.title,
+        rootPath: workspace.rootPath,
+        description: workspace.description,
+        demoComplete: workspace.index.demo?.complete ?? null,
+        missing: workspace.index.demo?.missing ?? [],
+      });
+      setRegisterMessage(
+        workspace.reused
+          ? `已复用项目 ${workspace.projectId}`
+          : `已注册项目 ${workspace.projectId}`,
+      );
+    } catch (error) {
+      setRegisterMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setRegisterBusy(false);
+    }
+  }
 
   return (
     <main className="navivisor-module scrollbar-hide flex min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-7 lg:p-10">
@@ -197,6 +242,54 @@ export function ResearchHomePage() {
           <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-[#55739f] sm:text-lg">
             从一个研究领域，让AI陪你走完完整的研究旅程。
           </p>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-[#d7e6fb] bg-white/80 p-4 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-extrabold text-[#173778]">论文工作目录</h2>
+              <p className="mt-1 text-xs font-medium text-[#7890b6]">
+                选择服务端可访问目录；四模块共用同一 projectId。示例包见仓库
+                demo-packages/camera-vad-scene-memory。
+              </p>
+            </div>
+            <LoadWorkspaceDemoButton />
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-[1fr_12rem_auto]">
+            <label className="block text-xs font-bold text-[#55739f]">
+              绝对路径
+              <input
+                value={workspacePath}
+                onChange={(event) => setWorkspacePath(event.target.value)}
+                placeholder="例如 D:/Research/CameraVAD-SceneMemory"
+                className="mt-1 w-full rounded-xl border border-[#c9dbf8] bg-white px-3 py-2 text-sm font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
+              />
+            </label>
+            <label className="block text-xs font-bold text-[#55739f]">
+              论文标题（可选）
+              <input
+                value={workspaceTitle}
+                onChange={(event) => setWorkspaceTitle(event.target.value)}
+                placeholder="自动取目录名"
+                className="mt-1 w-full rounded-xl border border-[#c9dbf8] bg-white px-3 py-2 text-sm font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={registerBusy}
+              onClick={() => void registerWorkspace()}
+              className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F4DCB] px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+            >
+              <FolderInput className="size-4" />
+              {registerBusy ? '注册中…' : '选择 / 注册目录'}
+            </button>
+          </div>
+          {registerMessage ? (
+            <p className="mt-2 text-xs font-medium text-[#55739f]">{registerMessage}</p>
+          ) : null}
+          <div className="mt-3">
+            <CurrentPaperCard />
+          </div>
         </div>
 
         {/* Four module icon buttons + curved path */}
@@ -239,21 +332,21 @@ export function ResearchHomePage() {
               </span>
             </div>
             <ul className="min-h-0 space-y-1.5 overflow-hidden">
-              {recentProjects.slice(0, 2).map((project) => {
-                const Icon = project.icon;
+              {recentProjects.slice(0, 2).map((item) => {
+                const Icon = item.icon;
                 return (
                   <li
-                    key={project.title}
+                    key={item.title}
                     className="flex items-center gap-2.5 rounded-xl border border-[#e4eefc] bg-[#f7faff] px-2.5 py-2"
                   >
                     <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-[#1F4DCB] shadow-sm">
                       <Icon className="size-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-bold text-[#173778]">{project.title}</div>
+                      <div className="truncate text-xs font-bold text-[#173778]">{item.title}</div>
                       <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold text-[#7890b6]">
-                        <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[#1F4DCB]">{project.stage}</span>
-                        <span>{project.updated}</span>
+                        <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[#1F4DCB]">{item.stage}</span>
+                        <span>{item.updated}</span>
                       </div>
                     </div>
                   </li>

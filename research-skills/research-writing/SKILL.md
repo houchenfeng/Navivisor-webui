@@ -7,7 +7,7 @@ description: Draft, revise, translate, render, or illustrate a paper from finali
 
 Ground every empirical and bibliographic claim in the declared input artifacts. Keep missing evidence explicit; do not invent citations, results, significance, or author metadata. Propagate simulated provenance visibly into the manuscript and metadata.
 
-Treat each request as one immutable writing run. Read only the input artifact IDs declared in the run prompt. Never locate a newer artifact implicitly. Write all outputs into the supplied run temporary directory and produce `result.json` listing each output file, role, media type, simulation flag, and useful metadata. Preserve stable citation keys and make the submission handoff self-contained.
+Treat each request as one immutable writing run. Read only the files listed in the persisted input manifest (`context.json`) and the input artifact IDs declared in the run prompt. Never locate a newer artifact implicitly. Write all outputs into the supplied run temporary directory and produce `result.json` listing each output file, role, media type, simulation flag, and useful metadata. Preserve stable citation keys and make the submission handoff self-contained.
 
 Use these output roles:
 

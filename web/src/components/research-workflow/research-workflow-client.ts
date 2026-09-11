@@ -1,3 +1,4 @@
+import { getAuthorizationHeader } from '@/auth-token';
 import {
   researchWorkflowCancelRun,
   researchWorkflowCreateProject,
@@ -9,11 +10,13 @@ import {
   researchWorkflowStartAgentRun,
 } from '@/generated/api/sdk.gen';
 import type {
+  LoadDemoResult,
   ResearchArtifact,
   ResearchProject,
   ResearchRun,
   ResearchRunMode,
   ResearchRunStatus,
+  ResearchWorkspace,
   StartedResearchRun,
 } from './research-workflow-types';
 
@@ -34,29 +37,97 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const authorization = getAuthorizationHeader();
+  const response = await fetch(path, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authorization ? { Authorization: authorization } : {}),
+      ...(init?.headers ?? {}),
+    },
+  });
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+    try {
+      const body = (await response.json()) as { message?: string | string[] };
+      if (Array.isArray(body.message)) message = body.message.join('; ');
+      else if (body.message) message = body.message;
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
 export const researchWorkflowClient = {
   async listProjects(): Promise<ResearchProject[]> {
     return dataOf(await researchWorkflowListProjects({ throwOnError: true }));
   },
   async createProject(name: string): Promise<ResearchProject> {
-    return dataOf(await researchWorkflowCreateProject({ body: { name }, throwOnError: true }));
+    return dataOf(
+      await researchWorkflowCreateProject({ body: { name }, throwOnError: true }),
+    );
+  },
+  async registerWorkspace(input: {
+    absolutePath: string;
+    title?: string;
+    createIfMissing?: boolean;
+  }): Promise<ResearchWorkspace & { reused: boolean }> {
+    return apiJson('/api/research/workspaces/register', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  async getWorkspace(projectId: string): Promise<ResearchWorkspace> {
+    return apiJson(
+      `/api/research/projects/${encodeURIComponent(projectId)}/workspace`,
+    );
+  },
+  async scanWorkspace(projectId: string) {
+    return apiJson(
+      `/api/research/projects/${encodeURIComponent(projectId)}/workspace/scan`,
+      { method: 'POST', body: '{}' },
+    );
+  },
+  async loadWorkspaceDemo(projectId: string): Promise<LoadDemoResult> {
+    return apiJson(
+      `/api/research/projects/${encodeURIComponent(projectId)}/demo/load`,
+      { method: 'POST', body: '{}' },
+    );
   },
   async listRuns(projectId: string): Promise<ResearchRun[]> {
-    return dataOf(await researchWorkflowListRuns({ path: { projectId }, throwOnError: true }));
+    return dataOf(
+      await researchWorkflowListRuns({ path: { projectId }, throwOnError: true }),
+    );
   },
   async getRun(projectId: string, runId: string): Promise<ResearchRun> {
-    return dataOf(await researchWorkflowGetRun({ path: { projectId, runId }, throwOnError: true }));
+    return dataOf(
+      await researchWorkflowGetRun({
+        path: { projectId, runId },
+        throwOnError: true,
+      }),
+    );
   },
   async listArtifacts(projectId: string): Promise<ResearchArtifact[]> {
-    return dataOf(await researchWorkflowListArtifacts({ path: { projectId }, throwOnError: true }));
+    return dataOf(
+      await researchWorkflowListArtifacts({
+        path: { projectId },
+        throwOnError: true,
+      }),
+    );
   },
-  async getArtifactContent(projectId: string, artifactId: string): Promise<string> {
+  async getArtifactContent(
+    projectId: string,
+    artifactId: string,
+  ): Promise<string> {
     const response = await researchWorkflowGetArtifactContent({
       path: { projectId, artifactId },
       parseAs: 'text',
       throwOnError: true,
     });
-    if (response.error !== undefined) throw response.error;
     return String(response.data ?? '');
   },
   async startAgentRun(input: {
@@ -84,7 +155,10 @@ export const researchWorkflowClient = {
     );
   },
   async cancelRun(projectId: string, runId: string): Promise<void> {
-    await researchWorkflowCancelRun({ path: { projectId, runId }, throwOnError: true });
+    await researchWorkflowCancelRun({
+      path: { projectId, runId },
+      throwOnError: true,
+    });
   },
   async waitForRun(
     projectId: string,

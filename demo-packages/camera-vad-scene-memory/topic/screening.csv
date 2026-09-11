@@ -1,0 +1,4 @@
+paper_id,decision,relevance_score,reason,evidence,reviewer,synthetic
+DEMO-001,include,0.91,Matches lightweight screening baseline,abstract,demo-screener,true
+DEMO-002,include,0.88,Supports scene memory retrieval,abstract,demo-screener,true
+DEMO-003,include,0.90,Supports VLM verification path,abstract,demo-screener,true

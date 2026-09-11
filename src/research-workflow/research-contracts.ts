@@ -7,9 +7,11 @@ export const RESEARCH_MODULES = [
 export type ResearchModule = (typeof RESEARCH_MODULES)[number];
 
 export const RESEARCH_STAGES = [
+  'topic.intake',
   'topic.first-search',
-  'topic.core-literature',
+  'topic.candidates',
   'topic.confirmation',
+  'topic.core-literature',
   'experiment.plan',
   'experiment.run',
   'writing.outline',
@@ -38,10 +40,17 @@ export type ResearchRunStatus = (typeof RESEARCH_RUN_STATUSES)[number];
 export type ResearchRunMode = 'simulated' | 'real';
 
 export const RESEARCH_ARTIFACT_ROLES = [
+  'project-intake',
+  'search-strategy',
+  'search-iterations',
   'candidate-papers',
+  'screening-log',
+  'topic-landscape',
   'candidate-topics',
   'confirmed-topic',
   'core-references',
+  'literature-bib',
+  'paper-manifest',
   'literature-handoff',
   'experiment-plan',
   'experiment-results',
@@ -52,7 +61,6 @@ export const RESEARCH_ARTIFACT_ROLES = [
   'paper-pdf',
   'paper-figure',
   'paper-translation',
-  'project-intake',
   'dataset-manifest',
   'experiment-config',
   'venue-requirements',
@@ -61,6 +69,8 @@ export const RESEARCH_ARTIFACT_ROLES = [
   'rebuttal',
   'submission-decision',
   'diagnostics',
+  'workspace-index',
+  'demo-manifest',
 ] as const;
 export type ResearchArtifactRole = (typeof RESEARCH_ARTIFACT_ROLES)[number];
 
@@ -83,19 +93,69 @@ export const RESEARCH_STAGE_OUTPUT_ROLES: Record<
   ResearchStage,
   readonly ResearchArtifactRole[]
 > = {
-  'topic.first-search': ['candidate-papers', 'diagnostics'],
-  'topic.core-literature': ['candidate-topics', 'core-references', 'diagnostics'],
-  'topic.confirmation': ['confirmed-topic', 'literature-handoff', 'diagnostics'],
-  'experiment.plan': ['experiment-plan', 'experiment-config', 'diagnostics'],
-  'experiment.run': ['experiment-results', 'method-architecture', 'dataset-manifest', 'diagnostics'],
+  'topic.intake': ['project-intake', 'diagnostics'],
+  'topic.first-search': [
+    'search-strategy',
+    'search-iterations',
+    'candidate-papers',
+    'screening-log',
+    'diagnostics',
+  ],
+  'topic.candidates': ['topic-landscape', 'candidate-topics', 'diagnostics'],
+  'topic.confirmation': ['confirmed-topic', 'diagnostics'],
+  'topic.core-literature': [
+    'core-references',
+    'literature-bib',
+    'paper-manifest',
+    'literature-handoff',
+    'diagnostics',
+  ],
+  'experiment.plan': [
+    'experiment-plan',
+    'experiment-config',
+    'dataset-manifest',
+    'diagnostics',
+  ],
+  'experiment.run': [
+    'experiment-results',
+    'method-architecture',
+    'paper-figure',
+    'diagnostics',
+  ],
   'writing.outline': ['paper-outline', 'diagnostics'],
-  'writing.draft': ['paper-source', 'paper-metadata', 'paper-figure', 'paper-translation', 'diagnostics'],
-  'writing.final': ['paper-source', 'paper-metadata', 'paper-figure', 'paper-translation', 'paper-pdf', 'diagnostics'],
-  'submission.prepare': ['submission-package', 'diagnostics'],
+  'writing.draft': [
+    'paper-source',
+    'paper-metadata',
+    'paper-figure',
+    'paper-translation',
+    'diagnostics',
+  ],
+  'writing.final': [
+    'paper-source',
+    'paper-metadata',
+    'paper-figure',
+    'paper-translation',
+    'paper-pdf',
+    'diagnostics',
+  ],
+  'submission.prepare': [
+    'venue-requirements',
+    'submission-package',
+    'diagnostics',
+  ],
   'submission.review.round1': ['review-round1', 'diagnostics'],
   'submission.rebuttal': ['rebuttal', 'diagnostics'],
   'submission.decision': ['submission-decision', 'diagnostics'],
 };
+
+/** Allowed stage progression for topic module (acyclic). */
+export const TOPIC_STAGE_ORDER: readonly ResearchStage[] = [
+  'topic.intake',
+  'topic.first-search',
+  'topic.candidates',
+  'topic.confirmation',
+  'topic.core-literature',
+] as const;
 
 export function isOutputRoleAllowedForStage(
   stage: ResearchStage,
@@ -141,6 +201,65 @@ export interface ResearchAgentResult {
   status: 'completed';
   outputs: ResearchAgentResultOutput[];
   warnings: string[];
+}
+
+export interface WorkspaceProjectJson {
+  schemaVersion: 2;
+  projectId: string;
+  title: string;
+  description?: string;
+  language?: string;
+  directories: {
+    topic: string;
+    experiment: string;
+    writing: string;
+    submission: string;
+  };
+  demo?: { id: string; version: string; simulated: boolean };
+  createdAt: string;
+}
+
+export interface PortableProjectIndex {
+  schemaVersion: 2;
+  projectId: string;
+  title: string;
+  rootRelativeHint?: string;
+  updatedAt: string;
+  directories: WorkspaceProjectJson['directories'];
+  modules: Record<
+    ResearchModule,
+    {
+      status: 'empty' | 'partial' | 'ready' | 'external_modified';
+      currentFiles: Array<{
+        path: string;
+        role?: ResearchArtifactRole;
+        sha256?: string;
+        artifactId?: string;
+        externalModified?: boolean;
+      }>;
+    }
+  >;
+  runs: Array<{
+    runId: string;
+    stage: ResearchStage;
+    status: ResearchRunStatus;
+    mode: ResearchRunMode;
+  }>;
+  artifacts: Array<{
+    artifactId: string;
+    role: ResearchArtifactRole;
+    path: string;
+    sha256: string;
+    simulated: boolean;
+  }>;
+  demo?: {
+    demoId: string;
+    version: string;
+    manifestSha256: string;
+    loadedAt: string;
+    complete: boolean;
+    missing: string[];
+  };
 }
 
 export function moduleForStage(stage: ResearchStage): ResearchModule {

@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { DRIZZLE_DB, type AppDatabase } from '../database/database.constants';
 import { eq } from 'drizzle-orm';
 import { researchAgentInvocations } from '../database/schema';
@@ -9,7 +11,7 @@ import { ResearchPathsService } from './research-paths.service';
 import { ResearchSkillRegistryService } from './research-skill-registry.service';
 import { ResearchWorkflowService } from './research-workflow.service';
 
-const PROMPT_VERSION = 'research-run/v1';
+const PROMPT_VERSION = 'research-run/v2';
 
 export interface StartResearchAgentRunOptions {
   projectId: string;
@@ -46,7 +48,7 @@ export class ResearchCodexBridgeService {
       run.module,
     );
     const skill = await this.skills.resolveForStage(session.cwd, options.stage);
-    const prompt = this.buildPrompt(run.runId, options);
+    const prompt = await this.buildPrompt(run.runId, options);
 
     try {
       const response = await this.threads.startTurn({
@@ -154,18 +156,64 @@ export class ResearchCodexBridgeService {
     });
   }
 
-  private buildPrompt(
+  private async buildPrompt(
     runId: string,
     options: StartResearchAgentRunOptions,
-  ): string {
+  ): Promise<string> {
     const inputIds = options.inputArtifactIds ?? [];
+    const inputs: Array<Record<string, unknown>> = [];
+    for (const artifactId of inputIds) {
+      try {
+        const artifact = this.workflow.getArtifact(
+          options.projectId,
+          artifactId,
+        );
+        inputs.push({
+          artifactId: artifact.artifactId,
+          role: artifact.role,
+          name: artifact.name,
+          path: artifact.path,
+          sha256: artifact.sha256,
+          simulated: artifact.simulated,
+          absolutePath: this.workflow.artifactAbsolutePath(
+            options.projectId,
+            artifactId,
+          ),
+        });
+      } catch {
+        inputs.push({ artifactId, missing: true });
+      }
+    }
+    const contextPath = this.paths.context(options.projectId, runId);
+    await mkdir(dirname(contextPath), { recursive: true });
+    await writeFile(
+      contextPath,
+      JSON.stringify(
+        {
+          schemaVersion: 1,
+          projectId: options.projectId,
+          runId,
+          stage: options.stage,
+          mode: options.mode,
+          inputs,
+          writtenAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
     return [
       `Prompt contract: ${PROMPT_VERSION}`,
       `Project ID: ${options.projectId}`,
       `Run ID: ${runId}`,
       `Stage: ${options.stage}`,
       `Mode: ${options.mode}`,
+      `Persisted input manifest: ${contextPath}`,
       `Input artifact IDs: ${inputIds.join(', ') || '(none)'}`,
+      'Read only the files listed in the persisted input manifest for this project.',
+      'Do not read other research projects or invent artifact contents.',
       `Temporary output directory: ${this.paths.temp(options.projectId, runId)}`,
       'Write result.json and all declared outputs only in that temporary directory.',
       'Do not finalize artifacts; the workflow service validates and moves them.',

@@ -107,7 +107,6 @@ async function extractTurnText(threadId: string, turnId: string): Promise<string
     path: { threadId, turnId },
     throwOnError: true,
   });
-  if (response.error !== undefined) throw response.error;
   const items = (response.data as { items?: Array<{ type?: string; text?: string; phase?: string | null }> })?.items ?? [];
   const messages = items.filter((item) => item.type === 'agentMessage' && typeof item.text === 'string' && item.text.trim());
   if (messages.length === 0) return '';
@@ -130,7 +129,6 @@ async function waitForTurnText(
       query: { limit: 20, sortDirection: 'desc', itemsView: 'summary' },
       throwOnError: true,
     });
-    if (turnsResponse.error !== undefined) throw turnsResponse.error;
     const turns = (turnsResponse.data as { data?: Array<{ id?: string; status?: string; error?: { message?: string } | null }> })?.data ?? [];
     const turn = turns.find((entry) => entry.id === turnId);
 
@@ -291,7 +289,6 @@ export async function generateWritingFigure(
       path: { threadId: started.threadId, turnId: started.turnId },
       throwOnError: true,
     });
-    if (itemsResponse.error !== undefined) throw itemsResponse.error;
     const items =
       (itemsResponse.data as {
         items?: Array<{

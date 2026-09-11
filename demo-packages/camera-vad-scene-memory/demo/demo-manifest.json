@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 2,
+  "demoId": "camera-vad-scene-memory",
+  "version": "1.0.0",
+  "simulated": true,
+  "nodes": [
+    {
+      "key": "intake",
+      "stage": "topic.intake",
+      "files": [
+        {
+          "key": "intake-json",
+          "path": "topic/intake.json",
+          "role": "project-intake",
+          "mediaType": "application/json",
+          "sha256": "fcf0cbbde01b62467cee32f7b4eda534bd5f2375b2811005a51639a4eadd6371"
+        }
+      ],
+      "inputs": []
+    },
+    {
+      "key": "first-search",
+      "stage": "topic.first-search",
+      "files": [
+        {
+          "key": "search-strategy",
+          "path": "topic/search-strategy.json",
+          "role": "search-strategy",
+          "mediaType": "application/json",
+          "sha256": "c83ed7f5301da5038573f34cda9e2a7c8aed7ee78b4885ab48476a928274f9aa"
+        },
+        {
+          "key": "search-iterations",
+          "path": "topic/search-iterations.jsonl",
+          "role": "search-iterations",
+          "mediaType": "application/x-ndjson",
+          "sha256": "8e91c20254cf21c8573497f043f3206300d7080ccbcafbd3b9b1fcbaaa400703"
+        },
+        {
+          "key": "papers-csv",
+          "path": "topic/candidate-papers.csv",
+          "role": "candidate-papers",
+          "mediaType": "text/csv",
+          "sha256": "fe5c480785e7e061770dc7c1b04189b1e8d38446a09d93f353699800ad725d8e"
+        },
+        {
+          "key": "screening-csv",
+          "path": "topic/screening.csv",
+          "role": "screening-log",
+          "mediaType": "text/csv",
+          "sha256": "ccbd9067aab18de70e54d4dc8034796243340cc608e2776f182ccc02f02357ce"
+        }
+      ],
+      "inputs": [
+        "intake-json"
+      ]
+    },
+    {
+      "key": "candidates",
+      "stage": "topic.candidates",
+      "files": [
+        {
+          "key": "landscape",
+          "path": "topic/landscape.md",
+          "role": "topic-landscape",
+          "mediaType": "text/markdown",
+          "sha256": "88d937ed6c81acce17d5b51b7f36076dd28694e116152fa3c9c80ce658200e4e"
+        },
+        {
+          "key": "candidate-topics",
+          "path": "topic/candidate-topics.json",
+          "role": "candidate-topics",
+          "mediaType": "application/json",
+          "sha256": "5e2800cefb8c711eaa7623e2d74e0753101f52f2f9761e777b0636f20a72173d"
+        }
+      ],
+      "inputs": [
+        "papers-csv",
+        "screening-csv"
+      ]
+    },
+    {
+      "key": "confirmation",
+      "stage": "topic.confirmation",
+      "files": [
+        {
+          "key": "confirmed-topic",
+          "path": "topic/confirmed-topic.json",
+          "role": "confirmed-topic",
+          "mediaType": "application/json",
+          "sha256": "1592bf22dfeeb1813345a41954c5cfdf1bc22c4ce9282fc299135e8ea2b4169a"
+        }
+      ],
+      "inputs": [
+        "candidate-topics"
+      ]
+    },
+    {
+      "key": "core-literature",
+      "stage": "topic.core-literature",
+      "files": [
+        {
+          "key": "core-references",
+          "path": "topic/core-references.csv",
+          "role": "core-references",
+          "mediaType": "text/csv",
+          "sha256": "963b2e3a0566a742e96f3922841a1c4c41f51cc269a236e2c65e9bf3ae3a2820"
+        },
+        {
+          "key": "literature-bib",
+          "path": "topic/references.bib",
+          "role": "literature-bib",
+          "mediaType": "application/x-bibtex",
+          "sha256": "2d246ea622aed36c40804b813c291ae9947733faa5d4d99191e775f08326bc7a"
+        },
+        {
+          "key": "paper-manifest",
+          "path": "topic/paper-manifest.json",
+          "role": "paper-manifest",
+          "mediaType": "application/json",
+          "sha256": "f2dfb16a37f314f87978d3c3cd346e95e9fa1886e25463e3681cd25fee2a2822"
+        },
+        {
+          "key": "literature-handoff",
+          "path": "topic/literature-handoff.md",
+          "role": "literature-handoff",
+          "mediaType": "text/markdown",
+          "sha256": "82431bd2b8cfaa89031c99fecb9c95dcef1323f220eb2ab94ff39c399075a15d"
+        }
+      ],
+      "inputs": [
+        "confirmed-topic"
+      ]
+    },
+    {
+      "key": "experiment-plan",
+      "stage": "experiment.plan",
+      "files": [
+        {
+          "key": "experiment-plan",
+          "path": "experiment/plan.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "sha256": "30566e2df36bd9f82f6673750d7aa558331da25b03e78d12625515944e2db423"
+        },
+        {
+          "key": "experiment-config",
+          "path": "experiment/config.json",
+          "role": "experiment-config",
+          "mediaType": "application/json",
+          "sha256": "ecfc0bb43f64f00b1be4597940fcc8b29f66215dce7ea7368f758d4b325f8e14"
+        },
+        {
+          "key": "dataset-manifest",
+          "path": "experiment/dataset-manifest.json",
+          "role": "dataset-manifest",
+          "mediaType": "application/json",
+          "sha256": "eaa9feb60f0ba97f4a1c1036823fa7c00c007d1fc2aaaba29ded6c7e6bee7ab8"
+        }
+      ],
+      "inputs": [
+        "confirmed-topic",
+        "literature-handoff"
+      ]
+    },
+    {
+      "key": "experiment-run",
+      "stage": "experiment.run",
+      "files": [
+        {
+          "key": "results-md",
+          "path": "experiment/results.md",
+          "role": "experiment-results",
+          "mediaType": "text/markdown",
+          "sha256": "e964b8a0e493dd14007da1c41454dc7f1217aa9c3968feb616617290d3d89864"
+        },
+        {
+          "key": "algorithm-details",
+          "path": "experiment/algorithm-details.md",
+          "role": "method-architecture",
+          "mediaType": "text/markdown",
+          "sha256": "f76807598fa4b3ecb7ccdb5bf68d3669c493bae37b89bab655915fe8b8549ba5"
+        },
+        {
+          "key": "comparison-png",
+          "path": "experiment/figures/comparison.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "placeholder": true,
+          "sha256": "c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77"
+        },
+        {
+          "key": "architecture-png",
+          "path": "experiment/figures/architecture.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "placeholder": true,
+          "sha256": "c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77"
+        }
+      ],
+      "inputs": [
+        "experiment-plan",
+        "experiment-config"
+      ]
+    },
+    {
+      "key": "writing-outline",
+      "stage": "writing.outline",
+      "files": [
+        {
+          "key": "outline",
+          "path": "writing/outline.md",
+          "role": "paper-outline",
+          "mediaType": "text/markdown",
+          "sha256": "bc7a617ef7454927be745dd7925f302f6de6a81dc944aa929917bf63d43589b6"
+        }
+      ],
+      "inputs": [
+        "confirmed-topic",
+        "results-md"
+      ]
+    },
+    {
+      "key": "writing-draft",
+      "stage": "writing.draft",
+      "files": [
+        {
+          "key": "paper-tex",
+          "path": "writing/paper.tex",
+          "role": "paper-source",
+          "mediaType": "application/x-tex",
+          "sha256": "2d56569c516f3da9c1c5d78b64e1c6ed195ac0c978fefa2480362b74d5803a23"
+        },
+        {
+          "key": "paper-metadata",
+          "path": "writing/paper-metadata.json",
+          "role": "paper-metadata",
+          "mediaType": "application/json",
+          "sha256": "670b206a6977ddc6d32a352c60a5ab7e8690b59f95eababa44126f580ea76ce2"
+        }
+      ],
+      "inputs": [
+        "outline"
+      ]
+    },
+    {
+      "key": "writing-final",
+      "stage": "writing.final",
+      "files": [
+        {
+          "key": "paper-pdf",
+          "path": "writing/paper.pdf",
+          "role": "paper-pdf",
+          "mediaType": "application/pdf",
+          "placeholder": true,
+          "sha256": "ccebb49d33f0daf177bce5b1d1396f89f996062410148642f9059e5c76304e72"
+        }
+      ],
+      "inputs": [
+        "paper-tex"
+      ]
+    },
+    {
+      "key": "submission-prepare",
+      "stage": "submission.prepare",
+      "files": [
+        {
+          "key": "venue",
+          "path": "submission/venue.json",
+          "role": "venue-requirements",
+          "mediaType": "application/json",
+          "sha256": "85a9313a30702fa5617fa6543c8588f06972e322e0cb2ec64f8bd6522cb5a75d"
+        },
+        {
+          "key": "package",
+          "path": "submission/submission-package.zip",
+          "role": "submission-package",
+          "mediaType": "application/zip",
+          "sha256": "8739c76e681f900923b900c9df0ef75cf421d39cabb54650c4b9ad19b6a76d85"
+        }
+      ],
+      "inputs": [
+        "paper-pdf"
+      ]
+    },
+    {
+      "key": "review-round1",
+      "stage": "submission.review.round1",
+      "files": [
+        {
+          "key": "reviews",
+          "path": "submission/reviews.json",
+          "role": "review-round1",
+          "mediaType": "application/json",
+          "sha256": "6a55e450d6501719a28bb0e29f3895966a14d191e2a9dd8ee2ba914365a111eb"
+        }
+      ],
+      "inputs": [
+        "package"
+      ]
+    },
+    {
+      "key": "rebuttal",
+      "stage": "submission.rebuttal",
+      "files": [
+        {
+          "key": "rebuttal-md",
+          "path": "submission/rebuttal.md",
+          "role": "rebuttal",
+          "mediaType": "text/markdown",
+          "sha256": "51bbe8dc423e4c91b7e88651590377bfc6b23b9dc67ff2db16504fae6ac38a11"
+        }
+      ],
+      "inputs": [
+        "reviews"
+      ]
+    },
+    {
+      "key": "decision",
+      "stage": "submission.decision",
+      "files": [
+        {
+          "key": "decision",
+          "path": "submission/decision.json",
+          "role": "submission-decision",
+          "mediaType": "application/json",
+          "sha256": "142a08243f9b54ad538f41f6bb584f24902c6c54f6f27828137cf91b2419ef04"
+        }
+      ],
+      "inputs": [
+        "rebuttal-md"
+      ]
+    }
+  ],
+  "missing": [
+    "topic/papers/DEMO-001.pdf",
+    "topic/papers/DEMO-002.pdf",
+    "topic/papers/DEMO-003.pdf",
+    "writing/template/cvpr.sty",
+    "GPT-generated comparison.png (current file is placeholder)",
+    "GPT-generated architecture.png (current file is placeholder)",
+    "Compiled paper.pdf from LaTeX (current file is placeholder)"
+  ]
+}

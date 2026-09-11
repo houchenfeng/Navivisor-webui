@@ -48,7 +48,6 @@ async function extractTurnText(threadId: string, turnId: string): Promise<string
     path: { threadId, turnId },
     throwOnError: true,
   });
-  if (response.error !== undefined) throw response.error;
   const items =
     (response.data as { items?: Array<{ type?: string; text?: string; phase?: string | null }> })
       ?.items ?? [];
@@ -71,7 +70,6 @@ async function waitForTurnText(threadId: string, turnId: string): Promise<string
       query: { limit: 20, sortDirection: 'desc', itemsView: 'summary' },
       throwOnError: true,
     });
-    if (turnsResponse.error !== undefined) throw turnsResponse.error;
     const turns =
       (turnsResponse.data as { data?: Array<{ id?: string; status?: string; error?: { message?: string } | null }> })
         ?.data ?? [];

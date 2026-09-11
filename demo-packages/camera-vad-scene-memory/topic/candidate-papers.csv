@@ -1,0 +1,4 @@
+paper_id,title,authors,venue,year,doi,abstract,citation_count,source,source_url,synthetic
+DEMO-001,Fast Screening for Camera Anomaly Clips,Demo Author A,Demo Venue,2025,,Lightweight scoring selects suspicious camera clips.,0,demo,,true
+DEMO-002,Memory Retrieval for Scene Understanding,Demo Author B,Demo Venue,2024,,Normal scene memories support retrieval and comparison.,0,demo,,true
+DEMO-003,Language Guided Verification of Video Events,Demo Author C,Demo Venue,2026,,A vision language model explains uncertain event clips.,0,demo,,true

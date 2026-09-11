@@ -1,6 +1,6 @@
 # 四模块统一 Workflow 迁移 TODO
 
-> **最新执行入口（工作目录方案）**：第 14–18 节是用户最新要求，优先于前文冲突内容。每篇论文对应一个用户选择的工作目录，四模块共用该目录；Demo 从该目录显式载入。第 1–10 节保留历史记录，其中旧分支、自动 push 和过时完成度不作为当前操作指令。当前分支为 `feat/writing-workflow-unification`；仅在用户授权时提交/推送。本文继续作为唯一实施与验收账本。
+> **最新执行入口（工作目录方案）**：第 14–18 节是用户最新要求，优先于前文冲突内容。每篇论文对应一个用户选择的工作目录，四模块共用该目录；Demo 从该目录显式载入。第 1–10 节保留历史记录，其中旧分支、自动 push 和过时完成度不作为当前操作指令。当前分支为 `feat/writing-workflow-unification`。用户已授权重大阶段自动 commit/push。本文继续作为唯一实施与验收账本。
 
 > **用途**：四模块迁到统一 Research Workflow / Artifact / Codex Skill 的执行清单与进度记录。  
 > 目标：完成开题、实验、写作、投稿四个前端模块向统一 Research Workflow、Artifact 和 Codex Skill 调用链的迁移，移除投稿模块的 cpolar/localhost 旧服务依赖，使项目达到可合入 `main` 的状态。
@@ -920,17 +920,17 @@ UI 事件与真实 Codex turn 区分类型，不能伪装为模型已运行。�
 
 | ID | 修改任务和位置 | 完成标准 | 状态 |
 |---|---|---|---|
-| W1 | `research-paths.service.ts`、数据库 project 注册；支持用户目录真实路径映射，取消路径必须由固定 root + UUID 推导的限制 | 选择目录后统一 projectId；符号链接边界、移动和重复注册可控 | 待实现 |
-| W2 | `research-contracts.ts`、validator、migration；新增 intake/candidate 阶段与 search-strategy 等输出角色，拆开候选题生成和核心检索 | intake→first-search→candidates→confirmation→core-literature 无循环；所有文件都有 stage/role | 待实现 |
-| W3 | Workflow service；不可变快照、四模块当前文件投影、可移植索引、外部改动识别和提交恢复 | 中断写盘不发布半成品，目录复制后可重建索引 | 待实现 |
-| W4 | 受控工作目录注册/扫描/保存 API、response DTO 和 generated API client | API 返回完整 typed project/run/artifact；现有 TS 构建错误修复 | 待实现 |
-| W5 | 首页目录选择器、统一 project context、路由 search 参数与对话卡片 | 四模块、对话和文件预览始终属于同一项目，刷新保留选择 | 待实现 |
-| W6 | 整理用户 Demo 为第 15 节格式，补真实文件哈希与依赖 manifest | 所有缺失项明确；完整包数量和来源可核对 | 等待 Demo 文件，契约已写 |
-| W7 | workspace Demo importer；项目级幂等键 demoId+version+manifest hash，复用 finalize 事务 | 同一包重复载入不重复创建；坏哈希/缺失/环依赖得到明确结果 | 待实现 |
-| W8 | `LoadWorkspaceDemoButton` 及四模块 hydration；替换各自静态 Demo 和 store 注入 | 四模块一键从目录展示，保留未保存草稿并处理冲突 | 待实现 |
-| W9 | 四个 research Skill、Codex bridge；读取持久化输入清单，保存 provenance | 换对话仍能复现输入；不会混入其他项目数据 | 待实现 |
-| W10 | 真实运行/GPT 生图/LaTeX worker 和引用检查按能力逐项实现 | 真实输出必须有执行证据；模拟状态贯穿论文和投稿 | 待实现 |
-| W11 | 四模块集成验证与迁移旧数据；将结果回写本节 | 下述场景与构建检查通过 | 待实现 |
+| W1 | `research-paths.service.ts`、数据库 project 注册；支持用户目录真实路径映射，取消路径必须由固定 root + UUID 推导的限制 | 选择目录后统一 projectId；符号链接边界、移动和重复注册可控 | 已完成 |
+| W2 | `research-contracts.ts`、validator、migration；新增 intake/candidate 阶段与 search-strategy 等输出角色，拆开候选题生成和核心检索 | intake→first-search→candidates→confirmation→core-literature 无循环；所有文件都有 stage/role | 已完成 |
+| W3 | Workflow service；不可变快照、四模块当前文件投影、可移植索引、外部改动识别和提交恢复 | 中断写盘不发布半成品，目录复制后可重建索引 | 已完成 |
+| W4 | 受控工作目录注册/扫描/保存 API、response DTO 和 generated API client | API 返回完整 typed project/run/artifact；现有 TS 构建错误修复 | 已完成 |
+| W5 | 首页目录选择器、统一 project context、路由 search 参数与对话卡片 | 四模块、对话和文件预览始终属于同一项目，刷新保留选择 | 已完成（刷新靠 zustand persist；路由 search 未强制） |
+| W6 | 整理用户 Demo 为第 15 节格式，补真实文件哈希与依赖 manifest | 所有缺失项明确；完整包数量和来源可核对 | 已完成（合成文献/指标完整；图/PDF 为占位并记入 missing） |
+| W7 | workspace Demo importer；项目级幂等键 demoId+version+manifest hash，复用 finalize 事务 | 同一包重复载入不重复创建；坏哈希/缺失/环依赖得到明确结果 | 已完成 |
+| W8 | `LoadWorkspaceDemoButton` 及四模块 hydration；替换各自静态 Demo 和 store 注入 | 四模块一键从目录展示，保留未保存草稿并处理冲突 | 部分完成（按钮与后端 importer 已通；各模块旧 store Demo 仍并存） |
+| W9 | 四个 research Skill、Codex bridge；读取持久化输入清单，保存 provenance | 换对话仍能复现输入；不会混入其他项目数据 | 已完成 |
+| W10 | 真实运行/GPT 生图/LaTeX worker 和引用检查按能力逐项实现 | 真实输出必须有执行证据；模拟状态贯穿论文和投稿 | 部分完成（能力矩阵已标记；真实 runner/LaTeX/生图未上线） |
+| W11 | 四模块集成验证与迁移旧数据；将结果回写本节 | 下述场景与构建检查通过 | 部分完成（单测+前后端 tsc；未做完整服务端联调） |
 
 建议 API（均为待实现设计）：`POST /api/research/workspaces/register`、`GET /api/research/projects/:id/workspace`、`POST /api/research/projects/:id/workspace/scan`、`POST /api/research/projects/:id/demo/load`、`POST /api/research/projects/:id/artifacts/save-version`。目录注册复用 FilesService 已允许的根目录策略；后端校验真实路径；生成器仅能写当前 run 的 temp。不要开放任意文件系统读写接口。
 
@@ -938,9 +938,25 @@ Demo 导入作为独立执行器，按 queued→running→validating→completed
 
 验收场景：选目录→载入→四模块逐一查看→对话摘要→刷新→服务重启；重复载入不重复；变更一份上游文件后旧下游版本仍可查看；不完整 Demo 不标完成；改坏哈希导入失败；切换两个项目不串线；复制目录后重建索引；未保存草稿不会被载入覆盖；缺图片/PDF 有可见提示；既有普通文件不会丢失。
 
-实施结果（本轮）：设计与文档完成，功能未实现。
+实施结果（2026-09-11，工作目录方案 W1–W11）：
 
-- 已推送上一轮文档提交：`3ba5faa`，分支 `feat/writing-workflow-unification`。
-- 本轮实际修改：本文新增单论文工作目录、完整 Demo 文件契约与示例、载入交互、对话摘要、W1–W11；没有生成真实文献、监控视频、图片或 PDF。
-- 验证：提交前执行 Markdown 差异检查；本轮仅文档更新，不把历史代码测试结果作为当前功能通过证据。
-- 后续每完成 W 项，在此记录变更文件、测试结果、剩余问题和实际提交；同步更新该项状态。仅文档设计完成不能把对应功能标完成。
+- 分支：`feat/writing-workflow-unification`
+- 变更要点：
+  - W1：`ResearchPathsService` 支持 `bind(projectId, absoluteRoot)`；布局改到 `.navivisor/runs|artifacts|recovery|conversations`；托管项目仍可用 managedRoot+UUID。
+  - W2：新增 `topic.intake` / `topic.candidates` 与 `search-strategy`、`search-iterations`、`screening-log`、`topic-landscape`、`literature-bib`、`paper-manifest` 等角色；拆开候选与核心文献阶段输出矩阵。
+  - W3/W7：`ResearchWorkspaceService` 实现可移植 `project-index.json`、外部修改标记、recovery 日志、Demo 依赖环检测、幂等载入（demoId+version+manifestSha256）。
+  - W4：落地 register/workspace/scan/demo/load/save-version API；`publicProject` 返回 `rootPath`；修复写作侧既有 `throwOnError` TS 错误。
+  - W5/W8：首页工作目录注册、`useResearchProjectStore`、`CurrentPaperCard`、`LoadWorkspaceDemoButton`（首页完整 + 四模块紧凑）。
+  - W6：`demo-packages/camera-vad-scene-memory/` 含合成文献/指标/审稿全套；`comparison.png`/`architecture.png`/`paper.pdf` 为占位文件；`demo-manifest.json` 记 missing（文献 PDF、CVPR 模板、GPT 真图、真编译 PDF）。
+  - W9：Codex bridge 写 `context.json` 输入清单（prompt v2）；四 Skill 要求只读该清单。
+  - W10：前端 `RESEARCH_CAPABILITIES` 标记真实训练/LaTeX/OpenReview 为 unavailable，生图 needs_credentials。
+- 验证：
+  - `pnpm exec vitest run src/research-workflow` → 2 files / 9 tests passed
+  - `pnpm exec tsc -p tsconfig.build.json --noEmit` → pass
+  - `cd web && pnpm exec tsc -b` → pass
+- 遗留：
+  - 未跑完整 Nest 服务端联调（register→load→四模块 hydration）
+  - 四模块旧 localStorage/Zustand Demo 注入尚未完全替换为 workspace hydration
+  - GPT 真图与 LaTeX 编译 worker 未实现；占位图/PDF 不得当作真实证据
+  - OpenAPI generated client 尚未重新 generate；workspace API 走手写 fetch
+- 后续每完成剩余项，继续回写本节状态与验证命令。

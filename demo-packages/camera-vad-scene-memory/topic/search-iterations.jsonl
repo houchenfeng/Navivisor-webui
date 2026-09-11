@@ -1,0 +1,2 @@
+{"iterationId":"it-1","queryVersion":1,"provider":"demo","retrievedCount":62,"deduplicatedCount":58,"sampleSize":20,"relevantInSample":17,"estimatedPrecision":0.85,"changeReason":"too_narrow","executedAt":"2026-09-11T12:05:00Z","simulated":true}
+{"iterationId":"it-2","queryVersion":2,"provider":"demo","retrievedCount":412,"deduplicatedCount":300,"sampleSize":50,"relevantInSample":41,"estimatedPrecision":0.82,"changeReason":"expanded_synonyms","executedAt":"2026-09-11T12:10:00Z","simulated":true}

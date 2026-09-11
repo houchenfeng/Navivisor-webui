@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, CircleHelp, FileSearch, FlaskConical, LoaderCircle, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { getApiToken } from '@/auth-token';
 import { withBasePath } from '@/base-path';
 import type { ResearchTaskSnapshot } from './topic-workflow-contract';
@@ -56,7 +57,10 @@ export function TopicPage() {
     <div className="mx-auto min-h-full w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-12">
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div><div className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#315a98]"><span className="grid size-8 place-items-center rounded-xl bg-white/80 text-[#1f4dcb]"><Sparkles className="size-4" /></span>启航 · 开题阶段</div><h1 className="text-3xl font-black tracking-[-0.04em] text-[#102f72] sm:text-4xl">开题智能体</h1><p className="mt-2 text-sm font-semibold leading-6 text-[#617da9]">输入感兴趣的研究领域，先用公开文献试检索确认方向。</p></div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#ddecff] px-3.5 py-2 text-xs font-black text-[#2670d1] shadow-sm"><span className={`size-2 rounded-full ${isRunning ? 'animate-pulse bg-[#1f4dcb]' : 'bg-[#4c83d0]'}`} />{isRunning ? '检索中' : 'OpenAlex · 公开试检索'}</span>
+        <div className="flex flex-col items-end gap-2">
+          <LoadWorkspaceDemoButton compact />
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#ddecff] px-3.5 py-2 text-xs font-black text-[#2670d1] shadow-sm"><span className={`size-2 rounded-full ${isRunning ? 'animate-pulse bg-[#1f4dcb]' : 'bg-[#4c83d0]'}`} />{isRunning ? '检索中' : 'OpenAlex · 公开试检索'}</span>
+        </div>
       </header>
 
       <nav aria-label="开题三步进度" className="mt-8 grid grid-cols-1 gap-2 rounded-2xl bg-white p-2 shadow-[0_12px_32px_rgba(38,90,167,0.12)] sm:grid-cols-3">

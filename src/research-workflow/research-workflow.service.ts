@@ -52,16 +52,35 @@ export class ResearchWorkflowService {
 
   async createProject(name: string) {
     const projectId = randomUUID();
-    const rootPath = this.paths.project(projectId);
+    const rootPath = this.paths.managedProject(projectId);
+    this.paths.bind(projectId, rootPath);
     const now = Date.now();
-    await mkdir(join(rootPath, 'runs'), { recursive: true });
+    await mkdir(join(rootPath, '.navivisor', 'runs'), { recursive: true });
+    await mkdir(join(rootPath, '.navivisor', 'artifacts'), { recursive: true });
+    await mkdir(join(rootPath, '.navivisor', 'recovery'), { recursive: true });
+    await mkdir(join(rootPath, '.navivisor', 'conversations'), {
+      recursive: true,
+    });
+    await mkdir(join(rootPath, 'topic'), { recursive: true });
+    await mkdir(join(rootPath, 'experiment'), { recursive: true });
+    await mkdir(join(rootPath, 'writing'), { recursive: true });
+    await mkdir(join(rootPath, 'submission'), { recursive: true });
+    await mkdir(join(rootPath, 'demo'), { recursive: true });
     await mkdir(join(rootPath, 'uploads'), { recursive: true });
     const row = { projectId, name, rootPath, createdAt: now, updatedAt: now };
     this.db.insert(researchProjects).values(row).run();
     await this.atomicJson(join(rootPath, 'project.json'), {
-      schemaVersion: 1,
+      schemaVersion: 2,
       projectId,
-      name,
+      title: name,
+      description: '',
+      language: 'zh-CN',
+      directories: {
+        topic: 'topic',
+        experiment: 'experiment',
+        writing: 'writing',
+        submission: 'submission',
+      },
       createdAt: new Date(now).toISOString(),
     });
     return this.publicProject(row);
@@ -73,7 +92,10 @@ export class ResearchWorkflowService {
       .from(researchProjects)
       .orderBy(desc(researchProjects.updatedAt))
       .all()
-      .map((row) => this.publicProject(row));
+      .map((row) => {
+        this.paths.bind(row.projectId, row.rootPath);
+        return this.publicProject(row);
+      });
   }
 
   getProject(projectId: string) {
@@ -83,6 +105,7 @@ export class ResearchWorkflowService {
       .where(eq(researchProjects.projectId, projectId))
       .get();
     if (!row) throw new NotFoundException('Research project not found');
+    this.paths.bind(row.projectId, row.rootPath);
     return this.publicProject(row);
   }
 
@@ -300,14 +323,14 @@ export class ResearchWorkflowService {
     const bytes = Buffer.isBuffer(content)
       ? content
       : Buffer.from(content, 'utf8');
-    const finalPath = join(
-      this.paths.artifacts(run.projectId, runId),
-      `${artifactId}-${safeName}`,
-    );
+    const artifactDir = this.paths.artifactDir(run.projectId, artifactId);
+    await mkdir(artifactDir, { recursive: true });
+    const finalPath = join(artifactDir, safeName);
     const tempPath = join(
       this.paths.temp(run.projectId, runId),
       `${artifactId}.part`,
     );
+    await mkdir(this.paths.temp(run.projectId, runId), { recursive: true });
     await writeFile(tempPath, bytes, { flag: 'wx' });
     await rename(tempPath, finalPath);
     const createdAt = Date.now();
@@ -389,6 +412,7 @@ export class ResearchWorkflowService {
     return {
       projectId: row.projectId,
       name: row.name,
+      rootPath: row.rootPath,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

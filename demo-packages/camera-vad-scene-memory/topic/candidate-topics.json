@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "candidates": [
+    {
+      "id": "cand-innovative",
+      "profile": "innovative",
+      "title": "事件图谱记忆与多角色复核的跨摄像头异常检测",
+      "question": "结构化长期记忆能否提升跨摄像头事件推理一致性？",
+      "methodSteps": [
+        "事件建图",
+        "检索",
+        "多角色复核",
+        "证据融合"
+      ],
+      "innovations": [
+        "事件图谱",
+        "多角色复核",
+        "跨镜关联"
+      ],
+      "feasibility": "medium-high",
+      "risks": [
+        "图构建成本",
+        "身份关联误差"
+      ],
+      "evidencePaperIds": [
+        "DEMO-002",
+        "DEMO-003"
+      ],
+      "expectedOutputs": [
+        "graph",
+        "reviews"
+      ]
+    },
+    {
+      "id": "cand-feasible",
+      "profile": "feasible",
+      "title": "轻量筛查与视觉语言大模型按需复核",
+      "question": "只复核不确定片段能否以较低成本提升检测效果？",
+      "methodSteps": [
+        "轻量评分",
+        "阈值触发",
+        "VLM复核",
+        "分数融合"
+      ],
+      "innovations": [
+        "不确定性触发",
+        "按需复核"
+      ],
+      "feasibility": "high",
+      "risks": [
+        "阈值迁移",
+        "时延"
+      ],
+      "evidencePaperIds": [
+        "DEMO-001",
+        "DEMO-003"
+      ],
+      "expectedOutputs": [
+        "metrics",
+        "cost"
+      ]
+    },
+    {
+      "id": "cand-balanced",
+      "profile": "balanced",
+      "title": "基于场景记忆与大模型复核的快慢双通路视频异常检测",
+      "question": "场景记忆能否在固定预算下改善疑难片段识别和解释？",
+      "methodSteps": [
+        "筛查",
+        "记忆检索",
+        "VLM按需复核",
+        "校准融合"
+      ],
+      "innovations": [
+        "不确定性触发",
+        "场景正常记忆",
+        "证据化复核与校准融合"
+      ],
+      "feasibility": "medium",
+      "risks": [
+        "记忆污染",
+        "场景漂移"
+      ],
+      "evidencePaperIds": [
+        "DEMO-001",
+        "DEMO-002",
+        "DEMO-003"
+      ],
+      "expectedOutputs": [
+        "metrics",
+        "explanations"
+      ]
+    }
+  ],
+  "alternates": []
+}

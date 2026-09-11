@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "scale": {
+    "min": 1,
+    "max": 10
+  },
+  "reviewers": [
+    {
+      "id": "R1",
+      "score": 6,
+      "confidence": 3,
+      "summary": "预算控制思路清晰",
+      "strengths": [
+        "快慢路径可解释"
+      ],
+      "weaknesses": [
+        "缺少真实测量"
+      ],
+      "questions": [
+        {
+          "id": "R1-Q1",
+          "text": "请提供不同触发阈值的成本曲线"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "score": 5,
+      "confidence": 4,
+      "summary": "需证明场景记忆的作用",
+      "strengths": [
+        "模块容易拆分"
+      ],
+      "weaknesses": [
+        "消融组合不足"
+      ],
+      "questions": [
+        {
+          "id": "R2-Q1",
+          "text": "如何避免测试集信息进入记忆库？"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "score": 6,
+      "confidence": 3,
+      "summary": "适合形成原型",
+      "strengths": [
+        "输出解释具有应用价值"
+      ],
+      "weaknesses": [
+        "跨场景验证不足"
+      ],
+      "questions": [
+        {
+          "id": "R3-Q1",
+          "text": "长期光照变化是否造成记忆漂移？"
+        }
+      ]
+    }
+  ]
+}

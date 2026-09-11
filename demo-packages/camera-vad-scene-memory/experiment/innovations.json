@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "items": [
+    {
+      "id": "I1",
+      "title": "不确定性触发",
+      "selected": true,
+      "hypothesis": "Only review uncertain clips",
+      "implementation": "threshold on s and u",
+      "baseline": "always/never VLM",
+      "ablation": "trigger on/off",
+      "cost": "low",
+      "acceptanceCriteria": "call rate < 20%"
+    },
+    {
+      "id": "I2",
+      "title": "场景正常记忆",
+      "selected": true,
+      "hypothesis": "Normal memory helps hard clips",
+      "implementation": "top-k retrieval",
+      "baseline": "no memory",
+      "ablation": "memory on/off",
+      "cost": "medium",
+      "acceptanceCriteria": "no test leakage"
+    },
+    {
+      "id": "I3",
+      "title": "证据化 VLM 复核",
+      "selected": true,
+      "hypothesis": "Explanations improve trust",
+      "implementation": "VLM JSON evidence",
+      "baseline": "score-only",
+      "ablation": "VLM on/off",
+      "cost": "high",
+      "acceptanceCriteria": "structured outputs"
+    },
+    {
+      "id": "I4",
+      "title": "融合分数校准",
+      "selected": false
+    },
+    {
+      "id": "I5",
+      "title": "记忆污染过滤",
+      "selected": false
+    },
+    {
+      "id": "I6",
+      "title": "时间一致性约束",
+      "selected": false
+    },
+    {
+      "id": "I7",
+      "title": "跨场景适配",
+      "selected": false
+    }
+  ]
+}

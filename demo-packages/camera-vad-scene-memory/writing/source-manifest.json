@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "sections": {
+    "abstract": {
+      "inputs": [
+        "topic/intake.json",
+        "topic/confirmed-topic.json"
+      ]
+    },
+    "related": {
+      "inputs": [
+        "topic/core-references.csv"
+      ]
+    },
+    "method": {
+      "inputs": [
+        "experiment/algorithm-details.md",
+        "experiment/config.json"
+      ]
+    },
+    "experiments": {
+      "inputs": [
+        "experiment/metrics/main.csv",
+        "experiment/results.md"
+      ]
+    }
+  }
+}
