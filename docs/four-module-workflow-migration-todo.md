@@ -186,6 +186,15 @@ POST   /api/research/projects/:projectId/uploads
 
 完成判定：`rg` 不再发现研究模块自行拼接 host/base URL。
 
+实施结果（2026-09-11）：部分完成
+
+- 完成 SHA：`6dd4581`
+- 实际修改：从当前后端 Swagger 重新生成 Hey API SDK、类型和 TanStack Query options；新增 project/run/artifact/agent-run/cancel/retry/content 的同源客户端操作，自动复用既有 `web/src/api-client.ts` 配置。
+- 验证命令：`cd web && pnpm build && pnpm test`
+- 验证结果：前端生产构建通过；20 个测试文件、195 项测试全部通过。
+- 遗留问题：后端 response DTO 尚未显式标注，生成的研究接口响应暂为 `unknown`；共享 research hooks 和四模块调用替换尚未完成，旧投稿 URL 因而仍存在。
+- 远端状态：已推送至 `origin/integration/research-workflow`。
+
 ### TODO-B2：统一项目、run 和 artifact UI 模型
 
 任务：
@@ -365,16 +374,16 @@ git diff --stat <last-merged-sha>..origin/<feature-branch>
 
 ## 10. 执行状态摘要
 
-| 阶段           | 状态     | 完成 SHA  | 验证结果                        |
-| -------------- | -------- | --------- | ------------------------------- |
-| A 后端闭环     | 部分完成 | `f588788` | build/lint 通过；定向测试 21/21 |
-| B 前端基础设施 | 未开始   | -         | -                               |
-| C1 开题迁移    | 未开始   | -         | -                               |
-| C2 实验迁移    | 未开始   | -         | -                               |
-| C3 写作实现    | 未开始   | -         | -                               |
-| C4 投稿迁移    | 未开始   | -         | -                               |
-| D 旧架构清理   | 未开始   | -         | -                               |
-| E 端到端验收   | 未开始   | -         | -                               |
+| 阶段           | 状态     | 完成 SHA  | 验证结果                             |
+| -------------- | -------- | --------- | ------------------------------------ |
+| A 后端闭环     | 部分完成 | `f588788` | build/lint 通过；定向测试 21/21      |
+| B 前端基础设施 | 部分完成 | `6dd4581` | web build；20 files / 195 tests 通过 |
+| C1 开题迁移    | 未开始   | -         | -                                    |
+| C2 实验迁移    | 未开始   | -         | -                                    |
+| C3 写作实现    | 未开始   | -         | -                                    |
+| C4 投稿迁移    | 未开始   | -         | -                                    |
+| D 旧架构清理   | 未开始   | -         | -                                    |
+| E 端到端验收   | 未开始   | -         | -                                    |
 
 执行者完成每个阶段后，必须直接更新此表和对应 TODO 的实际结果、commit SHA、测试命令与遗留问题，不创建新的中间状态文档。
 
