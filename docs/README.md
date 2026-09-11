@@ -8,7 +8,7 @@
 |---|---|
 | [research-modules-gap-report.md](./research-modules-gap-report.md) | 四模块已修问题与未实装缺口清单 |
 | [sam-experiment-demo-guide.md](./sam-experiment-demo-guide.md) | 实验模块 SAM Demo 演示步骤 |
-| [four-module-workflow-migration-todo.md](./four-module-workflow-migration-todo.md) | 四模块迁到统一 Research Workflow 的执行 TODO |
+| [four-module-workflow-migration-todo.md](./four-module-workflow-migration-todo.md) | 唯一执行 TODO；包含四模块产物链、显式存储、统一 Demo 导入和进度回写规则 |
 | [writing-workflow-data-model-unification-plan.md](./writing-workflow-data-model-unification-plan.md) | 写作数据模型与 Codex 调用统一改造计划 |
 | [four-module-main-integration-plan.md](./four-module-main-integration-plan.md) | 四模块合入 main 的架构与合并手册 |
 | [four-module-test-bug-report.md](./four-module-test-bug-report.md) | 四模块联测与缺陷记录（历史） |

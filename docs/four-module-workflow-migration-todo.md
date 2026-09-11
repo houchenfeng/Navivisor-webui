@@ -385,6 +385,7 @@ git diff --stat <last-merged-sha>..origin/<feature-branch>
 | C4 投稿迁移    | 未开始   | -         | -                                                   |
 | D 旧架构清理   | 未开始   | -         | -                                                   |
 | E 端到端验收   | 部分完成 | -         | 首轮 smoke：后端 23/23、前端 195/195；发现 6 项缺口 |
+| F 文件链与 Demo | 未开始   | -         | 已完成产品契约与实施任务拆解，等待 Demo 数据         |
 
 执行者完成每个阶段后，必须直接更新此表和对应 TODO 的实际结果、commit SHA、测试命令与遗留问题，不创建新的中间状态文档。
 
@@ -411,3 +412,194 @@ git diff --stat <last-merged-sha>..origin/<feature-branch>
 - TODO 文档初始提交：`d10796e`。
 - `d10796e` 已推送至 `origin/integration/research-workflow`，创建本规则前工作区 clean，远端与本地 ahead/behind 为 `0/0`。
 - 后续每次重大代码改动均先提交到该分支并 push 保存，再更新本文件中的实际 SHA 和验证结果；禁止直接 push `main`。
+
+## 11. 产品产物契约：从输入到投稿的唯一文件链
+
+本节吸收 2026-09-11 对四模块输入、输出和提示词的最新梳理。编号（1）到（10）是产品语义编号；落地时不得再以页面 Step 数字、聊天消息或临时文件名代替 artifact role。
+
+### 11.1 总链路
+
+```text
+（1）研究方向 +（2）研究目标
+  ->（3）Scopus/OpenAlex 检索策略
+  ->（4）第一轮候选文献 CSV
+  ->（5）候选课题分析 + 用户确认课题
+  ->（6）近三年核心文献 CSV/BibTeX/PDF 集合
+  ->（7）实验方案
+  ->（8）实验实现与结果
+  ->（9）论文 LaTeX 工程和 PDF
+  ->（10）审稿意见、Rebuttal 和决定
+```
+
+上下文衔接不依赖“让下一模块阅读上一段聊天”。每个 stage 创建新 run，并把所有必要上游文件的 `artifactId` 放进 `inputArtifactIds`。后端将这些引用及 SHA-256 固化到 `manifest.json`；Codex bridge 根据 manifest 生成文件清单和受控路径，让对应 Skill 读取真实文件。
+
+### 11.2 文件与 artifact role 映射
+
+| 编号 | 阶段 | 建议文件 | artifact role | 内容要求 |
+|---|---|---|---|---|
+| 1–2 | `topic.intake`（待新增） | `project-intake.json` | `project-intake` | 研究方向、研究目标、语言、时间范围、排除领域、目标文献量 |
+| 3 | `topic.first-search` | `search-strategy.json`、`scopus-query.txt` | `diagnostics` | 查询版本、TITLE-ABS-KEY 检索式、TITLE 排除项、年份限制、每轮命中量及修改原因 |
+| 4 | `topic.first-search` | `candidate-papers.csv` | `candidate-papers` | 标题、作者、期刊/会议、年份、DOI、摘要、引用数、来源、OpenAlex ID；建议 200–800 条 |
+| 5 | `topic.core-literature` | `candidate-topics.md`、`candidate-topics.json` | `candidate-topics` | 6–9 个论文级候选及元分析证据，并显式标出最创新、最可行、最平衡三个 |
+| 5 | `topic.confirmation` | `confirmed-topic.json` | `confirmed-topic` | 概括标题、一句话定义、技术路线、创新价值、立论依据、用户确认时间 |
+| 5 | `topic.confirmation` | `literature-handoff.md` | `literature-handoff` | 给实验模块的可读摘要，不复制整个 CSV |
+| 6 | `topic.core-literature` | `core-references.csv`、`references.bib` | `core-references` | 原则上近 3 年、约 30 篇；相关性优先于数量；每条保留来源和证据字段 |
+| 6 | `topic.core-literature` | `papers/<key>.pdf`、`paper-manifest.json` | `core-references` | PDF 是多个独立 artifact 或一个带成员 manifest 的受控 bundle；记录下载状态、合法来源 URL、SHA-256，未下载不得伪装成功 |
+| 7 | `experiment.plan` | `experiment-plan.md`、`experiment-config.json` | `experiment-plan`、`experiment-config` | 概要、baseline、数据集、指标与公式、5–8 个创新点、代码改动位置、预计提升、Go/No-Go |
+| 8 | `experiment.run` | `algorithm-details.md`、`experiment-results.md` | `method-architecture`、`experiment-results` | 至少三个选定创新点；主结果、baseline/对比算法、消融、误差范围和模拟/真实披露 |
+| 8 | `experiment.run` | `figures/comparison.png`、`figures/architecture.png` | `experiment-results`、`method-architecture` | 效果对比图与算法框架图；保存生成提示词、模型/工具、源数据 artifact ID；写作采用时再派生为 `paper-figure` |
+| 8 | `experiment.run` | `dataset-manifest.json` | `dataset-manifest` | 数据集名称、版本、划分、许可、下载位置或外部引用；不把大型数据集复制进项目目录 |
+| 9 | `writing.outline` | `paper-outline.md` | `paper-outline` | 标题、摘要结构、章节和证据映射 |
+| 9 | `writing.draft/final` | `paper.tex`、`references.bib`、`sections/*.tex` | `paper-source` | 引用必须能追溯到输入的 `core-references`，禁止模型虚构引用 |
+| 9 | `writing.final` | `paper-metadata.json`、`figures/*`、`paper.pdf` | `paper-metadata`、`paper-figure`、`paper-pdf` | CVPR 模板、编译日志和模拟数据声明；PDF 由确定性 LaTeX worker 生成 |
+| 10 | `submission.prepare` | `submission-package.zip` | `submission-package` | 论文、补充材料、元数据和检查清单 |
+| 10 | `submission.review.round1` | `review-round1.json`、`review-round1.md` | `review-round1` | 三位审稿人结构化意见、分数、置信度、问题和总体建议 |
+| 10 | `submission.rebuttal` | `rebuttal.md` | `rebuttal` | 按 reviewer/问题逐条响应，并引用论文或实验 artifact |
+| 10 | `submission.decision` | `decision.json` | `submission-decision` | 模拟或真实来源、决定、理由和时间；Demo 必须标记 simulated |
+
+说明：现有 `RESEARCH_STAGES` 缺少 `topic.intake`，`RESEARCH_ARTIFACT_ROLES` 缺少 `search-strategy`。第一版可把检索策略暂存为 `diagnostics` 并在 metadata 中写 `kind=search-strategy`；正式实现 TODO-F4 时补齐 stage、role 和允许输出映射，避免长期复用语义过宽的 diagnostics。
+
+### 11.3 第一轮与核心文献检索边界
+
+- 第一轮检索的目标是覆盖候选空间，不承诺每篇 100% 相关；记录查询演化，目标相关度约 80%，数量由页面给出建议区间 200–800，不用模型伪造数量。
+- 核心文献阶段以已确认课题为输入，优先近三年顶会顶刊和直接相关工作；约 30 篇只是上限建议，更少但更相关可以接受。
+- OpenAlex/Scopus/arXiv/Google Scholar 是 adapter 的来源选择，不是 artifact role。每条记录必须保存 `source`、稳定标识和来源 URL。
+- Google Scholar 没有稳定公开批量 API；不得通过未经授权的抓取假装成功。需要人工检索或合规连接器时，run 转为 `waiting_for_input`/`needs_credentials`。
+- PDF 下载必须遵守来源许可。只有实际下载且校验成功的文件才能登记 artifact；受限论文只保存元数据、链接和 `downloadStatus=unavailable`。
+
+### 11.4 显式存储与版本规则
+
+数据库是索引和关系事实源，文件系统是内容事实源：
+
+```text
+SQLite
+  research_projects       一项研究
+  research_runs           某阶段的一次不可变尝试
+  research_artifacts      文件元数据、角色、路径、SHA-256、simulated
+  research_agent_sessions 每个 project/module 的 Codex thread
+  research_agent_invocations run 与 thread/turn 的绑定
+
+NAVIVISOR_RESEARCH_WORK_ROOT/<projectId>/
+  project.json
+  uploads/
+  runs/<runId>/
+    manifest.json
+    temp/                  执行中，不能被下游选择
+    artifacts/             校验完成后的真实文件
+```
+
+必须补充的字段/规则：
+
+- `project-intake.json` 是（1）（2）的结构化事实源；页面草稿可临时存在内存，但点击保存后必须生成新 artifact。
+- artifact 不可覆盖。用户修改、重新检索、重新生成或重跑实验都产生新 run 和新 artifact ID。
+- `manifest.inputs[]` 固定保存 `artifactId`、`producerRunId`、`role`、`sha256`；下游永远可以重建当时上下文。
+- 增加 `artifact_relations` 表或等价 JSON 字段，表达 `derived_from`、`supersedes`、`contains`、`cites`；不要仅靠文件名推断关系。
+- 增加 `latest.json` 或数据库 stage-head 投影，仅用于默认选中最新成功版本，不改变旧 run 的输入。
+- 大型数据集和受限 PDF 不复制进数据库；保存受控文件或外部引用 manifest。数据库不得存 PDF/PNG blob。
+- `simulated=true` 必须沿整条派生链传播。只要论文结果依赖模拟实验，论文和投稿决定都要展示该标记。
+
+### 11.5 上下文装配规则
+
+每个 Skill 的输入必须有白名单，避免把整个项目无差别塞进上下文：
+
+| Skill | 必需输入 | 可选输入 |
+|---|---|---|
+| `research-topic` 第一轮 | `project-intake` | 历史 `search-strategy` |
+| `research-topic` 候选题 | `candidate-papers` | `project-intake`、检索 diagnostics |
+| `research-topic` 核心文献 | `confirmed-topic` | `candidate-papers`、`candidate-topics` |
+| `research-experiment` 方案 | `confirmed-topic`、`core-references` | `literature-handoff`、用户模板压缩包 |
+| `research-experiment` 运行 | `experiment-plan`、`experiment-config` | `dataset-manifest`、代码快照引用 |
+| `research-writing` | `confirmed-topic`、`core-references`、`experiment-results`、`method-architecture` | `paper-figure`、`literature-handoff` |
+| `research-submission` | `paper-source`、`paper-metadata`、`paper-pdf` | `experiment-results`、`paper-figure` |
+
+上下文过大时不截断关键来源：CSV/PDF 先由确定性工具生成索引或结构化摘要 artifact，Skill 同时拿到摘要与原始 artifact 引用。摘要必须记录来源行、DOI、页码或 chunk ID，便于回查。
+
+## 12. 统一 Demo 数据与按钮
+
+### TODO-F1：定义唯一 Demo bundle
+
+状态：未开始。
+
+用户后续提供的 Demo 数据应整理为一个版本化 bundle，而不是分别硬编码在四个页面：
+
+```text
+research-demo/<demoId>/
+  demo-manifest.json
+  project-intake.json
+  topic/search-strategy.json
+  topic/candidate-papers.csv
+  topic/candidate-topics.json
+  topic/confirmed-topic.json
+  topic/core-references.csv
+  topic/references.bib
+  experiment/experiment-plan.md
+  experiment/experiment-config.json
+  experiment/algorithm-details.md
+  experiment/experiment-results.md
+  experiment/figures/comparison.png
+  experiment/figures/architecture.png
+  writing/paper.tex
+  writing/references.bib
+  writing/figures/*
+  writing/paper.pdf
+  submission/review-round1.json
+  submission/rebuttal.md
+  submission/decision.json
+```
+
+`demo-manifest.json` 必须声明 `schemaVersion`、`demoId`、`version`、标题、说明、所有文件的 role/mediaType/sha256、stage、依赖关系及 `simulated=true`。Demo 可以缺少尚未提供的文件，但必须显式列入 `missing[]`，UI 不得伪装完整。
+
+### TODO-F2：实现后端 Demo 导入器
+
+状态：未开始。
+
+- 新增受控的 `POST /api/research/demo-imports`，body 只接受服务端已注册的 `demoId`，禁止浏览器传任意服务器路径。
+- 校验 bundle schema、文件白名单、大小、SHA-256 和路径边界。
+- 创建一个新的 research project，并按 stage 创建已完成的 simulated runs；所有文件走与真实结果相同的 artifact finalize 逻辑。
+- 重复点击默认创建新的 Demo 项目；如要复用已有项目，必须让用户显式选择，不能静默覆盖。
+- 返回 `projectId`、各 stage 的 `runId`、artifact IDs 和推荐跳转路由。
+- 给导入器加契约测试、路径逃逸测试、缺文件测试和 checksum 错误测试。
+
+### TODO-F3：统一“一键载入 Demo”组件
+
+状态：未开始。
+
+- 新建一个共享 `ImportResearchDemoButton`，四模块不再各写 `loadDemo()`、静态常量或 mock 注入按钮。
+- 按钮文案统一为“一键载入完整 Demo”；副文案明确“将创建一个独立的模拟研究项目，不覆盖当前项目”。
+- 导入时显示进度；成功后切换统一 `projectId`，按入口跳到相应模块，并从 Workflow API hydration。
+- 首页展示主入口；四模块只展示同一组件的紧凑变体。已在 Demo 项目内时改为“重新载入 Demo”，并再次提示会创建新项目。
+- 删除 `fillFromExperiment` 直接读取 Zustand、写作页面自动调用实验 `loadDemo()`、投稿页面独立 mock 数据注入等旁路。
+- UI 的 Demo 标识由 artifact/run 的 `simulated` 字段驱动，不能由页面路径或按钮点击后的内存布尔值驱动。
+
+完成判定：从首页单击一次即可创建并打开完整 Demo；随后依次打开四模块，数据来自同一个 project 的持久化 artifacts；刷新浏览器或重启服务后仍可恢复；所有模拟数据始终有清晰标识。
+
+## 13. 基于最新需求的实施顺序
+
+### TODO-F4：先补契约和项目上下文
+
+状态：未开始。
+
+- 为（1）到（10）的 JSON/CSV/Markdown 文件定义 JSON Schema 或列级契约。
+- 增加 `topic.intake` stage、正式 `search-strategy` role、对应允许输出映射、artifact 关系以及 stage-head/latest 投影。
+- 实现统一当前项目选择器；路由或全局 context 只保存 `projectId`，实际数据重新请求服务端。
+- 修复当前 generated client 的类型错误，确保 `pnpm --dir web build` 通过后再迁移页面。
+
+### TODO-F5：按依赖顺序迁移四模块
+
+状态：未开始。
+
+1. 开题：先落 `project-intake`、检索策略和第一轮 CSV，再实现候选题、确认课题、核心文献包。
+2. 实验：只消费确认课题和核心文献 artifacts；方案、结果、表格和两张图全部 finalize。
+3. 写作：移除 localStorage 业务事实和 `fillFromExperiment` 旁路；引用由 BibTeX/DOI 校验；确定性编译 CVPR PDF。
+4. 投稿：消费论文 artifacts；三位 reviewer、Rebuttal、decision 全部持久化；默认明确为模拟。
+
+### TODO-F6：最终闭环验收并回写本文
+
+状态：未开始。
+
+- 使用用户提供的同一份 Demo bundle 跑通（1）到（10）。
+- 对每个 run 检查输入 ID、SHA-256、输出 role、simulated 传播和来源关系。
+- 验证刷新、重启、重试、上游新版本、下游旧版本复现、缺文件、取消和失败恢复。
+- 执行第 7 节全部质量门；不得用删除测试或跳过类型检查换取通过。
+- 完成后直接更新 TODO-F1 至 F6 的状态、实际修改、验证命令、结果、commit SHA 和遗留问题，并同步更新第 10 节摘要表。
+- 除用户最终交付的 Demo 数据文件外，不创建日报、临时计划、阶段报告或其他中间 Markdown。
