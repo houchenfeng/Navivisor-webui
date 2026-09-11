@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useTimelineStore } from '@/stores/timeline-store';
 import { cn } from '@/lib/utils';
-import { SubmissionPrimerDialog } from '@/components/research-home/submission-primer-dialog';
 
 const modules = [
   {
@@ -107,7 +106,7 @@ function JourneyCurve() {
   return (
     <div className="pointer-events-none absolute inset-x-[10%] top-2 z-0 hidden md:block">
       <p className="mb-1 text-center text-xs font-extrabold tracking-[0.18em] text-[#1F4DCB]/80">
-        点击开始尝试 →
+        点击开始尝试
       </p>
       <svg className="mx-auto h-12 w-[88%] overflow-visible" viewBox="0 0 760 48" fill="none" aria-hidden="true">
         <defs>
@@ -198,9 +197,6 @@ export function ResearchHomePage() {
           <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-[#55739f] sm:text-lg">
             从一个研究领域，让AI陪你走完完整的研究旅程。
           </p>
-          <div className="mt-4">
-            <SubmissionPrimerDialog />
-          </div>
         </div>
 
         {/* Four module icon buttons + curved path */}

@@ -2,6 +2,7 @@
 import { useSimulation } from '../../context/SimulationContext';
 import { MOCK_NEWS, MOCK_ACTIVE_VENUES, MOCK_OPEN_VENUES, MOCK_ALL_VENUES } from '../../data/mockData';
 import GuideBubble from '../../components/GuideBubble';
+import { SubmissionPrimerDialog } from '../../components/SubmissionPrimerDialog';
 import { Clock } from 'lucide-react';
 
 export default function Step1OpenReviewHome() {
@@ -10,6 +11,13 @@ export default function Step1OpenReviewHome() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded border border-[#e0d6c8] bg-[#fff8ef] px-3 py-2.5">
+        <p className="text-sm font-medium leading-6 text-[#5c4033]">
+          我们会模拟 CVPR 顶会的投稿全流程，请和 AI 一起体验一下会议投稿吧~！
+        </p>
+        <SubmissionPrimerDialog />
+      </div>
+
       {/* News section */}
       <div className="mb-8 border border-[#ccc] bg-white">
         <div className="flex items-center justify-between border-b border-[#ccc] px-3 py-2">
