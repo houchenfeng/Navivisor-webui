@@ -331,37 +331,6 @@ pnpm test
 - 四个路由可访问，错误/空状态/取消/审批/用户输入可见。
 - 根测试的既有 Windows 环境失败必须与本次新增回归分开记录。
 
-### 7.1 四模块首轮运行测试记录（2026-09-11）
-
-测试环境：Windows、本地生产构建、`http://localhost:8172`、Codex app-server 正常初始化；桌面视口及 390×844 移动视口。使用临时 API key 和临时 SQLite，未使用用户业务数据。
-
-自动化结果：
-
-- `pnpm build`：通过。
-- `pnpm test -- src/research-workflow/research-result-validator.service.spec.ts src/research-topic/research-topic.service.spec.ts src/threads/threads.controller.spec.ts`：3 个文件、23 项测试通过。
-- `cd web && pnpm build`：通过。
-- `cd web && pnpm test`：20 个文件、195 项测试通过。
-
-浏览器烟雾测试：
-
-| 模块 | 页面加载 | 主要交互                                                  | Console       | 结果                   |
-| ---- | -------- | --------------------------------------------------------- | ------------- | ---------------------- |
-| 开题 | 通过     | 教学示例填充、OpenAlex 试检索进入 running                 | 无 error/warn | 部分可用               |
-| 实验 | 通过     | SAM Demo 导入、生成方案并进入 `/research/experiment/plan` | 无 error/warn | Demo 可用              |
-| 写作 | 通过     | 无可操作工作流                                            | 无 error/warn | 未实现                 |
-| 投稿 | 通过     | 首页 → CVPR 会议 → 投稿表单                               | 无 error/warn | 页面可用，服务链未迁移 |
-
-发现的问题：
-
-1. **P0：写作模块未实现。** `/research/paper` 只有“在这里实现写作模块”占位文字，没有 artifact 选择、outline/draft/final run、版本恢复或 PDF 产出。由 TODO-C3 处理。
-2. **P0：投稿模型请求仍指向旧服务。** `apiClient.ts` 和 `config/api.ts` 硬编码 cpolar，`apiService.ts` fallback 到 `localhost:3001`；当前本地后端日志中没有投稿 Workflow 请求。由 TODO-C4 处理。
-3. **P1：开题流程只实现第一步。** 页面把候选课题与核心文献分析标为“待后续能力接入”，无法完成到实验的 artifact handoff。由 TODO-C1 处理。
-4. **P1：实验数据仍为离线 Demo/localStorage。** Demo 能生成方案，但不是从统一 project/artifact 恢复，页面刷新和跨模块交接仍依赖 `experiment-store.ts`。由 TODO-C2 处理。
-5. **P1：投稿 AI Assist 无反馈。** 未选择 PDF 时点击任意 `AI Assist` 不改变字段，也不显示“请先上传 PDF”等提示；代码在 `handleAIAssist` 中仅处理 `selectedFile` 分支后直接返回。TODO-C4 迁移时必须提供明确禁用态或错误提示。
-6. **P2：投稿移动端存在横向溢出。** 390×844 下页面底部出现横向滚动条，OpenReview 顶栏和步骤条内容超出视口；迁移投稿页面时增加响应式回归测试。
-
-本轮测试没有修改业务代码；上述问题均已映射到现有 TODO，避免创建独立 bug 报告文件。
-
 ## 8. 建议提交与 push 节奏
 
 每个 commit 只做一个可审查阶段：
