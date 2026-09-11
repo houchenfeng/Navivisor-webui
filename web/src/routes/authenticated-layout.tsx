@@ -262,7 +262,10 @@ export function AuthenticatedLayout() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-full overflow-hidden bg-background">
+      <div className={cn(
+        'flex h-full overflow-hidden bg-background',
+        !pathname.startsWith('/research/submit') && 'navivisor-shell',
+      )}>
         {/* Desktop: inline sidebar with collapse animation */}
         {isDesktop && (
           <aside

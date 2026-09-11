@@ -65,41 +65,49 @@ body {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Writing module tokens (text-brand-* / text-ink*) */
+  --color-brand-100: #e8f0ff;
+  --color-brand-300: #a6c7ff;
+  --color-brand-500: #1f4dcb;
+  --color-brand-700: #173778;
+  --color-ink: #102c65;
+  --color-ink-sub: #55739f;
 }
 
 /* ══════════════════════════════════════════════════════
    LIGHT THEME — subtle blue-tinted OKLCH palette
    ══════════════════════════════════════════════════════ */
 :root {
-  --background: oklch(0.985 0.002 240);
+  --background: #f5f9ff;
   --foreground: oklch(0.16 0.01 248);
   --card: oklch(0.997 0.002 245);
   --card-foreground: oklch(0.16 0.01 248);
   --popover: oklch(0.997 0.002 245);
   --popover-foreground: oklch(0.16 0.01 248);
-  --primary: oklch(0.22 0.03 255);
-  --primary-foreground: oklch(0.985 0.002 240);
-  --secondary: oklch(0.96 0.004 245);
+  --primary: #1f4dcb;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f0ff;
   --secondary-foreground: oklch(0.22 0.01 248);
   --muted: oklch(0.96 0.004 245);
   --muted-foreground: oklch(0.55 0.01 250);
-  --accent: oklch(0.96 0.004 245);
+  --accent: #dce9ff;
   --accent-foreground: oklch(0.22 0.01 248);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.90 0.008 246);
   --input: oklch(0.90 0.008 246);
-  --ring: oklch(0.60 0.04 255);
-  --chart-1: oklch(0.87 0.01 245);
-  --chart-2: oklch(0.556 0.01 248);
-  --chart-3: oklch(0.439 0.01 250);
-  --chart-4: oklch(0.371 0.01 250);
-  --chart-5: oklch(0.269 0.01 250);
+  --ring: #1f4dcb;
+  --chart-1: #1f4dcb;
+  --chart-2: #4779e0;
+  --chart-3: #70a0ef;
+  --chart-4: #a6c7ff;
+  --chart-5: #d8e7ff;
   --radius: 0.875rem;
   --sidebar: oklch(0.98 0.003 245);
   --sidebar-foreground: oklch(0.16 0.01 248);
-  --sidebar-primary: oklch(0.22 0.03 255);
+  --sidebar-primary: #1f4dcb;
   --sidebar-primary-foreground: oklch(0.985 0.002 240);
-  --sidebar-accent: oklch(0.96 0.004 245);
+  --sidebar-accent: #dce9ff;
   --sidebar-accent-foreground: oklch(0.22 0.01 248);
   --sidebar-border: oklch(0.90 0.008 246);
   --sidebar-ring: oklch(0.60 0.04 255);
@@ -206,6 +214,122 @@ body {
   html {
     @apply font-sans;
   }
+}
+
+/* Navivisor brand layer. The OpenReview reproduction is deliberately excluded
+   by AuthenticatedLayout, so its page-level visual language remains intact. */
+.navivisor-shell {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(166, 199, 255, 0.7), transparent 34rem),
+    linear-gradient(145deg, #eef5ff 0%, #f8fbff 48%, #dce9ff 100%);
+}
+
+.navivisor-shell .glass-bar {
+  background: linear-gradient(90deg, rgba(255,255,255,.88), rgba(236,244,255,.78));
+  border-bottom-color: rgba(31, 77, 203, 0.1);
+}
+
+.navivisor-auth,
+.navivisor-home {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255,255,255,.95), transparent 30rem),
+    radial-gradient(circle at 88% 5%, rgba(31,77,203,.18), transparent 28rem),
+    linear-gradient(145deg, #a6c7ff 0%, #d9e8ff 48%, #f7fbff 100%);
+}
+
+/* Keep dark theme readable: brand gradients are light-mode only. */
+.dark .navivisor-shell,
+.dark .navivisor-auth,
+.dark .navivisor-home {
+  background: transparent;
+}
+
+.dark .navivisor-shell .glass-bar {
+  background: var(--glass-4-surface);
+  border-bottom-color: var(--glass-border-subtle);
+}
+
+.navivisor-logo {
+  filter: drop-shadow(0 7px 12px rgba(31, 77, 203, 0.18));
+  transition: transform 300ms cubic-bezier(.2,.8,.2,1), filter 300ms ease;
+}
+
+.navivisor-logo:hover {
+  transform: translateY(-2px) rotate(-2deg);
+  filter: drop-shadow(0 10px 16px rgba(31, 77, 203, 0.28));
+}
+
+.brand-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(2px);
+  opacity: .7;
+  animation: brand-float 9s ease-in-out infinite;
+}
+
+.brand-orb-one {
+  width: 26rem;
+  height: 26rem;
+  left: -8rem;
+  top: -10rem;
+  background: rgba(255,255,255,.55);
+}
+
+.brand-orb-two {
+  width: 20rem;
+  height: 20rem;
+  right: -5rem;
+  bottom: -7rem;
+  background: rgba(31,77,203,.14);
+  animation-delay: -4s;
+}
+
+.brand-enter {
+  animation: brand-enter 600ms cubic-bezier(.16,1,.3,1) both;
+}
+
+.journey-card {
+  animation: brand-enter 600ms cubic-bezier(.16,1,.3,1) both;
+  transition: transform 300ms cubic-bezier(.2,.8,.2,1), box-shadow 300ms ease, border-color 300ms ease;
+}
+
+.journey-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -20% -70% 30%;
+  height: 10rem;
+  border-radius: 50%;
+  background: rgba(166,199,255,.3);
+  transition: transform 400ms ease;
+  pointer-events: none;
+}
+
+.journey-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(31,77,203,.26);
+  box-shadow: 0 24px 58px rgba(31,77,203,.17);
+}
+
+.journey-card:hover::after { transform: translate(-1rem, -1rem) scale(1.1); }
+
+@keyframes brand-enter {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes brand-float {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  50% { transform: translate3d(1.25rem,-1rem,0) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-enter, .brand-orb, .journey-card { animation: none; }
+  .journey-card, .navivisor-logo { transition: none; }
+}
+
+@media (max-width: 420px) {
+  .navivisor-auth form { padding: 1.5rem; }
+  .navivisor-home h1 { font-size: 2.5rem; }
 }
 
 /* ══════════════════════════════════════════════════════

@@ -29,6 +29,7 @@ import { useMessageVersions } from '@/hooks/use-message-branches';
 import { BranchGraphDialog } from '@/components/branches/branch-graph-dialog';
 import { AccountRateLimitBadge } from './account-rate-limit-badge';
 import { McpStatusBadge } from './mcp-status-badge';
+import { BrandLogo } from '@/components/brand-logo';
 
 /** Mobile overflow menu — closes after each action. */
 function MobileOverflowMenu({
@@ -234,7 +235,7 @@ export function ChatHeader({ dark, onToggleDark, onToggleDiagnostics }: Props) {
               )}
             </div>
           ) : (
-            <h1 className="text-lg font-semibold tracking-tight">Codex WebUI</h1>
+            <BrandLogo className="origin-left scale-90" />
           )}
         </div>
         {/* Always visible badges */}
