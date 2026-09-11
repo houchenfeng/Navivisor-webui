@@ -270,7 +270,7 @@ export function AuthenticatedLayout() {
         {isDesktop && (
           <aside
             className={cn(
-              'relative z-10 shrink-0 overflow-hidden border-r border-[var(--glass-border-subtle)] transition-[width] duration-200 ease-in-out',
+              'relative z-10 shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out',
               desktopSidebarCollapsed ? 'w-0 border-r-0' : 'w-64',
             )}
           >

@@ -98,11 +98,11 @@ export function ThreadSidebar() {
   // ── Layout store (sidebar view + collapsed groups + collapse) ────────
   const sidebarView = useLayoutStore((s) => s.sidebarView);
   const setSidebarView = useLayoutStore((s) => s.setSidebarView);
-  const collapsedGroupKeys = useLayoutStore((s) => s.collapsedGroupKeys);
+  const expandedGroupKeys = useLayoutStore((s) => s.expandedGroupKeys);
   const toggleCollapsedGroup = useLayoutStore((s) => s.toggleCollapsedGroup);
   const toggleDesktopSidebarCollapsed = useLayoutStore((s) => s.toggleDesktopSidebarCollapsed);
-  // Derive Set<string> for child components that expect it
-  const collapsedGroups = useMemo(() => new Set(collapsedGroupKeys), [collapsedGroupKeys]);
+  // Groups are collapsed by default; this set tracks what the user expanded.
+  const expandedGroups = useMemo(() => new Set(expandedGroupKeys), [expandedGroupKeys]);
 
   // ── Local UI state (ephemeral) ─────────────────────────────────────
   const [cursor, setCursor] = useState<string | null>(null);
@@ -452,17 +452,15 @@ export function ThreadSidebar() {
 
   // ── Render ──────────────────────────────────────────────────────────
   return (
-    <div className="flex h-full flex-col bg-card/80">
+    <div className="navivisor-sidebar flex h-full flex-col">
       {/* Global actions */}
       <div className="space-y-0.5 px-2 py-2">
         <button
           type="button"
           onClick={() => void navigate({ to: '/research/home' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'home'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'home' && 'navivisor-nav-item-active',
           )}
         >
           <Home className="h-4 w-4 shrink-0" />
@@ -472,10 +470,8 @@ export function ThreadSidebar() {
           type="button"
           onClick={() => void navigate({ to: '/research/topic' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'proposal'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'proposal' && 'navivisor-nav-item-active',
           )}
         >
           <ClipboardList className="h-4 w-4 shrink-0" />
@@ -485,10 +481,8 @@ export function ThreadSidebar() {
           type="button"
           onClick={() => void navigate({ to: '/research/experiment' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'experiment'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'experiment' && 'navivisor-nav-item-active',
           )}
         >
           <FlaskConical className="h-4 w-4 shrink-0" />
@@ -498,10 +492,8 @@ export function ThreadSidebar() {
           type="button"
           onClick={() => void navigate({ to: '/research/paper' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'writing'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'writing' && 'navivisor-nav-item-active',
           )}
         >
           <PenLine className="h-4 w-4 shrink-0" />
@@ -511,26 +503,22 @@ export function ThreadSidebar() {
           type="button"
           onClick={() => void navigate({ to: '/research/submit' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'submission'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'submission' && 'navivisor-nav-item-active',
           )}
         >
           <Send className="h-4 w-4 shrink-0" />
           投稿
         </button>
 
-        <Separator className="my-2" />
+        <Separator className="my-2 bg-[rgba(31,77,203,0.12)]" />
 
         <button
           type="button"
           onClick={() => void navigate({ to: '/files' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'files'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'files' && 'navivisor-nav-item-active',
           )}
         >
           <FolderOpen className="h-4 w-4 shrink-0" />
@@ -540,10 +528,8 @@ export function ThreadSidebar() {
           type="button"
           onClick={() => void navigate({ to: '/terminal' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'terminal'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'terminal' && 'navivisor-nav-item-active',
           )}
         >
           <Terminal className="h-4 w-4 shrink-0" />
@@ -553,10 +539,8 @@ export function ThreadSidebar() {
           type="button"
           onClick={() => void navigate({ to: '/integrations', search: { tab: 'plugins' } })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'integrations'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'integrations' && 'navivisor-nav-item-active',
           )}
         >
           <Puzzle className="h-4 w-4 shrink-0" />
@@ -566,10 +550,8 @@ export function ThreadSidebar() {
           type="button"
           onClick={() => void navigate({ to: '/settings' })}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-            activeView === 'settings'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            'navivisor-nav-item flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
+            activeView === 'settings' && 'navivisor-nav-item-active',
           )}
         >
           <Settings className="h-4 w-4 shrink-0" />
@@ -577,11 +559,11 @@ export function ThreadSidebar() {
         </button>
       </div>
 
-      <Separator />
+      <Separator className="bg-[rgba(31,77,203,0.12)]" />
 
       {/* Thread list header */}
       <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-xs font-medium text-muted-foreground">{t('Threads')}</span>
+        <span className="text-xs font-medium text-[#5d789f]">{t('Threads')}</span>
         <Button
           size="icon"
           variant="ghost"
@@ -599,7 +581,7 @@ export function ThreadSidebar() {
           <WorkspaceOverview
             archivedThreads={archivedThreads}
             workspaceGroups={workspaceGroups}
-            collapsedGroups={collapsedGroups}
+            expandedGroups={expandedGroups}
             isLoading={overviewThreadsQuery.isLoading || overviewArchivedQuery.isLoading}
             onToggleCollapse={toggleCollapsedGroup}
             onOpenArchivedDetail={openArchivedDetail}

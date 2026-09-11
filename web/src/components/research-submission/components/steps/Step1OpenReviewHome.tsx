@@ -44,9 +44,9 @@ export default function Step1OpenReviewHome() {
           <h2 className="mb-2 border-b border-[#999] pb-1 text-xl font-bold text-[#333]">{t.openForSubmissions}</h2>
           <ul className="space-y-2">
             {MOCK_OPEN_VENUES.map((venue) => (
-              <li key={venue.id} className={`relative ${venue.highlight ? 'rounded bg-[#fef3c7]/40 p-1 -ml-1' : ''}`}>
+              <li key={venue.id} className={`relative ${venue.highlight ? 'rounded-xl bg-[#fef3c7]/70 p-2 -ml-1 ring-2 ring-[#f59e0b]/50' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <button type="button" onClick={() => venue.highlight && goToStep(2)} className={`text-left text-[#336699] hover:underline ${venue.highlight ? 'font-bold' : ''}`}>
+                  <button type="button" onClick={() => venue.highlight && goToStep(2)} className={`text-left text-[#336699] hover:underline ${venue.highlight ? 'text-lg font-extrabold' : ''}`}>
                     {venue.name}
                   </button>
                   {venue.highlight && <GuideBubble text={t.guideClickVenue} position="left" className="-left-1" />}

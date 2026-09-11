@@ -75,7 +75,7 @@ export default function Step4FirstRoundResult() {
           <div className="p-4">
             <p className="mb-2 text-sm font-semibold text-[#e67e22]">{t.decision}: {t.pending}</p>
             <p className="text-sm leading-relaxed text-[#444]">{t.initialReviewCompleted}</p>
-            <div className="mt-3 rounded border border-[#1565c0]/30 bg-[#e3f2fd]/40 px-3 py-2"><p className="text-xs text-[#1565c0]">💡 {t.rebuttalNote}</p></div>
+            <div className="mt-3 rounded-xl border-2 border-[#f59e0b] bg-gradient-to-br from-[#fff7ed] via-[#fef3c7] to-[#fde68a] px-4 py-3 shadow-[0_8px_20px_rgba(245,158,11,0.28)]"><p className="text-base font-bold text-[#7c2d12]">💡 {t.rebuttalNote}</p></div>
           </div>
         </div>
         <div className="mb-6">
@@ -107,14 +107,17 @@ export default function Step4FirstRoundResult() {
         </div>
         <div className="mb-6">
           <div className="mb-3"><h2 className="text-xl font-bold text-[#800000]">{t.authorRebuttal}</h2><p className="mt-1 text-sm text-[#555]">{t.authorRebuttalDesc}</p></div>
-          <div className="mb-4 rounded border border-[#b3d1e8] bg-[#e8f2fa] p-3">
-            <div className="mb-2 flex items-center gap-1.5"><Lightbulb className="size-4 text-[#2c5f7a]" /><span className="text-sm font-bold text-[#1a4055]">{t.rebuttalTips}</span></div>
-            <ul className="space-y-1 text-xs text-[#222]">{[t.rebuttalTip1, t.rebuttalTip2, t.rebuttalTip3, t.rebuttalTip4, t.rebuttalTip5].map((tip, i) => <li key={i} className="flex gap-2"><Check className="mt-0.5 size-3 shrink-0 text-[#2c5f7a]" /><span>{tip}</span></li>)}</ul>
+          <div className="mb-4 rounded-xl border-2 border-[#f59e0b] bg-gradient-to-br from-[#fff7ed] via-[#fef3c7] to-[#fde68a] p-4 shadow-[0_8px_20px_rgba(245,158,11,0.28)]">
+            <div className="mb-2 flex items-center gap-2"><Lightbulb className="size-5 text-[#d97706]" /><span className="text-base font-extrabold text-[#7c2d12]">{t.rebuttalTips}</span></div>
+            <ul className="space-y-1.5 text-sm font-semibold text-[#7c2d12]">{[t.rebuttalTip1, t.rebuttalTip2, t.rebuttalTip3, t.rebuttalTip4, t.rebuttalTip5].map((tip, i) => <li key={i} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-[#d97706]" /><span>{tip}</span></li>)}</ul>
           </div>
           <div className="border-2 border-[#9a2c22] bg-[#fef9e7]">
             <div className="flex items-center justify-between border-b-2 border-[#9a2c22] bg-[#fef3c7] px-3 py-2">
               <span className="text-sm font-bold text-[#800000]">Rebuttal by Authors</span>
-              <button type="button" onClick={handleAIAssist} disabled={isAIGenerating} className="flex items-center gap-1 rounded border border-[#999] bg-white px-2 py-0.5 text-xs text-[#333] hover:bg-[#f5f0e0] disabled:opacity-60">{isAIGenerating ? <><Loader2 className="size-3 animate-spin" />{t.generating}</> : <><Wand2 className="size-3" />{t.aiAssist}</>}</button>
+              <span className="relative inline-flex">
+                <button type="button" onClick={handleAIAssist} disabled={isAIGenerating} className="flex items-center gap-1.5 rounded-md border-2 border-[#800000] bg-white px-3 py-1.5 text-sm font-bold text-[#800000] hover:bg-[#fff5f5] disabled:opacity-60">{isAIGenerating ? <><Loader2 className="size-4 animate-spin" />{t.generating}</> : <><Wand2 className="size-4" />{t.aiAssist}</>}</button>
+                {!form.rebuttal && !isAIGenerating && <GuideBubble text={t.guideAiAssist} position="left" />}
+              </span>
             </div>
             <div className="p-3">
               <textarea value={form.rebuttal} onChange={(e) => setFormField('rebuttal', e.target.value)} rows={14} placeholder="Type your rebuttal here. Respond to reviewer comments point by point..." className="w-full resize-y rounded-sm border border-[#ccc] bg-white p-3 text-sm leading-relaxed text-[#333] focus:outline-none focus:ring-1 focus:ring-[#9a2c22]" />

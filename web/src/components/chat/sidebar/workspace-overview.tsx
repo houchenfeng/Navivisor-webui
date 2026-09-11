@@ -28,7 +28,7 @@ function ThreadSkeleton() {
 interface Props {
   archivedThreads: ThreadDto[];
   workspaceGroups: WorkspaceGroup[];
-  collapsedGroups: Set<string>;
+  expandedGroups: Set<string>;
   isLoading: boolean;
   onToggleCollapse: (key: string) => void;
   onOpenArchivedDetail: () => void;
@@ -40,7 +40,7 @@ interface Props {
 export function WorkspaceOverview({
   archivedThreads,
   workspaceGroups,
-  collapsedGroups,
+  expandedGroups,
   isLoading,
   onToggleCollapse,
   onOpenArchivedDetail,
@@ -49,7 +49,7 @@ export function WorkspaceOverview({
   renderThreadRow,
 }: Props) {
   const { t } = useTranslation();
-  const archivedCollapsed = collapsedGroups.has('__archived__');
+  const archivedCollapsed = !expandedGroups.has('__archived__');
 
   if (isLoading) {
     return (
@@ -117,7 +117,7 @@ export function WorkspaceOverview({
 
       {/* Workspace groups */}
       {workspaceGroups.map((group) => {
-        const collapsed = collapsedGroups.has(group.cwd);
+        const collapsed = !expandedGroups.has(group.cwd);
         return (
           <section key={group.cwd}>
             <div className="mb-0.5 flex items-center gap-1 px-2" title={group.cwd}>

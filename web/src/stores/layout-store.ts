@@ -5,7 +5,7 @@
  *
  * Persisted fields (localStorage via Zustand persist):
  *   - desktopSidebarCollapsed: whether desktop sidebar is manually collapsed
- *   - collapsedGroupKeys: workspace group collapse preferences
+ *   - expandedGroupKeys: workspace groups the user has expanded (default: all collapsed)
  *
  * Runtime-only fields (reset on refresh):
  *   - sidebarOpen: mobile/tablet Sheet open state
@@ -27,8 +27,8 @@ interface LayoutState {
   // ── Persisted ──────────────────────────────────────────────────────
   /** Whether the desktop sidebar is manually collapsed. */
   desktopSidebarCollapsed: boolean;
-  /** Workspace group keys that are collapsed in the sidebar thread list. */
-  collapsedGroupKeys: string[];
+  /** Workspace group keys that are expanded in the sidebar thread list. */
+  expandedGroupKeys: string[];
 
   // ── Runtime only ───────────────────────────────────────────────────
   /** Whether the mobile/tablet sidebar Sheet is open. */
@@ -42,7 +42,7 @@ interface LayoutState {
   setDesktopSidebarCollapsed: (collapsed: boolean) => void;
   toggleDesktopSidebarCollapsed: () => void;
   setSidebarView: (view: SidebarViewState) => void;
-  /** Toggle a workspace group's collapsed state. */
+  /** Toggle a workspace group's collapsed/expanded state. */
   toggleCollapsedGroup: (key: string) => void;
   /** Check if a workspace group is collapsed. */
   isGroupCollapsed: (key: string) => boolean;
@@ -53,7 +53,7 @@ export const useLayoutStore = create<LayoutState>()(
     (set, get) => ({
       // ── Persisted defaults ───────────────────────────────────────────
       desktopSidebarCollapsed: false,
-      collapsedGroupKeys: [],
+      expandedGroupKeys: [],
 
       // ── Runtime defaults ─────────────────────────────────────────────
       sidebarOpen: false,
@@ -72,21 +72,21 @@ export const useLayoutStore = create<LayoutState>()(
 
       toggleCollapsedGroup: (key) =>
         set((s) => {
-          const keys = s.collapsedGroupKeys;
+          const keys = s.expandedGroupKeys;
           return {
-            collapsedGroupKeys: keys.includes(key)
+            expandedGroupKeys: keys.includes(key)
               ? keys.filter((k) => k !== key)
               : [...keys, key],
           };
         }),
 
-      isGroupCollapsed: (key) => get().collapsedGroupKeys.includes(key),
+      isGroupCollapsed: (key) => !get().expandedGroupKeys.includes(key),
     }),
     {
-      name: 'codex.webui.layout',
+      name: 'codex.webui.layout.v2',
       partialize: (state) => ({
         desktopSidebarCollapsed: state.desktopSidebarCollapsed,
-        collapsedGroupKeys: state.collapsedGroupKeys,
+        expandedGroupKeys: state.expandedGroupKeys,
       }),
     },
   ),

@@ -221,6 +221,49 @@ body {
   background: linear-gradient(108deg, #f5f6f5 0%, #e5f0fd 51%, #bfdcff 100%);
 }
 
+/* Sidebar: same blue family as modules, but flatter/cooler so content stays primary. */
+.navivisor-sidebar {
+  background: linear-gradient(180deg, #eef4fc 0%, #e3edf9 48%, #d9e7f7 100%);
+  color: #173778;
+  border-right: 1px solid rgba(31, 77, 203, 0.12);
+}
+
+.navivisor-sidebar .navivisor-nav-item {
+  color: #5d789f;
+}
+
+.navivisor-sidebar .navivisor-nav-item:hover {
+  background: rgba(255, 255, 255, 0.55);
+  color: #173778;
+}
+
+.navivisor-sidebar .navivisor-nav-item-active {
+  background: linear-gradient(135deg, #1f4dcb, #3a6fe0);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(31, 77, 203, 0.22);
+}
+
+.dark .navivisor-sidebar {
+  background: oklch(0.18 0.012 250);
+  color: var(--sidebar-foreground);
+  border-right-color: var(--sidebar-border);
+}
+
+.dark .navivisor-sidebar .navivisor-nav-item {
+  color: var(--muted-foreground);
+}
+
+.dark .navivisor-sidebar .navivisor-nav-item:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.dark .navivisor-sidebar .navivisor-nav-item-active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: none;
+}
+
 /* Navivisor brand layer. The OpenReview reproduction is deliberately excluded
    by AuthenticatedLayout, so its page-level visual language remains intact. */
 .navivisor-shell {
@@ -330,6 +373,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .brand-enter, .brand-orb, .journey-card { animation: none; }
   .journey-card, .navivisor-logo { transition: none; }
+  .home-journey-path { animation: none; stroke-dasharray: none; }
+}
+
+.home-journey-path {
+  stroke-dasharray: 12 10;
+  animation: home-journey-flow 1.8s linear infinite;
+}
+
+@keyframes home-journey-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -44; }
 }
 
 @media (max-width: 420px) {
