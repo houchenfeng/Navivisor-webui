@@ -1205,3 +1205,11 @@ git merge --no-ff origin/feat/research-topic
 10. 扩充了测试和交付门槛，覆盖 Skill 路径伪造、Codex 事件串线、审批竞态、app-server 重启、恶意 result.json、跨项目读取、模拟数据传播和外部模型 URL 回归。
 
 当前文档阶段只完成架构分析和执行设计，没有实际合并三个功能分支，也没有实现上述业务代码。下一位 AI 应从 TASK-0.1 开始，逐项提交并在本节下面继续追加“实际完成 SHA / 测试结果 / 未完成项”，不要另建平行计划文档。
+
+### 实际执行记录
+
+- TASK-0.1：完成。远端基线仍为 `main@1bb84f5`、topic@`fe5cd2e`、writing@`38c98d0`、submission@`c3246d6`。
+- TASK-0.2：完成。集成分支为 `integration/research-workflow`；三个功能分支均以 `--no-ff` merge 保留 ancestry；投稿 router 冲突已手工重建为四模块并存。
+- TASK-0.3：完成。新增 `.gitattributes`，保留 main 的 `web/pnpm-workspace.yaml` 配置。
+- 基线验证：根目录 `pnpm build` 通过；`web/pnpm build` 通过；`web/pnpm test` 为 20 files / 195 tests 全通过。
+- 基线已知问题：根目录测试为 36 files 通过、2 files 失败，合计 309 tests 通过、5 tests 失败。失败来自 Windows 环境下用户主目录同时是 FilesService 默认允许根导致 3 个“outside root”断言不成立、无 symlink 权限导致 1 项失败，以及并行 schema/AppModule 测试缺 `WEBUI_API_KEY` 并发生 SQLite 临时文件锁。后续应单独修复，不能误记为本次 workflow 新测试回归。
