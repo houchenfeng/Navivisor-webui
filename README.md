@@ -73,6 +73,8 @@ cd web && pnpm dev      # 前端，常见 http://localhost:5173 或 5174
 
 ## 产物如何衔接
 
+最新工作目录设计：一篇论文对应一个用户在首页选择的工作目录，四模块共享该目录中的 `topic/`、`experiment/`、`writing/`、`submission/`。对话窗口显示项目简述和产物链接；统一“从工作目录载入 Demo”按钮读取目录中的示例文件。此能力尚待实现，文件格式、视频异常检测示例与实施清单见 [TODO 第 14–18 节](./docs/four-module-workflow-migration-todo.md#14-最新产品决定一篇论文一个工作目录)。
+
 - 同一项研究始终使用同一个 `projectId`。
 - 每次检索、生成、实验、写作或审稿都是一个独立 `runId`，失败重试也创建新 run。
 - CSV、PDF、BibTeX、Markdown、PNG、TeX 等文件完成校验后获得独立 `artifactId` 和 SHA-256。
