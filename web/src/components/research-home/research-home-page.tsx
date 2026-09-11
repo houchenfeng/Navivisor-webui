@@ -30,12 +30,12 @@ export function ResearchHomePage() {
       <section className="brand-enter mx-auto flex w-full max-w-6xl flex-col justify-center py-5 lg:py-10">
         <BrandLogo />
         <div className="mt-9 max-w-3xl">
-          <p className="text-sm font-bold tracking-[0.2em] text-[#1F4DCB] uppercase">Your research voyage</p>
+          <p className="text-sm font-bold tracking-[0.2em] text-[#1F4DCB]">你好，研究者</p>
           <h1 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#102c65] sm:text-5xl lg:text-6xl">
-            让研究路径，看得见。
+            欢迎来到Navivisor研途启航
           </h1>
           <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-[#55739f] sm:text-lg">
-            从一个好问题出发，在同一条数据链路中完成开题、实验、写作与投稿。
+            从一个研究领域，让AI陪你走完完整的研究旅程。
           </p>
         </div>
 

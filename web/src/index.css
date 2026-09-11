@@ -216,6 +216,11 @@ body {
   }
 }
 
+/* Shared page wash for research modules (topic / experiment / writing). */
+.navivisor-module {
+  background: linear-gradient(108deg, #f5f6f5 0%, #e5f0fd 51%, #bfdcff 100%);
+}
+
 /* Navivisor brand layer. The OpenReview reproduction is deliberately excluded
    by AuthenticatedLayout, so its page-level visual language remains intact. */
 .navivisor-shell {

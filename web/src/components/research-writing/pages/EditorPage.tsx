@@ -46,7 +46,7 @@ export default function EditorPage() {
   };
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(108deg,#f5f6f5_0%,#e5f0fd_51%,#bfdcff_100%)] p-4">
+    <main className="navivisor-module flex min-h-0 flex-1 flex-col p-4">
       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/60 shadow-lg backdrop-blur">
         <header className="flex items-center gap-4 border-b border-blue-100 bg-white/70 px-6 py-3">
           <Button
