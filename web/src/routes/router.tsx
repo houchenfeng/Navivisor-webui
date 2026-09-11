@@ -10,20 +10,20 @@ import {
   Outlet,
 } from '@tanstack/react-router';
 import { getApiToken } from '@/auth-token';
-import { LoginRoute } from './login-route';
+import { BASE_PATH } from '@/base-path';
+import { IntegrationsPage } from '@/components/integrations/integrations-page';
+import { ExperimentDemo } from '@/components/research-experiment/experiment-demo';
+import { SubmissionPage } from '@/components/research-submission/submission-page';
+import { TopicPage } from '@/components/research-topic/topic-page';
+import { WritingPage } from '@/components/research-writing/writing-page';
+import { SettingsPage } from '@/components/settings/settings-page';
 import { AuthenticatedLayout } from './authenticated-layout';
 import { ChatView } from './chat-view';
-import { ThreadView } from './thread-view';
-import { FilesRoute } from './files-route';
-import { TerminalRoute } from './terminal-route';
 import { DiagnosticsRoute } from './diagnostics-route';
-import { ResearchModuleRoute } from './research-module-route';
-import { ExperimentDemo } from '@/components/research-experiment/experiment-demo';
-import { TopicPage } from '@/components/research-topic/topic-page';
-import { SettingsPage } from '@/components/settings/settings-page';
-import { IntegrationsPage } from '@/components/integrations/integrations-page';
-import { BASE_PATH } from '@/base-path';
-import { WritingPage } from '@/components/research-writing/writing-page';
+import { FilesRoute } from './files-route';
+import { LoginRoute } from './login-route';
+import { TerminalRoute } from './terminal-route';
+import { ThreadView } from './thread-view';
 
 export type LoginSearch = { redirect: string };
 export type IntegrationsSearch = { tab: 'plugins' | 'apps' | 'mcps' };
@@ -139,7 +139,7 @@ const writingRoute = createRoute({
 const submissionRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/research/submit',
-  component: () => <ResearchModuleRoute moduleName="投稿" />,
+  component: SubmissionPage,
 });
 
 /** Diagnostics panel. */
