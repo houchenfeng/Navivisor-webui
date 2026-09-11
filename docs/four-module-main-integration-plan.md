@@ -1216,3 +1216,7 @@ git merge --no-ff origin/feat/research-topic
 - TASK-1.1（实施中）：已新增 `research_projects`、`research_runs`、`research_artifacts`、`research_agent_sessions`、`research_agent_invocations` 五张表及 Drizzle migration `0010_eminent_chameleon.sql`。
 - TASK-1.2（实施中）：已新增共享 contract、受控 project/run/temp/artifacts 路径服务、project/run/artifact API 与 SHA-256、临时文件原子 finalize；运行根默认位于 `%USERPROFILE%/.codex/research-projects`，并通过 `.gitignore` 排除仓库内兼容运行目录。
 - 数据底座阶段验证：根目录 `pnpm build` 通过。后续在补齐 manifest 状态迁移、安全测试及 Codex bridge 后再次执行完整 build/lint/test。
+- TASK-2.1：完成核心实现。新增四个仓库内业务 Skill；`SkillsService` 增加 `skills/extraRoots/set`；`ResearchSkillRegistryService` 在 app-server ready/restart 后注册根目录，以 `skills/list(forceReload=true)` 按 cwd、stage、enabled、name、真实 path 解析，并计算 SKILL.md SHA-256。
+- TASK-2.2：完成安全修复。普通 thread/turn REST 入口不再只做 Skill 字符串形状校验，而是读取 thread cwd，并要求 name/path 与该 cwd 下 `skills/list` 返回的 enabled Skill 完全一致；新增伪造路径拒绝测试。
+- TASK-2.3：完成核心 Codex bridge。每个 project/module 复用一个 Codex thread；每个 agent run 创建一个 turn；调用同时发送 `$skill-name` 文本和 `type: skill` 输入；持久化 run/thread/turn/model/effort/Skill path/digest/promptVersion。四模块不得新增独立模型 SDK 或模型 URL。
+- Skill/Codex 阶段验证：根目录 `pnpm build` 通过；相关 ESLint 通过；`threads.controller.spec.ts` 为 17/17 通过。Skill Creator 的 `quick_validate.py` 因当前系统 Python 缺少 `PyYAML` 未能运行，构建及 Markdown frontmatter 人工检查通过；这不是 Skill 内容校验失败，后续 CI 应安装 validator 依赖后补跑。

@@ -18,6 +18,7 @@ import {
   RESEARCH_ARTIFACT_ROLES,
   type ResearchArtifactRole,
 } from './research-contracts';
+import { ResearchCodexBridgeService } from './research-codex-bridge.service';
 import { ResearchWorkflowService } from './research-workflow.service';
 
 class CreateResearchProjectDto {
@@ -38,11 +39,21 @@ class CreateTextArtifactDto {
   @ApiProperty() simulated!: boolean;
 }
 
+class StartResearchAgentRunDto extends CreateResearchRunDto {
+  @ApiProperty() instructions!: string;
+  @ApiPropertyOptional() model?: string;
+  @ApiPropertyOptional({ enum: ['low', 'medium', 'high', 'xhigh'] })
+  effort?: 'low' | 'medium' | 'high' | 'xhigh';
+}
+
 @ApiTags('research-workflow')
 @ApiBearerAuth()
 @Controller('research/projects')
 export class ResearchWorkflowController {
-  constructor(private readonly workflow: ResearchWorkflowService) {}
+  constructor(
+    private readonly workflow: ResearchWorkflowService,
+    private readonly codexBridge: ResearchCodexBridgeService,
+  ) {}
 
   @Post() createProject(@Body() body: CreateResearchProjectDto) {
     const name = body?.name?.trim();
@@ -91,6 +102,28 @@ export class ResearchWorkflowController {
       body.mode,
       body.inputArtifactIds ?? [],
     );
+  }
+
+  @Post(':projectId/agent-runs') startAgentRun(
+    @Param('projectId') projectId: string,
+    @Body() body: StartResearchAgentRunDto,
+  ) {
+    if (!isResearchStage(body?.stage) || !isResearchRunMode(body?.mode))
+      throw new BadRequestException('Invalid research stage or mode');
+    const instructions = body.instructions?.trim();
+    if (!instructions || instructions.length > 20_000)
+      throw new BadRequestException(
+        'Instructions are required and must not exceed 20000 characters',
+      );
+    return this.codexBridge.start({
+      projectId,
+      stage: body.stage,
+      mode: body.mode,
+      inputArtifactIds: body.inputArtifactIds ?? [],
+      instructions,
+      model: body.model,
+      effort: body.effort,
+    });
   }
 
   @Post(':projectId/runs/:runId/artifacts/text') createTextArtifact(

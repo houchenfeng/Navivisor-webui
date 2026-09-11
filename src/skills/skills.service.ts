@@ -14,6 +14,16 @@ export class SkillsService {
     return this.codex.request<v2.SkillsListResponse>('skills/list', params);
   }
 
+  /** Replaces the additional skill roots scanned by the app-server. */
+  async setExtraRoots(
+    params: v2.SkillsExtraRootsSetParams,
+  ): Promise<v2.SkillsExtraRootsSetResponse> {
+    return this.codex.request<v2.SkillsExtraRootsSetResponse>(
+      'skills/extraRoots/set',
+      params,
+    );
+  }
+
   /** Writes skill enablement config by path or name. */
   async writeSkillConfig(
     params: v2.SkillsConfigWriteParams,

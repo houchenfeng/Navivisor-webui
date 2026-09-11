@@ -209,7 +209,7 @@ export class ResearchWorkflowService {
     return {
       ...row,
       createdAt: new Date(createdAt).toISOString(),
-    } as ResearchArtifact;
+    };
   }
 
   artifactAbsolutePath(projectId: string, artifactId: string): string {
@@ -236,7 +236,11 @@ export class ResearchWorkflowService {
   }
 
   private publicProject(row: typeof researchProjects.$inferSelect) {
-    const { rootPath: _rootPath, ...project } = row;
-    return project;
+    return {
+      projectId: row.projectId,
+      name: row.name,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
   }
 }

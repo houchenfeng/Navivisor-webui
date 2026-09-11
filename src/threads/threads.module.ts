@@ -6,6 +6,7 @@ import { ConversationBranchesModule } from '../conversation-branches/conversatio
 import { DatabaseModule } from '../database/database.module';
 import { FilesModule } from '../files/files.module';
 import { PendingApprovalsModule } from '../pending-approvals/pending-approvals.module';
+import { SkillsModule } from '../skills/skills.module';
 import { ThreadDeletionModule } from '../thread-deletion/thread-deletion.module';
 import { ActiveThreadRegistryService } from './active-thread-registry.service';
 import { AutoResumeService } from './auto-resume.service';
@@ -32,6 +33,7 @@ import { ThreadsService } from './threads.service';
     DatabaseModule,
     FilesModule,
     PendingApprovalsModule,
+    SkillsModule,
     ThreadDeletionModule,
   ],
   controllers: [
