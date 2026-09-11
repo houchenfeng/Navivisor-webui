@@ -8,6 +8,7 @@ import {
   ClipboardList,
   FlaskConical,
   FolderOpen,
+  Home,
   PanelLeftClose,
   PenLine,
   Puzzle,
@@ -62,13 +63,14 @@ import { ForkGoalDialog } from './sidebar/fork-goal-dialog';
 import { useForkWithGoal } from '@/hooks/use-fork-with-goal';
 
 /** Derives the active "view" from the current route path. */
-function useActiveView(): 'chat' | 'files' | 'terminal' | 'diagnostics' | 'settings' | 'integrations' | 'proposal' | 'experiment' | 'writing' | 'submission' | 'other' {
+function useActiveView(): 'chat' | 'files' | 'terminal' | 'diagnostics' | 'settings' | 'integrations' | 'home' | 'proposal' | 'experiment' | 'writing' | 'submission' | 'other' {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (pathname.startsWith('/files')) return 'files';
   if (pathname.startsWith('/terminal')) return 'terminal';
   if (pathname.startsWith('/diagnostics')) return 'diagnostics';
   if (pathname.startsWith('/integrations')) return 'integrations';
   if (pathname.startsWith('/settings')) return 'settings';
+  if (pathname.startsWith('/research/home')) return 'home';
   if (pathname.startsWith('/research/topic')) return 'proposal';
   if (pathname.startsWith('/research/experiment')) return 'experiment';
   if (pathname.startsWith('/research/paper')) return 'writing';
@@ -453,6 +455,19 @@ export function ThreadSidebar() {
     <div className="flex h-full flex-col bg-card/80">
       {/* Global actions */}
       <div className="space-y-0.5 px-2 py-2">
+        <button
+          type="button"
+          onClick={() => void navigate({ to: '/research/home' })}
+          className={cn(
+            'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
+            activeView === 'home'
+              ? 'bg-accent text-accent-foreground'
+              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+          )}
+        >
+          <Home className="h-4 w-4 shrink-0" />
+          首页
+        </button>
         <button
           type="button"
           onClick={() => void navigate({ to: '/research/topic' })}

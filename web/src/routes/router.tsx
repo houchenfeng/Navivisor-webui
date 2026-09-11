@@ -13,12 +13,12 @@ import { getApiToken } from '@/auth-token';
 import { BASE_PATH } from '@/base-path';
 import { IntegrationsPage } from '@/components/integrations/integrations-page';
 import { ExperimentDemo } from '@/components/research-experiment/experiment-demo';
+import { ResearchHomePage } from '@/components/research-home/research-home-page';
 import { SubmissionPage } from '@/components/research-submission/submission-page';
 import { TopicPage } from '@/components/research-topic/topic-page';
 import { WritingPage } from '@/components/research-writing/writing-page';
 import { SettingsPage } from '@/components/settings/settings-page';
 import { AuthenticatedLayout } from './authenticated-layout';
-import { ChatView } from './chat-view';
 import { DiagnosticsRoute } from './diagnostics-route';
 import { FilesRoute } from './files-route';
 import { LoginRoute } from './login-route';
@@ -82,11 +82,13 @@ const authenticatedRoute = createRoute({
   component: AuthenticatedLayout,
 });
 
-/** Index route — empty chat state (no thread selected). */
+/** Index route — land on the research home hub. */
 const indexRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/',
-  component: ChatView,
+  beforeLoad: () => {
+    throw redirect({ to: '/research/home' });
+  },
 });
 
 /** Thread route — specific thread by id. */
@@ -111,6 +113,12 @@ const terminalRoute = createRoute({
 });
 
 /** Navivisor research workflow modules. */
+const researchHomeRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/research/home',
+  component: ResearchHomePage,
+});
+
 const proposalRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/research/topic',
@@ -171,6 +179,7 @@ const routeTree = rootRoute.addChildren([
     threadRoute,
     filesRoute,
     terminalRoute,
+    researchHomeRoute,
     proposalRoute,
     experimentRoute,
     writingRoute,
