@@ -3,6 +3,8 @@
 > 目标：完成开题、实验、写作、投稿四个前端模块向统一 Research Workflow、Artifact 和 Codex Skill 调用链的迁移，移除投稿模块的 cpolar/localhost 旧服务依赖，使项目达到可合入 `main` 的状态。
 >
 > 执行分支：`integration/research-workflow`。禁止直接在 `main` 开发或 push。重大阶段必须独立 commit，验证通过后再 push 集成分支。
+>
+> 本文件是后续实施的唯一 TODO、进度和结果记录。`four-module-main-integration-plan.md` 只作为首次合并与架构决策参考；执行过程中不得再创建日报、阶段报告、迁移说明或平行计划等中间文档。每完成一项任务，直接在本文件对应 TODO 下追加结果，并同步更新第 10 节摘要表。
 
 ## 1. 当前基线
 
@@ -339,3 +341,27 @@ git diff --stat <last-merged-sha>..origin/<feature-branch>
 | E 端到端验收   | 未开始 | -        | -        |
 
 执行者完成每个阶段后，必须直接更新此表和对应 TODO 的实际结果、commit SHA、测试命令与遗留问题，不创建新的中间状态文档。
+
+### 10.1 统一结果记录格式
+
+每项 TODO 完成后，在该 TODO 末尾按以下格式追加，不能只修改摘要表：
+
+```markdown
+实施结果（YYYY-MM-DD）：完成/部分完成/阻塞
+
+- 完成 SHA：`<commit>`
+- 实际修改：列出关键文件和行为变化，不复制 git diff。
+- 验证命令：`<command>`
+- 验证结果：记录通过数量；失败时区分新增回归与已知基线问题。
+- 遗留问题：没有则写“无”；有则指出接续 TODO，不新建文档。
+- 远端状态：已推送/未推送；已推送时写明远端分支。
+```
+
+若一个 TODO 分多次提交，在同一结果块中列出全部 SHA。若实现方案与原计划不同，必须记录实际决策及原因；不要悄悄改写原始 TODO，使后续执行者无法看出计划与结果的差异。
+
+### 10.2 当前保存点
+
+- 当前集成分支：`integration/research-workflow`。
+- TODO 文档初始提交：`d10796e`。
+- `d10796e` 已推送至 `origin/integration/research-workflow`，创建本规则前工作区 clean，远端与本地 ahead/behind 为 `0/0`。
+- 后续每次重大代码改动均先提交到该分支并 push 保存，再更新本文件中的实际 SHA 和验证结果；禁止直接 push `main`。
