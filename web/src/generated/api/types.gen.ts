@@ -1748,6 +1748,31 @@ export type PluginUninstallResponseDto = {
     [key: string]: unknown;
 };
 
+export type CreateResearchProjectDto = {
+    name: string;
+};
+
+export type CreateResearchRunDto = {
+    stage: string;
+    mode: 'simulated' | 'real';
+    inputArtifactIds?: Array<string>;
+};
+
+export type StartResearchAgentRunDto = {
+    stage: string;
+    mode: 'simulated' | 'real';
+    inputArtifactIds?: Array<string>;
+    instructions: string;
+    model?: string;
+    effort?: 'low' | 'medium' | 'high' | 'xhigh';
+};
+
+export type RetryResearchAgentRunDto = {
+    instructions: string;
+    model?: string;
+    effort?: 'low' | 'medium' | 'high' | 'xhigh';
+};
+
 export type OnlyOfficeConfigResponseDto = {
     scriptUrl: string;
     config: {
@@ -3598,6 +3623,163 @@ export type PluginsUninstallPluginResponses = {
 
 export type PluginsUninstallPluginResponse = PluginsUninstallPluginResponses[keyof PluginsUninstallPluginResponses];
 
+export type ResearchWorkflowListProjectsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/research/projects';
+};
+
+export type ResearchWorkflowListProjectsResponses = {
+    200: unknown;
+};
+
+export type ResearchWorkflowCreateProjectData = {
+    body: CreateResearchProjectDto;
+    path?: never;
+    query?: never;
+    url: '/api/research/projects';
+};
+
+export type ResearchWorkflowCreateProjectResponses = {
+    201: unknown;
+};
+
+export type ResearchWorkflowGetProjectData = {
+    body?: never;
+    path: {
+        projectId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}';
+};
+
+export type ResearchWorkflowGetProjectResponses = {
+    200: unknown;
+};
+
+export type ResearchWorkflowListRunsData = {
+    body?: never;
+    path: {
+        projectId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/runs';
+};
+
+export type ResearchWorkflowListRunsResponses = {
+    200: unknown;
+};
+
+export type ResearchWorkflowCreateRunData = {
+    body: CreateResearchRunDto;
+    path: {
+        projectId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/runs';
+};
+
+export type ResearchWorkflowCreateRunResponses = {
+    201: unknown;
+};
+
+export type ResearchWorkflowGetRunData = {
+    body?: never;
+    path: {
+        projectId: string;
+        runId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/runs/{runId}';
+};
+
+export type ResearchWorkflowGetRunResponses = {
+    200: unknown;
+};
+
+export type ResearchWorkflowListArtifactsData = {
+    body?: never;
+    path: {
+        projectId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/artifacts';
+};
+
+export type ResearchWorkflowListArtifactsResponses = {
+    200: unknown;
+};
+
+export type ResearchWorkflowGetArtifactData = {
+    body?: never;
+    path: {
+        projectId: string;
+        artifactId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/artifacts/{artifactId}';
+};
+
+export type ResearchWorkflowGetArtifactResponses = {
+    200: unknown;
+};
+
+export type ResearchWorkflowGetArtifactContentData = {
+    body?: never;
+    path: {
+        projectId: string;
+        artifactId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/artifacts/{artifactId}/content';
+};
+
+export type ResearchWorkflowGetArtifactContentResponses = {
+    200: unknown;
+};
+
+export type ResearchWorkflowStartAgentRunData = {
+    body: StartResearchAgentRunDto;
+    path: {
+        projectId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/agent-runs';
+};
+
+export type ResearchWorkflowStartAgentRunResponses = {
+    201: unknown;
+};
+
+export type ResearchWorkflowCancelRunData = {
+    body?: never;
+    path: {
+        projectId: string;
+        runId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/runs/{runId}/cancel';
+};
+
+export type ResearchWorkflowCancelRunResponses = {
+    201: unknown;
+};
+
+export type ResearchWorkflowRetryRunData = {
+    body: RetryResearchAgentRunDto;
+    path: {
+        projectId: string;
+        runId: string;
+    };
+    query?: never;
+    url: '/api/research/projects/{projectId}/runs/{runId}/retry';
+};
+
+export type ResearchWorkflowRetryRunResponses = {
+    201: unknown;
+};
+
 export type OnlyOfficeGetConfigData = {
     body?: never;
     path?: never;
@@ -3818,3 +4000,40 @@ export type McpServersStartOauthLoginResponses = {
 };
 
 export type McpServersStartOauthLoginResponse = McpServersStartOauthLoginResponses[keyof McpServersStartOauthLoginResponses];
+
+export type ResearchTopicStartData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/research/topic/first-search';
+};
+
+export type ResearchTopicStartResponses = {
+    201: unknown;
+};
+
+export type ResearchTopicCancelData = {
+    body?: never;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/research/topic/tasks/{runId}';
+};
+
+export type ResearchTopicCancelResponses = {
+    200: unknown;
+};
+
+export type ResearchTopicGetData = {
+    body?: never;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/research/topic/tasks/{runId}';
+};
+
+export type ResearchTopicGetResponses = {
+    200: unknown;
+};

@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { accountCancelLogin, accountLogin, accountLogout, accountReadAccount, accountReadRateLimits, appGetStatus, appsListApps, appsReadApps, archiveListArchive, archiveReadEntry, authLogin, authLogout, chatUploadAttachment, codexConfigReadConfig, codexConfigReadRawConfig, codexConfigUpdateConfig, codexConfigUpdateRawConfig, codexFeedbackUploadFeedback, codexStatusGetStatus, codexStatusUpdateApprovalPolicy, codexStatusUpdateSandboxMode, filesAddRoot, filesCopyPath, filesCreateDirectory, filesCreateFile, filesDeletePath, filesDownloadFile, filesGetMetadata, filesGetRoots, filesMovePath, filesReadFile, filesReadTree, filesRenamePath, filesServeFile, filesUploadFiles, filesWriteFile, logsExportDiagnostics, logsListLogs, mcpServersListServers, mcpServersReloadAll, mcpServersStartOauthLogin, modelsListModels, onlyOfficeGetConfig, onlyOfficeHandleCallback, type Options, pendingApprovalsListPending, pendingApprovalsRespond, pluginsInstallPlugin, pluginsListPlugins, pluginsReadPlugin, pluginsReconcilePlugin, pluginsUninstallPlugin, settingsGetSetting, settingsListSettings, settingsResetSetting, settingsUpdateSetting, settingsUpdateSettings, skillsListSkills, skillsWriteSkillConfig, threadCommandsClearGoal, threadCommandsListCollaborationModes, threadCommandsReadCollaborationMode, threadCommandsReadGoal, threadCommandsSetCollaborationMode, threadCommandsSetGoal, threadCommandsStartReview, threadsArchiveThread, threadsCompactThread, threadsCountTurns, threadsCreateMessageBranch, threadsDeletionDeleteThread, threadsDeletionPreviewDelete, threadsDeletionReadBranchAdoptionStatus, threadsForkThread, threadsInterruptTurn, threadsListBranchTrees, threadsListLoadedThreads, threadsListOverview, threadsListThreads, threadsListTurnItems, threadsListTurns, threadsReadBranchState, threadsReadBranchTree, threadsReadThread, threadsResumeThread, threadsSetThreadName, threadsStartThread, threadsStartTurn, threadsSteerTurn, threadsUnarchiveThread, tokenUsageReadThreadTokenUsage, turnDiffReadThreadTurnDiffs, turnErrorsReadThreadTurnErrors } from '../sdk.gen';
-import type { AccountCancelLoginData, AccountCancelLoginError, AccountCancelLoginResponse, AccountLoginData, AccountLoginError, AccountLoginResponse, AccountLogoutData, AccountLogoutError, AccountLogoutResponse, AccountReadAccountData, AccountReadAccountError, AccountReadAccountResponse, AccountReadRateLimitsData, AccountReadRateLimitsError, AccountReadRateLimitsResponse, AppGetStatusData, AppGetStatusResponse, AppsListAppsData, AppsListAppsError, AppsListAppsResponse, AppsReadAppsData, AppsReadAppsError, AppsReadAppsResponse, ArchiveListArchiveData, ArchiveListArchiveError, ArchiveListArchiveResponse, ArchiveReadEntryData, ArchiveReadEntryError, AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, ChatUploadAttachmentData, ChatUploadAttachmentError, ChatUploadAttachmentResponse, CodexConfigReadConfigData, CodexConfigReadConfigError, CodexConfigReadConfigResponse, CodexConfigReadRawConfigData, CodexConfigReadRawConfigError, CodexConfigReadRawConfigResponse, CodexConfigUpdateConfigData, CodexConfigUpdateConfigError, CodexConfigUpdateConfigResponse, CodexConfigUpdateRawConfigData, CodexConfigUpdateRawConfigError, CodexConfigUpdateRawConfigResponse, CodexFeedbackUploadFeedbackData, CodexFeedbackUploadFeedbackError, CodexFeedbackUploadFeedbackResponse, CodexStatusGetStatusData, CodexStatusGetStatusError, CodexStatusGetStatusResponse, CodexStatusUpdateApprovalPolicyData, CodexStatusUpdateApprovalPolicyError, CodexStatusUpdateApprovalPolicyResponse, CodexStatusUpdateSandboxModeData, CodexStatusUpdateSandboxModeError, CodexStatusUpdateSandboxModeResponse, FilesAddRootData, FilesAddRootError, FilesAddRootResponse, FilesCopyPathData, FilesCopyPathError, FilesCopyPathResponse, FilesCreateDirectoryData, FilesCreateDirectoryError, FilesCreateDirectoryResponse, FilesCreateFileData, FilesCreateFileError, FilesCreateFileResponse, FilesDeletePathData, FilesDeletePathError, FilesDeletePathResponse, FilesDownloadFileData, FilesDownloadFileError, FilesGetMetadataData, FilesGetMetadataError, FilesGetMetadataResponse, FilesGetRootsData, FilesGetRootsError, FilesGetRootsResponse, FilesMovePathData, FilesMovePathError, FilesMovePathResponse, FilesReadFileData, FilesReadFileError, FilesReadFileResponse, FilesReadTreeData, FilesReadTreeError, FilesReadTreeResponse, FilesRenamePathData, FilesRenamePathError, FilesRenamePathResponse, FilesServeFileData, FilesServeFileError, FilesUploadFilesData, FilesUploadFilesError, FilesUploadFilesResponse, FilesWriteFileData, FilesWriteFileError, FilesWriteFileResponse, LogsExportDiagnosticsData, LogsExportDiagnosticsError, LogsExportDiagnosticsResponse, LogsListLogsData, LogsListLogsError, LogsListLogsResponse, McpServersListServersData, McpServersListServersError, McpServersListServersResponse, McpServersReloadAllData, McpServersReloadAllError, McpServersReloadAllResponse, McpServersStartOauthLoginData, McpServersStartOauthLoginError, McpServersStartOauthLoginResponse, ModelsListModelsData, ModelsListModelsError, ModelsListModelsResponse, OnlyOfficeGetConfigData, OnlyOfficeGetConfigError, OnlyOfficeGetConfigResponse, OnlyOfficeHandleCallbackData, OnlyOfficeHandleCallbackResponse, PendingApprovalsListPendingData, PendingApprovalsListPendingResponse, PendingApprovalsRespondData, PendingApprovalsRespondResponse, PluginsInstallPluginData, PluginsInstallPluginError, PluginsInstallPluginResponse, PluginsListPluginsData, PluginsListPluginsError, PluginsListPluginsResponse, PluginsReadPluginData, PluginsReadPluginError, PluginsReadPluginResponse, PluginsReconcilePluginData, PluginsReconcilePluginError, PluginsReconcilePluginResponse, PluginsUninstallPluginData, PluginsUninstallPluginError, PluginsUninstallPluginResponse, SettingsGetSettingData, SettingsGetSettingError, SettingsGetSettingResponse, SettingsListSettingsData, SettingsListSettingsError, SettingsListSettingsResponse, SettingsResetSettingData, SettingsResetSettingError, SettingsResetSettingResponse, SettingsUpdateSettingData, SettingsUpdateSettingError, SettingsUpdateSettingResponse, SettingsUpdateSettingsData, SettingsUpdateSettingsError, SettingsUpdateSettingsResponse, SkillsListSkillsData, SkillsListSkillsError, SkillsListSkillsResponse, SkillsWriteSkillConfigData, SkillsWriteSkillConfigError, SkillsWriteSkillConfigResponse, ThreadCommandsClearGoalData, ThreadCommandsClearGoalError, ThreadCommandsClearGoalResponse, ThreadCommandsListCollaborationModesData, ThreadCommandsListCollaborationModesError, ThreadCommandsListCollaborationModesResponse, ThreadCommandsReadCollaborationModeData, ThreadCommandsReadCollaborationModeError, ThreadCommandsReadCollaborationModeResponse, ThreadCommandsReadGoalData, ThreadCommandsReadGoalError, ThreadCommandsReadGoalResponse, ThreadCommandsSetCollaborationModeData, ThreadCommandsSetCollaborationModeError, ThreadCommandsSetCollaborationModeResponse, ThreadCommandsSetGoalData, ThreadCommandsSetGoalError, ThreadCommandsSetGoalResponse, ThreadCommandsStartReviewData, ThreadCommandsStartReviewError, ThreadCommandsStartReviewResponse, ThreadsArchiveThreadData, ThreadsArchiveThreadError, ThreadsArchiveThreadResponse, ThreadsCompactThreadData, ThreadsCompactThreadError, ThreadsCompactThreadResponse, ThreadsCountTurnsData, ThreadsCountTurnsError, ThreadsCountTurnsResponse, ThreadsCreateMessageBranchData, ThreadsCreateMessageBranchError, ThreadsCreateMessageBranchResponse, ThreadsDeletionDeleteThreadData, ThreadsDeletionDeleteThreadError, ThreadsDeletionDeleteThreadResponse, ThreadsDeletionPreviewDeleteData, ThreadsDeletionPreviewDeleteError, ThreadsDeletionPreviewDeleteResponse, ThreadsDeletionReadBranchAdoptionStatusData, ThreadsDeletionReadBranchAdoptionStatusError, ThreadsDeletionReadBranchAdoptionStatusResponse, ThreadsForkThreadData, ThreadsForkThreadError, ThreadsForkThreadResponse, ThreadsInterruptTurnData, ThreadsInterruptTurnError, ThreadsInterruptTurnResponse, ThreadsListBranchTreesData, ThreadsListBranchTreesError, ThreadsListBranchTreesResponse, ThreadsListLoadedThreadsData, ThreadsListLoadedThreadsError, ThreadsListLoadedThreadsResponse, ThreadsListOverviewData, ThreadsListOverviewError, ThreadsListOverviewResponse, ThreadsListThreadsData, ThreadsListThreadsError, ThreadsListThreadsResponse, ThreadsListTurnItemsData, ThreadsListTurnItemsError, ThreadsListTurnItemsResponse, ThreadsListTurnsData, ThreadsListTurnsError, ThreadsListTurnsResponse, ThreadsReadBranchStateData, ThreadsReadBranchStateError, ThreadsReadBranchStateResponse, ThreadsReadBranchTreeData, ThreadsReadBranchTreeError, ThreadsReadBranchTreeResponse, ThreadsReadThreadData, ThreadsReadThreadError, ThreadsReadThreadResponse, ThreadsResumeThreadData, ThreadsResumeThreadError, ThreadsResumeThreadResponse, ThreadsSetThreadNameData, ThreadsSetThreadNameError, ThreadsSetThreadNameResponse, ThreadsStartThreadData, ThreadsStartThreadError, ThreadsStartThreadResponse, ThreadsStartTurnData, ThreadsStartTurnError, ThreadsStartTurnResponse, ThreadsSteerTurnData, ThreadsSteerTurnError, ThreadsSteerTurnResponse, ThreadsUnarchiveThreadData, ThreadsUnarchiveThreadError, ThreadsUnarchiveThreadResponse, TokenUsageReadThreadTokenUsageData, TokenUsageReadThreadTokenUsageError, TokenUsageReadThreadTokenUsageResponse, TurnDiffReadThreadTurnDiffsData, TurnDiffReadThreadTurnDiffsError, TurnDiffReadThreadTurnDiffsResponse, TurnErrorsReadThreadTurnErrorsData, TurnErrorsReadThreadTurnErrorsError, TurnErrorsReadThreadTurnErrorsResponse } from '../types.gen';
+import { accountCancelLogin, accountLogin, accountLogout, accountReadAccount, accountReadRateLimits, appGetStatus, appsListApps, appsReadApps, archiveListArchive, archiveReadEntry, authLogin, authLogout, chatUploadAttachment, codexConfigReadConfig, codexConfigReadRawConfig, codexConfigUpdateConfig, codexConfigUpdateRawConfig, codexFeedbackUploadFeedback, codexStatusGetStatus, codexStatusUpdateApprovalPolicy, codexStatusUpdateSandboxMode, filesAddRoot, filesCopyPath, filesCreateDirectory, filesCreateFile, filesDeletePath, filesDownloadFile, filesGetMetadata, filesGetRoots, filesMovePath, filesReadFile, filesReadTree, filesRenamePath, filesServeFile, filesUploadFiles, filesWriteFile, logsExportDiagnostics, logsListLogs, mcpServersListServers, mcpServersReloadAll, mcpServersStartOauthLogin, modelsListModels, onlyOfficeGetConfig, onlyOfficeHandleCallback, type Options, pendingApprovalsListPending, pendingApprovalsRespond, pluginsInstallPlugin, pluginsListPlugins, pluginsReadPlugin, pluginsReconcilePlugin, pluginsUninstallPlugin, researchTopicCancel, researchTopicGet, researchTopicStart, researchWorkflowCancelRun, researchWorkflowCreateProject, researchWorkflowCreateRun, researchWorkflowGetArtifact, researchWorkflowGetArtifactContent, researchWorkflowGetProject, researchWorkflowGetRun, researchWorkflowListArtifacts, researchWorkflowListProjects, researchWorkflowListRuns, researchWorkflowRetryRun, researchWorkflowStartAgentRun, settingsGetSetting, settingsListSettings, settingsResetSetting, settingsUpdateSetting, settingsUpdateSettings, skillsListSkills, skillsWriteSkillConfig, threadCommandsClearGoal, threadCommandsListCollaborationModes, threadCommandsReadCollaborationMode, threadCommandsReadGoal, threadCommandsSetCollaborationMode, threadCommandsSetGoal, threadCommandsStartReview, threadsArchiveThread, threadsCompactThread, threadsCountTurns, threadsCreateMessageBranch, threadsDeletionDeleteThread, threadsDeletionPreviewDelete, threadsDeletionReadBranchAdoptionStatus, threadsForkThread, threadsInterruptTurn, threadsListBranchTrees, threadsListLoadedThreads, threadsListOverview, threadsListThreads, threadsListTurnItems, threadsListTurns, threadsReadBranchState, threadsReadBranchTree, threadsReadThread, threadsResumeThread, threadsSetThreadName, threadsStartThread, threadsStartTurn, threadsSteerTurn, threadsUnarchiveThread, tokenUsageReadThreadTokenUsage, turnDiffReadThreadTurnDiffs, turnErrorsReadThreadTurnErrors } from '../sdk.gen';
+import type { AccountCancelLoginData, AccountCancelLoginError, AccountCancelLoginResponse, AccountLoginData, AccountLoginError, AccountLoginResponse, AccountLogoutData, AccountLogoutError, AccountLogoutResponse, AccountReadAccountData, AccountReadAccountError, AccountReadAccountResponse, AccountReadRateLimitsData, AccountReadRateLimitsError, AccountReadRateLimitsResponse, AppGetStatusData, AppGetStatusResponse, AppsListAppsData, AppsListAppsError, AppsListAppsResponse, AppsReadAppsData, AppsReadAppsError, AppsReadAppsResponse, ArchiveListArchiveData, ArchiveListArchiveError, ArchiveListArchiveResponse, ArchiveReadEntryData, ArchiveReadEntryError, AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, ChatUploadAttachmentData, ChatUploadAttachmentError, ChatUploadAttachmentResponse, CodexConfigReadConfigData, CodexConfigReadConfigError, CodexConfigReadConfigResponse, CodexConfigReadRawConfigData, CodexConfigReadRawConfigError, CodexConfigReadRawConfigResponse, CodexConfigUpdateConfigData, CodexConfigUpdateConfigError, CodexConfigUpdateConfigResponse, CodexConfigUpdateRawConfigData, CodexConfigUpdateRawConfigError, CodexConfigUpdateRawConfigResponse, CodexFeedbackUploadFeedbackData, CodexFeedbackUploadFeedbackError, CodexFeedbackUploadFeedbackResponse, CodexStatusGetStatusData, CodexStatusGetStatusError, CodexStatusGetStatusResponse, CodexStatusUpdateApprovalPolicyData, CodexStatusUpdateApprovalPolicyError, CodexStatusUpdateApprovalPolicyResponse, CodexStatusUpdateSandboxModeData, CodexStatusUpdateSandboxModeError, CodexStatusUpdateSandboxModeResponse, FilesAddRootData, FilesAddRootError, FilesAddRootResponse, FilesCopyPathData, FilesCopyPathError, FilesCopyPathResponse, FilesCreateDirectoryData, FilesCreateDirectoryError, FilesCreateDirectoryResponse, FilesCreateFileData, FilesCreateFileError, FilesCreateFileResponse, FilesDeletePathData, FilesDeletePathError, FilesDeletePathResponse, FilesDownloadFileData, FilesDownloadFileError, FilesGetMetadataData, FilesGetMetadataError, FilesGetMetadataResponse, FilesGetRootsData, FilesGetRootsError, FilesGetRootsResponse, FilesMovePathData, FilesMovePathError, FilesMovePathResponse, FilesReadFileData, FilesReadFileError, FilesReadFileResponse, FilesReadTreeData, FilesReadTreeError, FilesReadTreeResponse, FilesRenamePathData, FilesRenamePathError, FilesRenamePathResponse, FilesServeFileData, FilesServeFileError, FilesUploadFilesData, FilesUploadFilesError, FilesUploadFilesResponse, FilesWriteFileData, FilesWriteFileError, FilesWriteFileResponse, LogsExportDiagnosticsData, LogsExportDiagnosticsError, LogsExportDiagnosticsResponse, LogsListLogsData, LogsListLogsError, LogsListLogsResponse, McpServersListServersData, McpServersListServersError, McpServersListServersResponse, McpServersReloadAllData, McpServersReloadAllError, McpServersReloadAllResponse, McpServersStartOauthLoginData, McpServersStartOauthLoginError, McpServersStartOauthLoginResponse, ModelsListModelsData, ModelsListModelsError, ModelsListModelsResponse, OnlyOfficeGetConfigData, OnlyOfficeGetConfigError, OnlyOfficeGetConfigResponse, OnlyOfficeHandleCallbackData, OnlyOfficeHandleCallbackResponse, PendingApprovalsListPendingData, PendingApprovalsListPendingResponse, PendingApprovalsRespondData, PendingApprovalsRespondResponse, PluginsInstallPluginData, PluginsInstallPluginError, PluginsInstallPluginResponse, PluginsListPluginsData, PluginsListPluginsError, PluginsListPluginsResponse, PluginsReadPluginData, PluginsReadPluginError, PluginsReadPluginResponse, PluginsReconcilePluginData, PluginsReconcilePluginError, PluginsReconcilePluginResponse, PluginsUninstallPluginData, PluginsUninstallPluginError, PluginsUninstallPluginResponse, ResearchTopicCancelData, ResearchTopicGetData, ResearchTopicStartData, ResearchWorkflowCancelRunData, ResearchWorkflowCreateProjectData, ResearchWorkflowCreateRunData, ResearchWorkflowGetArtifactContentData, ResearchWorkflowGetArtifactData, ResearchWorkflowGetProjectData, ResearchWorkflowGetRunData, ResearchWorkflowListArtifactsData, ResearchWorkflowListProjectsData, ResearchWorkflowListRunsData, ResearchWorkflowRetryRunData, ResearchWorkflowStartAgentRunData, SettingsGetSettingData, SettingsGetSettingError, SettingsGetSettingResponse, SettingsListSettingsData, SettingsListSettingsError, SettingsListSettingsResponse, SettingsResetSettingData, SettingsResetSettingError, SettingsResetSettingResponse, SettingsUpdateSettingData, SettingsUpdateSettingError, SettingsUpdateSettingResponse, SettingsUpdateSettingsData, SettingsUpdateSettingsError, SettingsUpdateSettingsResponse, SkillsListSkillsData, SkillsListSkillsError, SkillsListSkillsResponse, SkillsWriteSkillConfigData, SkillsWriteSkillConfigError, SkillsWriteSkillConfigResponse, ThreadCommandsClearGoalData, ThreadCommandsClearGoalError, ThreadCommandsClearGoalResponse, ThreadCommandsListCollaborationModesData, ThreadCommandsListCollaborationModesError, ThreadCommandsListCollaborationModesResponse, ThreadCommandsReadCollaborationModeData, ThreadCommandsReadCollaborationModeError, ThreadCommandsReadCollaborationModeResponse, ThreadCommandsReadGoalData, ThreadCommandsReadGoalError, ThreadCommandsReadGoalResponse, ThreadCommandsSetCollaborationModeData, ThreadCommandsSetCollaborationModeError, ThreadCommandsSetCollaborationModeResponse, ThreadCommandsSetGoalData, ThreadCommandsSetGoalError, ThreadCommandsSetGoalResponse, ThreadCommandsStartReviewData, ThreadCommandsStartReviewError, ThreadCommandsStartReviewResponse, ThreadsArchiveThreadData, ThreadsArchiveThreadError, ThreadsArchiveThreadResponse, ThreadsCompactThreadData, ThreadsCompactThreadError, ThreadsCompactThreadResponse, ThreadsCountTurnsData, ThreadsCountTurnsError, ThreadsCountTurnsResponse, ThreadsCreateMessageBranchData, ThreadsCreateMessageBranchError, ThreadsCreateMessageBranchResponse, ThreadsDeletionDeleteThreadData, ThreadsDeletionDeleteThreadError, ThreadsDeletionDeleteThreadResponse, ThreadsDeletionPreviewDeleteData, ThreadsDeletionPreviewDeleteError, ThreadsDeletionPreviewDeleteResponse, ThreadsDeletionReadBranchAdoptionStatusData, ThreadsDeletionReadBranchAdoptionStatusError, ThreadsDeletionReadBranchAdoptionStatusResponse, ThreadsForkThreadData, ThreadsForkThreadError, ThreadsForkThreadResponse, ThreadsInterruptTurnData, ThreadsInterruptTurnError, ThreadsInterruptTurnResponse, ThreadsListBranchTreesData, ThreadsListBranchTreesError, ThreadsListBranchTreesResponse, ThreadsListLoadedThreadsData, ThreadsListLoadedThreadsError, ThreadsListLoadedThreadsResponse, ThreadsListOverviewData, ThreadsListOverviewError, ThreadsListOverviewResponse, ThreadsListThreadsData, ThreadsListThreadsError, ThreadsListThreadsResponse, ThreadsListTurnItemsData, ThreadsListTurnItemsError, ThreadsListTurnItemsResponse, ThreadsListTurnsData, ThreadsListTurnsError, ThreadsListTurnsResponse, ThreadsReadBranchStateData, ThreadsReadBranchStateError, ThreadsReadBranchStateResponse, ThreadsReadBranchTreeData, ThreadsReadBranchTreeError, ThreadsReadBranchTreeResponse, ThreadsReadThreadData, ThreadsReadThreadError, ThreadsReadThreadResponse, ThreadsResumeThreadData, ThreadsResumeThreadError, ThreadsResumeThreadResponse, ThreadsSetThreadNameData, ThreadsSetThreadNameError, ThreadsSetThreadNameResponse, ThreadsStartThreadData, ThreadsStartThreadError, ThreadsStartThreadResponse, ThreadsStartTurnData, ThreadsStartTurnError, ThreadsStartTurnResponse, ThreadsSteerTurnData, ThreadsSteerTurnError, ThreadsSteerTurnResponse, ThreadsUnarchiveThreadData, ThreadsUnarchiveThreadError, ThreadsUnarchiveThreadResponse, TokenUsageReadThreadTokenUsageData, TokenUsageReadThreadTokenUsageError, TokenUsageReadThreadTokenUsageResponse, TurnDiffReadThreadTurnDiffsData, TurnDiffReadThreadTurnDiffsError, TurnDiffReadThreadTurnDiffsResponse, TurnErrorsReadThreadTurnErrorsData, TurnErrorsReadThreadTurnErrorsError, TurnErrorsReadThreadTurnErrorsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -1634,6 +1634,181 @@ export const pluginsUninstallPluginMutation = (options?: Partial<Options<Plugins
     return mutationOptions;
 };
 
+export const researchWorkflowListProjectsQueryKey = (options?: Options<ResearchWorkflowListProjectsData>) => createQueryKey('researchWorkflowListProjects', options);
+
+export const researchWorkflowListProjectsOptions = (options?: Options<ResearchWorkflowListProjectsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchWorkflowListProjectsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchWorkflowListProjects({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchWorkflowListProjectsQueryKey(options)
+});
+
+export const researchWorkflowCreateProjectMutation = (options?: Partial<Options<ResearchWorkflowCreateProjectData>>): UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowCreateProjectData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowCreateProjectData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await researchWorkflowCreateProject({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const researchWorkflowGetProjectQueryKey = (options: Options<ResearchWorkflowGetProjectData>) => createQueryKey('researchWorkflowGetProject', options);
+
+export const researchWorkflowGetProjectOptions = (options: Options<ResearchWorkflowGetProjectData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchWorkflowGetProjectQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchWorkflowGetProject({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchWorkflowGetProjectQueryKey(options)
+});
+
+export const researchWorkflowListRunsQueryKey = (options: Options<ResearchWorkflowListRunsData>) => createQueryKey('researchWorkflowListRuns', options);
+
+export const researchWorkflowListRunsOptions = (options: Options<ResearchWorkflowListRunsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchWorkflowListRunsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchWorkflowListRuns({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchWorkflowListRunsQueryKey(options)
+});
+
+export const researchWorkflowCreateRunMutation = (options?: Partial<Options<ResearchWorkflowCreateRunData>>): UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowCreateRunData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowCreateRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await researchWorkflowCreateRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const researchWorkflowGetRunQueryKey = (options: Options<ResearchWorkflowGetRunData>) => createQueryKey('researchWorkflowGetRun', options);
+
+export const researchWorkflowGetRunOptions = (options: Options<ResearchWorkflowGetRunData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchWorkflowGetRunQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchWorkflowGetRun({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchWorkflowGetRunQueryKey(options)
+});
+
+export const researchWorkflowListArtifactsQueryKey = (options: Options<ResearchWorkflowListArtifactsData>) => createQueryKey('researchWorkflowListArtifacts', options);
+
+export const researchWorkflowListArtifactsOptions = (options: Options<ResearchWorkflowListArtifactsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchWorkflowListArtifactsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchWorkflowListArtifacts({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchWorkflowListArtifactsQueryKey(options)
+});
+
+export const researchWorkflowGetArtifactQueryKey = (options: Options<ResearchWorkflowGetArtifactData>) => createQueryKey('researchWorkflowGetArtifact', options);
+
+export const researchWorkflowGetArtifactOptions = (options: Options<ResearchWorkflowGetArtifactData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchWorkflowGetArtifactQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchWorkflowGetArtifact({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchWorkflowGetArtifactQueryKey(options)
+});
+
+export const researchWorkflowGetArtifactContentQueryKey = (options: Options<ResearchWorkflowGetArtifactContentData>) => createQueryKey('researchWorkflowGetArtifactContent', options);
+
+export const researchWorkflowGetArtifactContentOptions = (options: Options<ResearchWorkflowGetArtifactContentData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchWorkflowGetArtifactContentQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchWorkflowGetArtifactContent({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchWorkflowGetArtifactContentQueryKey(options)
+});
+
+export const researchWorkflowStartAgentRunMutation = (options?: Partial<Options<ResearchWorkflowStartAgentRunData>>): UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowStartAgentRunData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowStartAgentRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await researchWorkflowStartAgentRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const researchWorkflowCancelRunMutation = (options?: Partial<Options<ResearchWorkflowCancelRunData>>): UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowCancelRunData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowCancelRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await researchWorkflowCancelRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const researchWorkflowRetryRunMutation = (options?: Partial<Options<ResearchWorkflowRetryRunData>>): UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowRetryRunData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ResearchWorkflowRetryRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await researchWorkflowRetryRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const onlyOfficeGetConfigQueryKey = (options: Options<OnlyOfficeGetConfigData>) => createQueryKey('onlyOfficeGetConfig', options);
 
 /**
@@ -1891,3 +2066,46 @@ export const mcpServersStartOauthLoginMutation = (options?: Partial<Options<McpS
     };
     return mutationOptions;
 };
+
+export const researchTopicStartMutation = (options?: Partial<Options<ResearchTopicStartData>>): UseMutationOptions<unknown, DefaultError, Options<ResearchTopicStartData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ResearchTopicStartData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await researchTopicStart({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const researchTopicCancelMutation = (options?: Partial<Options<ResearchTopicCancelData>>): UseMutationOptions<unknown, DefaultError, Options<ResearchTopicCancelData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ResearchTopicCancelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await researchTopicCancel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const researchTopicGetQueryKey = (options: Options<ResearchTopicGetData>) => createQueryKey('researchTopicGet', options);
+
+export const researchTopicGetOptions = (options: Options<ResearchTopicGetData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof researchTopicGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await researchTopicGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: researchTopicGetQueryKey(options)
+});
