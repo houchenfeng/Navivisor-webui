@@ -109,6 +109,115 @@ export type PendingServerRequestRow = typeof pendingServerRequests.$inferSelect;
 export type InsertPendingServerRequestRow =
   typeof pendingServerRequests.$inferInsert;
 
+/** Durable research workflow projects. */
+export const researchProjects = sqliteTable(
+  'research_projects',
+  {
+    projectId: text('project_id').primaryKey(),
+    name: text('name').notNull(),
+    rootPath: text('root_path').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [uniqueIndex('uidx_research_projects_root').on(table.rootPath)],
+);
+
+/** One immutable attempt at a research stage. */
+export const researchRuns = sqliteTable(
+  'research_runs',
+  {
+    runId: text('run_id').primaryKey(),
+    projectId: text('project_id').notNull(),
+    module: text('module').notNull(),
+    stage: text('stage').notNull(),
+    status: text('status').notNull(),
+    mode: text('mode').notNull(),
+    manifestPath: text('manifest_path').notNull(),
+    retryOfRunId: text('retry_of_run_id'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [
+    index('idx_research_runs_project_created').on(
+      table.projectId,
+      table.createdAt,
+    ),
+    index('idx_research_runs_status').on(table.status),
+  ],
+);
+
+/** Finalized, content-addressed outputs of research runs. */
+export const researchArtifacts = sqliteTable(
+  'research_artifacts',
+  {
+    artifactId: text('artifact_id').primaryKey(),
+    runId: text('run_id').notNull(),
+    projectId: text('project_id').notNull(),
+    role: text('role').notNull(),
+    name: text('name').notNull(),
+    path: text('path').notNull(),
+    mediaType: text('media_type').notNull(),
+    size: integer('size').notNull(),
+    sha256: text('sha256').notNull(),
+    simulated: integer('simulated', { mode: 'boolean' }).notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('uidx_research_artifacts_project_path').on(
+      table.projectId,
+      table.path,
+    ),
+    index('idx_research_artifacts_run').on(table.runId),
+    index('idx_research_artifacts_project_role').on(
+      table.projectId,
+      table.role,
+    ),
+  ],
+);
+
+/** One Codex thread retained per research project and module. */
+export const researchAgentSessions = sqliteTable(
+  'research_agent_sessions',
+  {
+    sessionId: text('session_id').primaryKey(),
+    projectId: text('project_id').notNull(),
+    module: text('module').notNull(),
+    threadId: text('thread_id').notNull(),
+    cwd: text('cwd').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('uidx_research_agent_project_module').on(
+      table.projectId,
+      table.module,
+    ),
+    uniqueIndex('uidx_research_agent_thread').on(table.threadId),
+  ],
+);
+
+/** Auditable binding between a research run and its Codex turn. */
+export const researchAgentInvocations = sqliteTable(
+  'research_agent_invocations',
+  {
+    runId: text('run_id').primaryKey(),
+    sessionId: text('session_id').notNull(),
+    threadId: text('thread_id').notNull(),
+    turnId: text('turn_id').notNull(),
+    model: text('model'),
+    effort: text('effort'),
+    serviceTier: text('service_tier'),
+    skillName: text('skill_name').notNull(),
+    skillPath: text('skill_path').notNull(),
+    skillSha256: text('skill_sha256').notNull(),
+    promptVersion: text('prompt_version').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('uidx_research_agent_turn').on(table.threadId, table.turnId),
+  ],
+);
+
 /** Persists final turn errors for hydration after page refresh. */
 export const turnErrors = sqliteTable(
   'turn_errors',

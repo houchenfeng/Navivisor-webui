@@ -53,7 +53,8 @@ pids
 *.seed
 *.pid.lock
 
-# Research-agent generated data: never commit user literature, PDFs, fixtures, or run manifests.
+# Research-agent generated data: never commit user literature, PDFs, or run manifests.
+/work/research-projects/
 /work/research-topic/runs/
 
 # Python bytecode generated while validating research tools.

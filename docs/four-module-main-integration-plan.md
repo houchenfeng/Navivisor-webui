@@ -28,12 +28,12 @@
 
 开始执行前必须重新 `git fetch --prune origin`，并把下面 SHA 当作“本文分析基线”，不能假定远端没有变化。
 
-| 模块 | 分支 | 本文分析时 HEAD | 相对 `main` | 实际完成度 |
-|---|---|---:|---:|---|
-| 实验 | `main` | `1bb84f5` | 基线 | 完整离线 Demo；结果主要在 Zustand/localStorage 和浏览器下载中 |
-| 开题 | `feat/research-topic` | `fe5cd2e` | 7 commits | 有 OpenAlex 后端、前端、工具和初版文件契约；只实现 first-search 的一部分 |
-| 写作 | `feat/research-writing` | `38c98d0` | 1 commit | 只有占位页和路由，不是完整写作模块 |
-| 投稿 | `feat/research-submission` | `c3246d6` | 1 commit | 有完整模拟 UI；依赖仓库外后端，状态只在内存中，API 层重复且有硬编码公网地址 |
+| 模块 | 分支                       | 本文分析时 HEAD | 相对 `main` | 实际完成度                                                                  |
+| ---- | -------------------------- | --------------: | ----------: | --------------------------------------------------------------------------- |
+| 实验 | `main`                     |       `1bb84f5` |        基线 | 完整离线 Demo；结果主要在 Zustand/localStorage 和浏览器下载中               |
+| 开题 | `feat/research-topic`      |       `fe5cd2e` |   7 commits | 有 OpenAlex 后端、前端、工具和初版文件契约；只实现 first-search 的一部分    |
+| 写作 | `feat/research-writing`    |       `38c98d0` |    1 commit | 只有占位页和路由，不是完整写作模块                                          |
+| 投稿 | `feat/research-submission` |       `c3246d6` |    1 commit | 有完整模拟 UI；依赖仓库外后端，状态只在内存中，API 层重复且有硬编码公网地址 |
 
 重新盘点命令：
 
@@ -77,7 +77,7 @@ git diff --name-status origin/main...origin/feat/research-submission
 当前输出根目录被硬编码为：
 
 ```ts
-join(process.cwd(), 'work', 'research-topic', 'runs')
+join(process.cwd(), 'work', 'research-topic', 'runs');
 ```
 
 当前真正落盘的文件只有：
@@ -157,12 +157,12 @@ import { SubmissionPage } from '@/components/research-submission/submission-page
 
 且路由映射必须是：
 
-| 路径 | component |
-|---|---|
-| `/research/topic` | `TopicPage` |
+| 路径                                | component                  |
+| ----------------------------------- | -------------------------- |
+| `/research/topic`                   | `TopicPage`                |
 | `/research/experiment` 及六个子路由 | 保持 `ExperimentDemo` 现状 |
-| `/research/paper` | `WritingPage` |
-| `/research/submit` | `SubmissionPage` |
+| `/research/paper`                   | `WritingPage`              |
+| `/research/submit`                  | `SubmissionPage`           |
 
 合并时把 `router.tsx` 统一保存为 UTF-8 无 BOM、LF。仓库可增加 `.gitattributes`：
 
@@ -352,23 +352,23 @@ GET    /api/research/projects/:projectId/artifacts/:artifactId/download
 
 ### 5.5 四模块交接表
 
-| 生产模块 | 必须输出的 role | 推荐文件 | 消费模块 |
-|---|---|---|---|
-| 开题 | `candidate-papers` | `first-search-papers.csv` | 开题后续、实验、写作 |
-| 开题 | `candidate-topics` | `candidate-topics.json`/`.csv` | 用户确认页 |
-| 开题 | `confirmed-topic` | `confirmed-topic.json` | 实验、写作 |
-| 开题 | `core-references` | `references.csv`、`references.bib` | 实验、写作 |
-| 开题 | `literature-handoff` | `handoff.md` | 实验、写作 |
-| 实验 | `experiment-plan` | `experiment-plan.json`/`.md` | 实验运行、写作 |
-| 实验 | `experiment-results` | `experiment-results.json`/`.md` | 写作 |
-| 实验 | `method-architecture` | `method-architecture.md` | 写作 |
-| 写作 | `paper-metadata` | `paper-metadata.json` | 投稿 |
-| 写作 | `paper-source` | `paper.md` 或 `paper.tex` | 写作、投稿准备 |
-| 写作 | `paper-pdf` | `paper.pdf` | 投稿 |
-| 投稿 | `submission-package` | `submission.json` | 投稿模拟/真实适配器 |
-| 投稿 | `review-round1` | `review-round1.json` | rebuttal |
-| 投稿 | `rebuttal` | `rebuttal.md` | 二审 |
-| 投稿 | `submission-decision` | `decision.json` | 最终展示/归档 |
+| 生产模块 | 必须输出的 role       | 推荐文件                           | 消费模块             |
+| -------- | --------------------- | ---------------------------------- | -------------------- |
+| 开题     | `candidate-papers`    | `first-search-papers.csv`          | 开题后续、实验、写作 |
+| 开题     | `candidate-topics`    | `candidate-topics.json`/`.csv`     | 用户确认页           |
+| 开题     | `confirmed-topic`     | `confirmed-topic.json`             | 实验、写作           |
+| 开题     | `core-references`     | `references.csv`、`references.bib` | 实验、写作           |
+| 开题     | `literature-handoff`  | `handoff.md`                       | 实验、写作           |
+| 实验     | `experiment-plan`     | `experiment-plan.json`/`.md`       | 实验运行、写作       |
+| 实验     | `experiment-results`  | `experiment-results.json`/`.md`    | 写作                 |
+| 实验     | `method-architecture` | `method-architecture.md`           | 写作                 |
+| 写作     | `paper-metadata`      | `paper-metadata.json`              | 投稿                 |
+| 写作     | `paper-source`        | `paper.md` 或 `paper.tex`          | 写作、投稿准备       |
+| 写作     | `paper-pdf`           | `paper.pdf`                        | 投稿                 |
+| 投稿     | `submission-package`  | `submission.json`                  | 投稿模拟/真实适配器  |
+| 投稿     | `review-round1`       | `review-round1.json`               | rebuttal             |
+| 投稿     | `rebuttal`            | `rebuttal.md`                      | 二审                 |
+| 投稿     | `submission-decision` | `decision.json`                    | 最终展示/归档        |
 
 每个 handoff 只引用不可变 artifact：
 
@@ -553,17 +553,17 @@ prompt builder 只接受结构化参数，不接受 controller 拼任意系统�
 
 状态映射：
 
-| Codex/系统事件 | workflow run 状态 | 动作 |
-|---|---|---|
-| turn 创建成功 | `running` | 保存 threadId/turnId |
-| serverRequest approval | `waiting_for_approval` | 复用 PendingApprovals UI，不自动同意 |
-| requestUserInput | `waiting_for_input` | 复用现有 user-input card/响应通道 |
-| 审批/输入已响应 | `running` | 等待后续通知 |
-| turn completed | `validating` | 校验 result.json 和输出文件 |
-| 校验通过并原子登记 | `completed` | 发布 artifact/handoff |
-| turn failed | `failed` | 保存分类错误，不发布半成品 |
-| turn interrupted | `cancelled` | 清理 temp 或保留诊断 |
-| app-server 重启 | 不直接假定失败 | 读取 thread/turn 历史；无法确认时标记 interrupted 并允许重试 |
+| Codex/系统事件         | workflow run 状态      | 动作                                                         |
+| ---------------------- | ---------------------- | ------------------------------------------------------------ |
+| turn 创建成功          | `running`              | 保存 threadId/turnId                                         |
+| serverRequest approval | `waiting_for_approval` | 复用 PendingApprovals UI，不自动同意                         |
+| requestUserInput       | `waiting_for_input`    | 复用现有 user-input card/响应通道                            |
+| 审批/输入已响应        | `running`              | 等待后续通知                                                 |
+| turn completed         | `validating`           | 校验 result.json 和输出文件                                  |
+| 校验通过并原子登记     | `completed`            | 发布 artifact/handoff                                        |
+| turn failed            | `failed`               | 保存分类错误，不发布半成品                                   |
+| turn interrupted       | `cancelled`            | 清理 temp 或保留诊断                                         |
+| app-server 重启        | 不直接假定失败         | 读取 thread/turn 历史；无法确认时标记 interrupted 并允许重试 |
 
 审批继续使用 `PendingApprovalsService` 的 generation/CAS 语义。科研页面只增加“此审批属于哪个 project/run/stage”的关联展示，不能创建第二套批准接口。
 
@@ -627,7 +627,7 @@ const STAGE_SKILL_POLICY = {
   'submission.prepare': ['research-submission'],
   'submission.review.round1': ['research-submission'],
   'submission.rebuttal': ['research-submission'],
-  'submission.decision': ['research-submission']
+  'submission.decision': ['research-submission'],
 } as const;
 ```
 
@@ -668,19 +668,19 @@ const STAGE_SKILL_POLICY = {
 
 ### 5.9 四模块中的模型能力统一替换表
 
-| 当前/计划能力 | 现状或风险 | 统一后的执行者 | 数据输出 |
-|---|---|---|---|
-| 开题文献检索 | OpenAlex 后端直调 | 确定性 OpenAlex adapter；Codex 不替代真实检索 | CSV + query-plan + manifest |
-| 候选题生成/分析 | 尚未完整实现 | Codex + `research-topic` Skill | candidate-topics artifact |
-| 核心文献总结 | 尚未实现 | Codex + Skill，输入真实文献 artifact | analysis/handoff artifact |
-| 实验想法与计划 | 前端硬编码 Demo | Codex + `research-experiment` Skill | experiment-plan |
-| 模拟结果叙述 | 前端字符串 | Codex + Skill，仍标 simulated | experiment-results |
-| SAM/其他模型真实运行 | 尚未接通 | 由 Codex Skill 调受控 runner/CLI；runner 是工具不是第二聊天后端 | checkpoints/metrics/logs |
-| 论文大纲和草稿 | 写作分支仅占位 | Codex + `research-writing` Skill | outline/source/metadata |
-| PDF metadata 提取 | 投稿直连临时后端 | 先用确定性 PDF parser；必要时由 Codex Skill 辅助 | paper-metadata |
-| 一审意见 | 投稿浏览器直连 cpolar | Codex + `research-submission` Skill | review-round1 |
-| rebuttal 生成 | 重复 API/mock | Codex +同一 Skill | rebuttal |
-| 最终决定 | 外部模拟接口 | Codex 教学模拟 + Skill，强制 simulated | decision |
+| 当前/计划能力        | 现状或风险            | 统一后的执行者                                                  | 数据输出                    |
+| -------------------- | --------------------- | --------------------------------------------------------------- | --------------------------- |
+| 开题文献检索         | OpenAlex 后端直调     | 确定性 OpenAlex adapter；Codex 不替代真实检索                   | CSV + query-plan + manifest |
+| 候选题生成/分析      | 尚未完整实现          | Codex + `research-topic` Skill                                  | candidate-topics artifact   |
+| 核心文献总结         | 尚未实现              | Codex + Skill，输入真实文献 artifact                            | analysis/handoff artifact   |
+| 实验想法与计划       | 前端硬编码 Demo       | Codex + `research-experiment` Skill                             | experiment-plan             |
+| 模拟结果叙述         | 前端字符串            | Codex + Skill，仍标 simulated                                   | experiment-results          |
+| SAM/其他模型真实运行 | 尚未接通              | 由 Codex Skill 调受控 runner/CLI；runner 是工具不是第二聊天后端 | checkpoints/metrics/logs    |
+| 论文大纲和草稿       | 写作分支仅占位        | Codex + `research-writing` Skill                                | outline/source/metadata     |
+| PDF metadata 提取    | 投稿直连临时后端      | 先用确定性 PDF parser；必要时由 Codex Skill 辅助                | paper-metadata              |
+| 一审意见             | 投稿浏览器直连 cpolar | Codex + `research-submission` Skill                             | review-round1               |
+| rebuttal 生成        | 重复 API/mock         | Codex +同一 Skill                                               | rebuttal                    |
+| 最终决定             | 外部模拟接口          | Codex 教学模拟 + Skill，强制 simulated                          | decision                    |
 
 “统一为 Codex”只指模型推理、生成和工具编排入口统一。真实数据库检索、文件解析、checksum、训练程序等确定性工作仍应作为后端 adapter 或 Codex 可调用工具存在，不能为了统一而让 LLM 猜测确定性结果。
 
@@ -1142,16 +1142,16 @@ git merge --no-ff origin/feat/research-topic
 
 如果仓库允许，增加 CODEOWNERS 或至少在 PR 模板中指定：
 
-| 路径 | 责任 |
-|---|---|
-| `src/research-workflow/**` | 四模块共同评审，contract owner 必须批准 |
-| `src/research-topic/**` | 开题负责人 |
-| `web/src/components/research-topic/**` | 开题负责人 |
-| `web/src/components/research-experiment/**` | 实验负责人 |
-| `web/src/components/research-writing/**` | 写作负责人 |
-| `web/src/components/research-submission/**` | 投稿负责人 |
-| `web/src/routes/router.tsx` | 集成负责人 |
-| `src/database/schema.ts`、`drizzle/**` | 后端/数据负责人 |
+| 路径                                        | 责任                                    |
+| ------------------------------------------- | --------------------------------------- |
+| `src/research-workflow/**`                  | 四模块共同评审，contract owner 必须批准 |
+| `src/research-topic/**`                     | 开题负责人                              |
+| `web/src/components/research-topic/**`      | 开题负责人                              |
+| `web/src/components/research-experiment/**` | 实验负责人                              |
+| `web/src/components/research-writing/**`    | 写作负责人                              |
+| `web/src/components/research-submission/**` | 投稿负责人                              |
+| `web/src/routes/router.tsx`                 | 集成负责人                              |
+| `src/database/schema.ts`、`drizzle/**`      | 后端/数据负责人                         |
 
 共享文件的修改必须单独 commit。模块负责人不应顺手格式化整个 router、lockfile 或通用 UI 目录。
 
@@ -1204,7 +1204,7 @@ git merge --no-ff origin/feat/research-topic
 9. 给出 TASK-0.1 至 TASK-6.4 的实施清单，每项均写明依赖、目标、修改、约束和完成判定，并给出无循环依赖的推荐执行顺序。
 10. 扩充了测试和交付门槛，覆盖 Skill 路径伪造、Codex 事件串线、审批竞态、app-server 重启、恶意 result.json、跨项目读取、模拟数据传播和外部模型 URL 回归。
 
-当前文档阶段只完成架构分析和执行设计，没有实际合并三个功能分支，也没有实现上述业务代码。下一位 AI 应从 TASK-0.1 开始，逐项提交并在本节下面继续追加“实际完成 SHA / 测试结果 / 未完成项”，不要另建平行计划文档。
+本文已从架构设计进入实施阶段。所有执行结果继续追加在本节，不建立平行计划或中间说明文件；尚未列为“完成”的任务仍必须按前文章节逐项实施和验证。
 
 ### 实际执行记录
 
@@ -1213,3 +1213,6 @@ git merge --no-ff origin/feat/research-topic
 - TASK-0.3：完成。新增 `.gitattributes`，保留 main 的 `web/pnpm-workspace.yaml` 配置。
 - 基线验证：根目录 `pnpm build` 通过；`web/pnpm build` 通过；`web/pnpm test` 为 20 files / 195 tests 全通过。
 - 基线已知问题：根目录测试为 36 files 通过、2 files 失败，合计 309 tests 通过、5 tests 失败。失败来自 Windows 环境下用户主目录同时是 FilesService 默认允许根导致 3 个“outside root”断言不成立、无 symlink 权限导致 1 项失败，以及并行 schema/AppModule 测试缺 `WEBUI_API_KEY` 并发生 SQLite 临时文件锁。后续应单独修复，不能误记为本次 workflow 新测试回归。
+- TASK-1.1（实施中）：已新增 `research_projects`、`research_runs`、`research_artifacts`、`research_agent_sessions`、`research_agent_invocations` 五张表及 Drizzle migration `0010_eminent_chameleon.sql`。
+- TASK-1.2（实施中）：已新增共享 contract、受控 project/run/temp/artifacts 路径服务、project/run/artifact API 与 SHA-256、临时文件原子 finalize；运行根默认位于 `%USERPROFILE%/.codex/research-projects`，并通过 `.gitignore` 排除仓库内兼容运行目录。
+- 数据底座阶段验证：根目录 `pnpm build` 通过。后续在补齐 manifest 状态迁移、安全测试及 Codex bridge 后再次执行完整 build/lint/test。
