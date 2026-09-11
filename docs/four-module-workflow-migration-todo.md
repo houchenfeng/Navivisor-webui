@@ -73,6 +73,15 @@
 
 完成判定：恶意路径、未知 role、跨 run 文件、checksum 伪造测试全部通过。
 
+实施结果（2026-09-11）：部分完成
+
+- 完成 SHA：`f588788`
+- 实际修改：增加 `ResearchResultValidatorService` 和 result contract；验证 schema/run/stage、已知 role、相对路径、真实路径、普通文件、重复项、数量及 50 MiB 单文件上限；服务端 finalize 时自行计算 SHA-256 并更新 manifest。
+- 验证命令：`pnpm build`；`pnpm exec eslint src/research-workflow/*.ts`；`pnpm test -- src/research-workflow/research-result-validator.service.spec.ts src/threads/threads.controller.spec.ts`
+- 验证结果：构建和 ESLint 通过，2 个测试文件、21 项测试通过。
+- 遗留问题：多输出 finalize 当前先完整预检、再逐项落盘，但尚未实现文件移动和数据库写入的补偿事务；符号链接逻辑已实现，Windows 权限环境下尚未加入实际 symlink fixture。
+- 远端状态：已推送至 `origin/integration/research-workflow`。
+
 ### TODO-A2：实现 run 状态机和 manifest 更新
 
 修改位置：
@@ -99,6 +108,15 @@ queued/running/waiting_* -> unavailable | cancelled
 
 完成判定：状态迁移单测、重试追溯测试、数据库/manifest 一致性测试通过。
 
+实施结果（2026-09-11）：部分完成
+
+- 完成 SHA：`f588788`
+- 实际修改：增加显式状态迁移表；数据库与 manifest 由同一方法更新；artifact 创建同步追加 manifest；重试新建 run 并保留 `retryOfRunId`；Codex provenance 写入 manifest。
+- 验证命令：同 TODO-A1。
+- 验证结果：构建、ESLint 和定向测试通过。
+- 遗留问题：需要增加状态机及写盘失败一致性专用单测，并实现补偿事务后才能标记完成。
+- 远端状态：已推送至 `origin/integration/research-workflow`。
+
 ### TODO-A3：订阅 Codex 生命周期和 turn 事件
 
 任务：
@@ -110,6 +128,15 @@ queued/running/waiting_* -> unavailable | cancelled
 - approval/user-input 等待状态必须可在刷新后恢复。
 
 完成判定：并发两个项目、同项目两个模块、重启 app-server、取消与审批竞态测试通过。
+
+实施结果（2026-09-11）：部分完成
+
+- 完成 SHA：`f588788`
+- 实际修改：增加 `ResearchRunEventsService`；严格按持久化 threadId + turnId 匹配 invocation；turn completed 触发校验/finalize，failed/interrupted 写入终态；app-server unavailable 将活动 run 标记 unavailable。
+- 验证命令：同 TODO-A1。
+- 验证结果：类型、lint 和现有定向测试通过。
+- 遗留问题：approval/user-input 状态通知映射、重启后 unavailable run 对账恢复、并发与竞态专用测试尚未完成。
+- 远端状态：已推送至 `origin/integration/research-workflow`。
 
 ### TODO-A4：补全 Workflow API
 
@@ -136,6 +163,15 @@ POST   /api/research/projects/:projectId/uploads
 - 删除或严格限制当前任意文本 artifact 写入接口，避免浏览器伪造 finalized 产物。
 - 所有 project/run/artifact 关系在后端验证，跨项目访问返回 404/403。
 - OpenAPI 生成后让前端使用共享 generated client，禁止新增手写 base URL。
+
+实施结果（2026-09-11）：部分完成
+
+- 完成 SHA：`f588788`
+- 实际修改：增加 project 范围内 run 详情、取消、重试和 artifact content 下载；取消会 interrupt 对应 Codex turn；删除允许浏览器任意创建 finalized 文本 artifact 的入口。
+- 验证命令：同 TODO-A1。
+- 验证结果：构建、ESLint 和定向测试通过。
+- 遗留问题：受控上传、OpenAPI 客户端再生成以及 controller 专用鉴权/跨项目测试尚未完成。
+- 远端状态：已推送至 `origin/integration/research-workflow`。
 
 ## 4. Phase B：统一前端基础设施
 
@@ -329,16 +365,16 @@ git diff --stat <last-merged-sha>..origin/<feature-branch>
 
 ## 10. 执行状态摘要
 
-| 阶段           | 状态   | 完成 SHA | 验证结果 |
-| -------------- | ------ | -------- | -------- |
-| A 后端闭环     | 未开始 | -        | -        |
-| B 前端基础设施 | 未开始 | -        | -        |
-| C1 开题迁移    | 未开始 | -        | -        |
-| C2 实验迁移    | 未开始 | -        | -        |
-| C3 写作实现    | 未开始 | -        | -        |
-| C4 投稿迁移    | 未开始 | -        | -        |
-| D 旧架构清理   | 未开始 | -        | -        |
-| E 端到端验收   | 未开始 | -        | -        |
+| 阶段           | 状态     | 完成 SHA  | 验证结果                        |
+| -------------- | -------- | --------- | ------------------------------- |
+| A 后端闭环     | 部分完成 | `f588788` | build/lint 通过；定向测试 21/21 |
+| B 前端基础设施 | 未开始   | -         | -                               |
+| C1 开题迁移    | 未开始   | -         | -                               |
+| C2 实验迁移    | 未开始   | -         | -                               |
+| C3 写作实现    | 未开始   | -         | -                               |
+| C4 投稿迁移    | 未开始   | -         | -                               |
+| D 旧架构清理   | 未开始   | -         | -                               |
+| E 端到端验收   | 未开始   | -         | -                               |
 
 执行者完成每个阶段后，必须直接更新此表和对应 TODO 的实际结果、commit SHA、测试命令与遗留问题，不创建新的中间状态文档。
 
