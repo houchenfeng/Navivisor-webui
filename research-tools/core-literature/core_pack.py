@@ -1,6 +1,7 @@
 import argparse
 import csv
 import json
+import os
 import sys
 import threading
 import urllib.error
@@ -76,7 +77,16 @@ def download_one(url, target, pdf_policy):
     if not ok: return reason, {"url": url, "attempted": False}
     max_bytes = int(pdf_policy.get("maxBytes", 25 * 1024 * 1024)); timeout = int(pdf_policy.get("timeoutSeconds", 20))
     try:
-        request = urllib.request.Request(url, headers={"User-Agent": "QihangResearchSkill/1.2", "Accept": "application/pdf"})
+        request_url = url
+        parsed = urllib.parse.urlparse(url)
+        if parsed.hostname and parsed.hostname.lower() == "content.openalex.org":
+            api_key = os.environ.get("OPENALEX_API_KEY", "").strip()
+            if not api_key:
+                return "openalex_content_api_key_missing", {"url": url, "attempted": False}
+            query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+            query["api_key"] = [api_key]
+            request_url = urllib.parse.urlunparse(parsed._replace(query=urllib.parse.urlencode(query, doseq=True)))
+        request = urllib.request.Request(request_url, headers={"User-Agent": "QihangResearchSkill/1.2", "Accept": "application/pdf"})
         with urllib.request.urlopen(request, timeout=timeout) as response:
             final_url = response.geturl(); ok, reason = allowed_url(final_url, pdf_policy); content_type = response.headers.get_content_type(); length = response.headers.get("Content-Length")
             detail = {"url": url, "finalUrl": final_url, "attempted": True, "httpStatus": response.status, "contentType": content_type}

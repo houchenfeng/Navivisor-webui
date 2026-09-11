@@ -44,6 +44,8 @@ cd web && pnpm install && cd ..
 
 cp .env.example .env
 # 编辑 .env，至少设置 WEBUI_API_KEY（Web 登录密钥，不是 ChatGPT 账号）
+# 开题检索与核心文献 PDF 下载还需要配置自己的 OpenAlex Key：
+# OPENALEX_API_KEY=...
 # Windows 建议设置 CODEX_BIN 指向本机 codex.exe
 
 pnpm start:dev          # 后端，默认 8172
@@ -61,13 +63,40 @@ cd web && pnpm dev      # 前端，常见 http://localhost:5173 或 5174
 | 模块 | 路径 | 怎么用 |
 |---|---|---|
 | 首页 | `/research/home` | 四模块入口；底栏卡片为 Demo |
-| 开题 | `/research/topic` | 填方向 → 试检索（OpenAlex）；Step2/3 暂为占位 |
+| 开题 | `/research/topic` | 填方向 → OpenAlex 试检索 → 候选课题 → 核心文献 |
 | 实验 | `/research/experiment` | 导入 SAM Demo → 模拟执行 → 查看/下载成果 |
 | 写作 | `/research/paper` | 填入实验素材 → 任意跳步 → AI 生成走 Codex |
 | 投稿 | `/research/submit` | 走完审稿 Demo（默认本地 mock） |
 
-写作 AI 需 Codex 已登录；PDF 请下载 zip 后本地编译。  
-目前开题后两步、真实实验、在线 PDF 编译和真实投稿仍未完成；页面中的模拟结果必须视为教学 Demo，不能作为真实论文证据。
+写作 AI 需 Codex 已登录；PDF 请下载 zip 后本地编译。页面中的模拟结果必须视为教学 Demo，不能作为真实论文证据。
+
+## OpenAlex 开题检索
+
+当前 `topic` 版本已接通开题检索的实际后端链路：
+
+```text
+页面 -> POST /api/research/topic/first-search
+     -> 后端生成 OpenAlex OQL
+     -> OpenAlex API
+     -> 去重、保存 CSV 和检索记录
+     -> Codex 生成三个待核验候选课题
+     -> 用户确认分类后检索核心文献
+     -> 核心文献打包并尝试获取合法 OA PDF
+```
+
+后端 `.env` 中配置：
+
+```env
+OPENALEX_API_KEY=你的OpenAlex_API_Key
+```
+
+API Key 只在后端使用，不能写入前端源码、浏览器存储、提交记录、日志、CSV、BibTeX 或截图。
+
+检索采用三层自适应策略：先使用 `focused` 高精度命名变体和标题排除词；去重结果不足时切换 `balanced`；仍不足时切换 `broad` 保底。每次请求都会记录 OQL、关键词、排除词、OpenAlex `meta.count`、返回数、去重数和切换原因。视频异常检测已配置专用的命名变体和跨领域排除词。
+
+核心文献阶段会请求 OpenAlex 的 `open_access`、`has_content` 和 `content_urls` 字段。对于 OpenAlex 官方缓存的 PDF，下载器访问 `content.openalex.org` 时才从后端环境变量临时加入 API Key，不把 Key 写入交接文件。PDF 下载仍受 OpenAlex 内容覆盖、额度、HTTPS、域名白名单、文件大小和 PDF 文件头校验限制；无法获取全文时保留元数据并标记状态，不伪造 PDF。
+
+给协作者本地 AI 的详细接入说明见 [OpenAlex 本地接入交接文档](./outputs/OpenAlex本地接入_AI协作者交接文档.md)。
 
 四模块产物链、文件契约、统一 Demo 按钮和后续实施状态统一记录在 [四模块 Workflow TODO](./docs/four-module-workflow-migration-todo.md)。每完成一项直接回写该文件，不另建阶段性中间文档。当前缺口见 [四模块缺口报告](./docs/research-modules-gap-report.md)，完整文档入口见 [文档索引](./docs/README.md)。
 

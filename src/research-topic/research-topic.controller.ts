@@ -16,17 +16,46 @@ export class ResearchTopicController {
   }
 
   @Get('tasks/:runId')
-  get(@Param('runId') runId: string) {
+  async get(@Param('runId') runId: string) {
     if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
-    const task = this.service.get(runId);
+    const task = await this.service.get(runId);
     if (!task) throw new NotFoundException('检索任务不存在或已过期。');
     return task;
   }
 
-  @Delete('tasks/:runId')
-  cancel(@Param('runId') runId: string) {
+  @Post('tasks/:runId/candidates')
+  async generateCandidates(@Param('runId') runId: string) {
     if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
-    if (!this.service.cancel(runId)) throw new NotFoundException('任务已结束或不存在。');
+    try {
+      return await this.service.generateCandidates(runId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'TASK_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
+      if (message === 'SEARCH_NOT_COMPLETED') throw new BadRequestException('请先完成第一环节的文献检索。');
+      if (message === 'NO_SEARCH_RESULTS') throw new BadRequestException('没有可用于生成候选课题的文献。');
+      throw new BadRequestException('无法创建候选课题任务。');
+    }
+  }
+
+  @Delete('tasks/:runId')
+  async cancel(@Param('runId') runId: string) {
+    if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
+    if (!await this.service.cancel(runId)) throw new NotFoundException('任务已结束或不存在。');
     return { runId, status: 'cancelled' as const };
+  }
+
+  @Post('tasks/:runId/core-literature')
+  async generateCoreLiterature(@Param('runId') runId: string, @Req() request: FastifyRequest) {
+    if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
+    const body = (request.body ?? {}) as { label?: string };
+    try {
+      return await this.service.generateCoreLiterature(runId, body.label ?? '');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'TASK_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
+      if (message === 'TOPIC_NOT_CONFIRMED') throw new BadRequestException('请先完成候选课题生成。');
+      if (message === 'CANDIDATE_NOT_FOUND') throw new BadRequestException('请选择有效的候选课题。');
+      throw new BadRequestException('无法创建核心文献检索任务。');
+    }
   }
 }

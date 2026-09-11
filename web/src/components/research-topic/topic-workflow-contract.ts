@@ -39,6 +39,22 @@ export interface ResearchTaskSnapshot {
     previewed?: number;
     targetReached?: boolean;
   };
+  candidateStatus?: 'idle' | 'queued' | 'running' | 'completed' | 'failed';
+  candidateError?: string;
+  coreStatus?: 'idle' | 'queued' | 'running' | 'completed' | 'partial' | 'failed';
+  coreRunId?: string;
+  coreManifest?: Record<string, unknown>;
+  coreError?: string;
+  candidates?: Array<{
+    label: '偏可行' | '偏创新' | '较平衡';
+    title: string;
+    oneSentenceDefinition: string;
+    researchDesign: string;
+    expectedInnovation: string;
+    rationale: string;
+  }>;
+  isDemo?: boolean;
+  demoCoreLiterature?: Array<{ title: string; openalexId: string; whyRelevant: string }>;
 }
 
 export interface TopicWorkflowClient {
@@ -62,14 +78,13 @@ export const unavailableTopicWorkflowClient: TopicWorkflowClient = {
     return unavailableSnapshot('first-search');
   },
 };
-
 function unavailableSnapshot(stage: ResearchTaskSnapshot['stage']): ResearchTaskSnapshot {
   return {
     runId: 'unavailable',
     stage,
     status: 'unavailable',
     files: [],
-    errors: [{ code: 'SERVICE_NOT_CONNECTED', message: '本地检索服务尚未接入。' }],
+    errors: [{ code: 'SEARCH_NOT_STARTED', message: '还没有开始本地文献检索。' }],
   };
 }
 
