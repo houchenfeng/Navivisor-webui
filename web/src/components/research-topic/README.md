@@ -19,11 +19,13 @@ pnpm build
 pnpm test
 ```
 
-当前页面是可运行的前端教学流程：输入、编辑、页间返回、试搜状态、候选选择位置、方案修改和交接说明均在本地完成。它没有调用真实 AI、Codex CLI、OpenAlex、Scopus、PDF 下载或本地检索服务；示例结果与候选位置均明确标记为教学演示/待核验。
+当前已接通 OpenAlex 第一阶段“试检索”最小闭环：页面输入研究兴趣后由项目后端创建任务，后端固定访问公开 OpenAlex Works API，页面轮询并展示真实返回的论文元数据与摘要节选。它不是 `qihang-first-stage-literature-search` 的完整候选课题产物；本次不生成候选课题、PDF、BibTeX，不调用 Codex CLI，也不接入 Scopus。没有返回结果或网络失败时，页面显示空/错误状态并支持重试。
+
+本地运行：根目录启动后端 `pnpm dev`（默认 API 端口 `8172`），另在 `web/` 执行 `pnpm dev`。接口为 `POST /api/research/topic/first-search`、`GET /api/research/topic/tasks/:runId` 和可选取消接口 `DELETE /api/research/topic/tasks/:runId`；输出保存于项目内相对目录 `work/research-topic/runs/<runId>/`，包含本次的 `first-search-papers.csv` 与 `manifest.json`。服务端限制输入长度、返回数量、超时和重试次数，不向浏览器暴露凭证或文件系统绝对路径。
 
 ## 接入接口
 
-`topic-workflow-contract.ts` 导出 `TopicWorkflowClient`、`ResearchTaskSnapshot` 和 `TopicHandoff`。后续服务只需实现该接口，再由页面注入 client；不得在组件中写固定端口、绝对路径、密钥或 CLI 调用。
+`topic-workflow-contract.ts` 导出 `TopicWorkflowClient`、`ResearchTaskSnapshot` 和 `TopicHandoff`。当前页面通过同源 API adapter 接入 OpenAlex；后续服务仍应遵循 `research-tools/contract.md`，不得在组件中写固定外部数据库地址、绝对路径、密钥或 CLI 调用。
 
 实验协作者只读消费 `TopicHandoff` 的 `confirmedTopic`、`boundary`、候选证据状态和 `evidenceRunId`。写作协作者消费 confirmed topic、来源状态和核心文献包。投稿协作者不从开题直接接管，只消费之后生成的论文草稿与教学模拟状态。
 

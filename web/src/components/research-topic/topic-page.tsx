@@ -22,9 +22,11 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getApiToken } from '@/auth-token';
+import { withBasePath } from '@/base-path';
 import { demoInterest, emptyResearchMessage, starterKeywordGroups, topicSteps } from './data';
 import type { KeywordGroup, TopicDraft, TopicStep } from './types';
-import { unavailableTopicWorkflowClient, type ResearchTaskSnapshot, type TopicHandoff } from './topic-workflow-contract';
+import type { ResearchTaskSnapshot, TopicHandoff } from './topic-workflow-contract';
 
 const initialDraft: TopicDraft = {
   interest: '',
@@ -83,11 +85,21 @@ export function TopicPage() {
 
   const runSearchPreview = async () => {
     setFeedback('');
-    setTask({ runId: 'pending-demo', stage: 'first-search', status: 'running', files: [], errors: [] });
-    await new Promise((resolve) => window.setTimeout(resolve, 420));
-    const snapshot = await unavailableTopicWorkflowClient.startFirstSearch({ topic: draft.interest, context: draft.boundary });
-    setTask(snapshot);
-    setFeedback('试搜接口已预留，但真实检索服务未接入；页面保留了失败/未接入状态，不展示虚构论文。');
+    setTask({ runId: 'pending', stage: 'first-search', status: 'running', files: [], errors: [] });
+    try {
+      const response = await fetch(withBasePath('/api/research/topic/first-search'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(getApiToken() ? { Authorization: `Bearer ${getApiToken()}` } : {}) },
+        body: JSON.stringify({ researchInterest: draft.interest, context: draft.boundary, maxItems: 20 }),
+      });
+      if (!response.ok) throw new Error(response.status === 401 ? '登录状态已失效，请重新登录。' : '检索任务创建失败，请检查输入后重试。');
+      const started = await response.json() as ResearchTaskSnapshot;
+      setTask(started);
+      await pollTask(started.runId, setTask);
+    } catch (error) {
+      setTask({ runId: 'failed', stage: 'first-search', status: 'failed', files: [], errors: [{ message: error instanceof Error ? error.message : '网络错误，请稍后重试。' }] });
+      setFeedback(error instanceof Error ? error.message : '网络错误，请稍后重试。');
+    }
   };
 
   const updateGroup = (groupIndex: number, updater: (group: KeywordGroup) => KeywordGroup) => {
@@ -112,7 +124,7 @@ export function TopicPage() {
             <h1 className="font-serif text-3xl tracking-[-0.03em] text-[#1d302e] sm:text-4xl">从一个问题，开始一次可验证的研究</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#65706c]">开题不是让智能体替你做决定，而是把兴趣变成可以查证、比较和继续实验的问题。</p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[#68736f]"><span className="size-2 rounded-full bg-[#c79045]" />本地教学流程 · 未接入真实检索</div>
+          <div className="flex items-center gap-2 text-xs text-[#68736f]"><span className="size-2 rounded-full bg-[#607b72]" />开题教学流程 · OpenAlex 试检索已接入</div>
         </header>
 
         <nav aria-label="开题五步进度" className="mb-8 grid grid-cols-2 gap-2 md:grid-cols-5">
@@ -129,8 +141,8 @@ export function TopicPage() {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
           <section className="min-w-0">
             {step === 1 && <InterestStep draft={draft} setDraft={setDraft} organized={organized} isOrganizing={isOrganizing} feedback={feedback} organizeInterest={organizeInterest} updateGroup={updateGroup} />}
-            {step === 2 && <SearchStep draft={draft} setDraft={setDraft} task={task} feedback={feedback} showSyntax={showSyntax} setShowSyntax={setShowSyntax} updateGroup={updateGroup} runSearchPreview={runSearchPreview} />}
-            {step === 3 && <EvidenceStep task={task} setStep={setStep} />}
+            {step === 2 && <SearchStep draft={draft} setDraft={setDraft} task={task} showSyntax={showSyntax} setShowSyntax={setShowSyntax} updateGroup={updateGroup} runSearchPreview={runSearchPreview} />}
+            {step === 3 && <EvidenceStep task={task} setStep={setStep} onRetry={runSearchPreview} />}
             {step === 4 && <CandidateStep selectedCandidate={selectedCandidate} setSelectedCandidate={setSelectedCandidate} feedback={feedback} />}
             {step === 5 && <DeepenStep draft={draft} handoff={handoff} deepened={deepened} setDeepened={setDeepened} setDraft={setDraft} feedback={feedback} />}
             <ActionBar step={step} setStep={setStep} next={next} canAdvance={canAdvance} feedback={feedback} />
@@ -151,16 +163,37 @@ function InterestStep({ draft, setDraft, organized, isOrganizing, feedback, orga
   </StepFrame>;
 }
 
-function SearchStep({ draft, setDraft, task, feedback, showSyntax, setShowSyntax, updateGroup, runSearchPreview }: { draft: TopicDraft; setDraft: React.Dispatch<React.SetStateAction<TopicDraft>>; task: ResearchTaskSnapshot | null; feedback: string; showSyntax: boolean; setShowSyntax: React.Dispatch<React.SetStateAction<boolean>>; updateGroup: (index: number, updater: (group: KeywordGroup) => KeywordGroup) => void; runSearchPreview: () => Promise<void> }) {
+function SearchStep({ draft, setDraft, task, showSyntax, setShowSyntax, updateGroup, runSearchPreview }: { draft: TopicDraft; setDraft: React.Dispatch<React.SetStateAction<TopicDraft>>; task: ResearchTaskSnapshot | null; showSyntax: boolean; setShowSyntax: React.Dispatch<React.SetStateAction<boolean>>; updateGroup: (index: number, updater: (group: KeywordGroup) => KeywordGroup) => void; runSearchPreview: () => Promise<void> }) {
   const resultLabels = ['结果 A', '结果 B', '结果 C'];
   return <StepFrame title="检索策略与相关度试搜" subtitle="正式检索前，先用少量结果检查：我们是不是在找正确的问题。" icon={Search}>
     <section className="rounded-2xl border border-[#d9d8d1] bg-[#fffefa] p-5 shadow-[0_8px_30px_rgba(41,54,48,0.04)] sm:p-6"><div className="flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-base font-semibold text-[#33423e]"><BookOpen className="size-4 text-[#9b672e]" />文献来源方案</h3><span className="text-[11px] text-[#89918d]">由后端策略选择</span></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-[#9fb5a4] bg-[#f1f6f0] p-4"><div className="flex items-center justify-between gap-2"><span className="font-semibold text-[#355449]">OpenAlex</span><span className="rounded-md bg-[#dbe9dc] px-2 py-1 text-[11px] font-semibold text-[#456158]">当前默认</span></div><p className="mt-2 text-xs leading-5 text-[#687a70]">开放元数据与摘要方案；网络可用性需在运行时验证，不代表全文或 PDF 已获取。</p></div><div className="rounded-xl border border-dashed border-[#d4d5ce] bg-[#fafaf7] p-4 opacity-75"><div className="flex items-center justify-between gap-2"><span className="font-semibold text-[#69736e]">Scopus</span><span className="rounded-md border border-[#e3d2b7] bg-[#fbf1e2] px-2 py-1 text-[11px] font-semibold text-[#8c6637]">待授权</span></div><p className="mt-2 text-xs leading-5 text-[#89918d]">当前不可直接运行；需要合法 API 或机构权限，浏览器登录不等于 API 授权。</p></div></div></section>
     <Panel title="检索范围" icon={FileSearch} status="待核验"><p className="mt-2 text-xs leading-5 text-[#747d78]">试搜只用来检查关键词方向，不代表真实论文结果。你可以修改上一页的三组关键词。</p><div className="mt-4 grid gap-3 sm:grid-cols-3">{draft.keywords.map((group, index) => <div key={group.label} className="rounded-xl border border-[#e2e1da] bg-[#fbfbf8] p-3"><div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold text-[#394a45]">{group.label}</span><button type="button" onClick={() => updateGroup(index, (current) => ({ ...current, items: [...current.items, ''] }))} className="text-xs font-semibold text-[#9b672e]">编辑</button></div><div className="space-y-1.5">{group.items.map((item, itemIndex) => <input key={`${group.label}-${itemIndex}`} value={item} onChange={(event) => updateGroup(index, (current) => ({ ...current, items: current.items.map((value, key) => key === itemIndex ? event.target.value : value) }))} className="w-full rounded-lg border border-[#deded7] bg-white px-2.5 py-1.5 text-xs outline-none focus:border-[#bc7d35]" aria-label={`${group.label}关键词${itemIndex + 1}`} />)}</div></div>)}</div><div className="mt-4 flex flex-wrap items-center gap-3"><Button onClick={runSearchPreview} disabled={task?.status === 'running'} className="bg-[#243f3b] text-[#f8f7f1] hover:bg-[#31534d]"><Search />{task?.status === 'running' ? '试搜中' : '试搜'}</Button><Button variant="outline" onClick={() => setShowSyntax((current) => !current)}>{showSyntax ? '收起检索语法' : '查看检索语法'}<ChevronDown className={cn('size-4 transition-transform', showSyntax && 'rotate-180')} /></Button></div>{showSyntax && <div className="mt-3 rounded-xl bg-[#edf1eb] p-4 text-xs leading-6 text-[#52645c]"><code>对象 AND 任务 AND 场景</code><br />这只是帮助理解的简化表达式，页面不会要求你手写复杂检索式。</div>}</Panel>
-    <Panel title="相关度检查" icon={CircleHelp} status="教学模拟"><p className="mt-2 text-xs leading-5 text-[#747d78]">当前没有真实来源可展示。下面的三个位置只是教学用的判断练习，不是论文条目。</p><div className="mt-4 space-y-2">{resultLabels.map((label) => <div key={label} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-[#cfd4cc] bg-[#fbfbf8] p-3"><span className="flex items-center gap-2 text-sm text-[#68736f]"><span className="grid size-7 place-items-center rounded-lg bg-[#e9eee8] text-xs font-bold text-[#607b72]">?</span>{label} · 尚未收到真实结果</span><div className="flex gap-1.5">{(['相关', '部分相关', '不相关'] as const).map((value) => <button key={value} type="button" onClick={() => setDraft((current) => ({ ...current, searchFeedback: { ...current.searchFeedback, [label]: value } }))} className={cn('rounded-md border px-2 py-1 text-xs transition', draft.searchFeedback[label] === value ? 'border-[#607b72] bg-[#e1ebe1] text-[#38554b]' : 'border-[#deded7] text-[#7a827d] hover:bg-white')}>{value}</button>)}</div></div>)}</div>{task?.status === 'unavailable' && <InlineMessage kind="warning" message={feedback} />}</Panel>
+    <Panel title="相关度检查" icon={CircleHelp} status="教学模拟"><p className="mt-2 text-xs leading-5 text-[#747d78]">当前的判断按钮仍是教学练习；论文列表来自本次真实 OpenAlex 元数据试检索，不能替代逐篇阅读和核验。</p><div className="mt-4 space-y-2">{resultLabels.map((label) => <div key={label} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-[#cfd4cc] bg-[#fbfbf8] p-3"><span className="flex items-center gap-2 text-sm text-[#68736f]"><span className="grid size-7 place-items-center rounded-lg bg-[#e9eee8] text-xs font-bold text-[#607b72]">?</span>{label} · 请在证据列表中判断</span><div className="flex gap-1.5">{(['相关', '部分相关', '不相关'] as const).map((value) => <button key={value} type="button" onClick={() => setDraft((current) => ({ ...current, searchFeedback: { ...current.searchFeedback, [label]: value } }))} className={cn('rounded-md border px-2 py-1 text-xs transition', draft.searchFeedback[label] === value ? 'border-[#607b72] bg-[#e1ebe1] text-[#38554b]' : 'border-[#deded7] text-[#7a827d] hover:bg-white')}>{value}</button>)}</div></div>)}</div>{task?.status === 'failed' && <InlineMessage kind="error" message={task.errors[0]?.message ?? '检索失败，请重试。'} />}</Panel>
   </StepFrame>;
 }
 
-function EvidenceStep({ task, setStep }: { task: ResearchTaskSnapshot | null; setStep: (step: TopicStep) => void }) { return <StepFrame title="文献证据、领域态势与研究空白" subtitle="把“我觉得值得研究”变成“我能指出依据在哪里”。" icon={BookOpen}><Panel title="已检索论文" icon={FileSearch} status="待核验"><EmptyState icon={Search} title="尚未收到真实检索结果" description={emptyResearchMessage} action={<Button variant="outline" onClick={() => setStep(2)}><ArrowLeft />返回策略与试搜</Button>} /></Panel><Panel title="核心文献" icon={BookOpen} status="待核验"><div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center"><div className="grid size-16 place-items-center rounded-2xl bg-[#e9eee8] text-[#607b72]"><LockKeyhole className="size-7" /></div><div><h3 className="font-semibold text-[#33423e]">核心文献库保持为空</h3><p className="mt-1 text-xs leading-5 text-[#747d78]">只有真实检索返回、来源可追溯的论文，才允许由用户逐篇加入。当前不会自动加入或生成论文。</p>{task && <span className="mt-2 inline-flex rounded-md border border-[#d9d8d1] px-2 py-1 text-xs text-[#7c8580]">任务状态：{task.status === 'unavailable' ? '工具未接入' : task.status}</span>}</div></div></Panel></StepFrame>; }
+function EvidenceStep({ task, setStep, onRetry }: { task: ResearchTaskSnapshot | null; setStep: (step: TopicStep) => void; onRetry: () => Promise<void> }) {
+  const papers = task?.papers ?? [];
+  const isLoading = task?.status === 'queued' || task?.status === 'running';
+  return <StepFrame title="文献证据、领域态势与研究空白" subtitle="把“我觉得值得研究”变成“我能指出依据在哪里”。" icon={BookOpen}>
+    <Panel title="已检索论文" icon={FileSearch} status="待核验">
+      {isLoading ? <div className="mt-4 flex items-center gap-3 rounded-xl bg-[#edf1eb] p-5 text-sm text-[#52645c]" role="status"><LoaderCircle className="size-5 animate-spin" />正在从 OpenAlex 获取公开元数据，请稍候。</div> : task?.status === 'failed' ? <EmptyState icon={AlertTriangle} title="这次试检索没有完成" description={task.errors[0]?.message ?? '公开资料服务暂时不可用，请稍后重试。'} action={<Button variant="outline" onClick={onRetry}><Search />重新试检索</Button>} /> : papers.length === 0 ? <EmptyState icon={Search} title="没有返回可展示的论文" description={task ? 'OpenAlex 已完成本次试检索，但没有返回符合条件的记录。可以修改兴趣描述后重试。' : emptyResearchMessage} action={<Button variant="outline" onClick={() => setStep(2)}><ArrowLeft />返回策略与试搜</Button>} /> : <div className="mt-4 space-y-3"><div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#747d78]"><span>本次返回 {task?.counts?.papers ?? papers.length} 条 · 来源：OpenAlex 公共 API</span><span>仅为元数据与摘要节选，待逐篇核验</span></div>{papers.map((paper) => <article key={paper.openalexId} className="rounded-xl border border-[#d9d8d1] bg-[#fbfbf8] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h4 className="min-w-0 flex-1 text-sm font-semibold leading-6 text-[#33423e]">{paper.title || '无标题'}</h4><span className="shrink-0 rounded-md border border-[#cbdcc9] bg-[#edf5eb] px-2 py-1 text-[11px] font-semibold text-[#456158]">OpenAlex · 待核验</span></div><p className="mt-2 text-xs leading-5 text-[#68736f]">{paper.publicationYear ?? '年份未知'} · {paper.authors.slice(0, 4).join('、') || '作者信息缺失'}{paper.authors.length > 4 ? ' 等' : ''} · {paper.source || '来源信息缺失'}{paper.citedByCount > 0 ? ` · 被引 ${paper.citedByCount}` : ''}</p><p className="mt-3 text-xs leading-5 text-[#52645c]">{paper.abstract ? `${paper.abstract.slice(0, 360)}${paper.abstract.length > 360 ? '…' : ''}` : '暂无摘要'}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">{paper.doi && <a href={paper.doi} target="_blank" rel="noreferrer" className="font-semibold text-[#9b672e] underline underline-offset-2">打开 DOI</a>}<a href={paper.landingUrl || paper.openalexId} target="_blank" rel="noreferrer" className="font-semibold text-[#607b72] underline underline-offset-2">打开 OpenAlex 来源</a></div></article>)}</div>}
+    </Panel>
+    <Panel title="核心文献" icon={BookOpen} status="待核验"><div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center"><div className="grid size-16 place-items-center rounded-2xl bg-[#e9eee8] text-[#607b72]"><LockKeyhole className="size-7" /></div><div><h3 className="font-semibold text-[#33423e]">核心文献库保持为空</h3><p className="mt-1 text-xs leading-5 text-[#747d78]">试检索只展示可追溯元数据；只有用户逐篇确认后，后续阶段才会整理核心文献包。当前不会自动加入、下载 PDF 或生成 BibTeX。</p>{task && <span className="mt-2 inline-flex rounded-md border border-[#d9d8d1] px-2 py-1 text-xs text-[#7c8580]">任务状态：{task.status === 'unavailable' ? '工具未接入' : task.status}</span>}</div></div></Panel>
+  </StepFrame>;
+}
+
+async function pollTask(runId: string, setTask: React.Dispatch<React.SetStateAction<ResearchTaskSnapshot | null>>) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 500));
+    const response = await fetch(withBasePath(`/api/research/topic/tasks/${encodeURIComponent(runId)}`), { headers: { ...(getApiToken() ? { Authorization: `Bearer ${getApiToken()}` } : {}) } });
+    if (!response.ok) throw new Error('无法读取检索任务状态，请重试。');
+    const snapshot = await response.json() as ResearchTaskSnapshot;
+    setTask(snapshot);
+    if (!['queued', 'running'].includes(snapshot.status)) return;
+  }
+  throw new Error('检索任务等待时间过长，请稍后重试。');
+}
 
 function CandidateStep({ selectedCandidate, setSelectedCandidate, feedback }: { selectedCandidate: string | null; setSelectedCandidate: (value: string | null) => void; feedback: string }) { const candidates = [['偏可行', '优先控制变量与资源成本'], ['偏创新', '优先探索新的问题切口'], ['较平衡', '在可验证与新意之间取平衡']] as const; return <StepFrame title="候选选题：三种方向取舍" subtitle="好的选题不是唯一答案，而是你在证据、资源和风险之间做出的选择。" icon={Target}><div className="mb-4 flex items-start gap-3 rounded-xl border border-[#e8d7bb] bg-[#fbf1e2] p-4 text-xs leading-5 text-[#775934]"><AlertTriangle className="mt-0.5 size-4 shrink-0" />当前候选内容等待真实文献分析，以下仅保留三个可比较的位置，不伪造课题、证据或研究空白。</div><div className="grid gap-4 lg:grid-cols-3">{candidates.map(([label, hint]) => <article key={label} className={cn('flex min-h-64 flex-col rounded-2xl border bg-[#fbfbf8] p-5 transition', selectedCandidate === label ? 'border-[#bc7d35] ring-2 ring-[#bc7d35]/15' : 'border-[#d9d8d1]')}><div className="flex items-center justify-between"><span className="rounded-md border border-[#d5d9d1] px-2 py-1 text-xs font-semibold text-[#53665e]">{label}</span>{selectedCandidate === label && <Check className="size-4 text-[#bc7d35]" />}</div><h3 className="mt-5 font-serif text-xl text-[#33423e]">等待真实分析</h3><p className="mt-2 text-sm leading-6 text-[#747d78]">{hint}。生成后这里会显示研究问题、推荐理由、资源、风险与关键证据。</p><div className="mt-auto pt-5"><Button variant={selectedCandidate === label ? 'default' : 'outline'} className={selectedCandidate === label ? 'bg-[#243f3b] text-white' : ''} onClick={() => setSelectedCandidate(label)}>选择此方向</Button></div></article>)}</div>{feedback && <InlineMessage kind="warning" message={feedback} />}</StepFrame>; }
 

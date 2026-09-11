@@ -14,10 +14,24 @@ export interface ResearchTaskSnapshot {
   files: Array<{
     name: string;
     path: string;
-    kind: 'csv' | 'bib' | 'pdf' | 'markdown' | 'manifest';
+    kind: 'csv' | 'bib' | 'pdf' | 'markdown' | 'manifest' | 'json';
   }>;
   errors: Array<{ code?: string; message: string }>;
   updatedAt?: string;
+  papers?: Array<{
+    openalexId: string;
+    title: string;
+    authors: string[];
+    institutions: string[];
+    source: string;
+    publicationYear: number | null;
+    citedByCount: number;
+    abstract: string;
+    doi: string;
+    landingUrl: string;
+    sourceStatus: 'openalex_public_api';
+  }>;
+  counts?: { papers: number };
 }
 
 export interface TopicWorkflowClient {

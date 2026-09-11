@@ -14,7 +14,7 @@ OpenAlex 可使用公开 API，不要求 API Key；但网络可用性、请求�
 python first_stage.py --config examples/dry-run.json --mode dry-run
 ```
 
-本目录只保留配置形状示例；实际脚本未复制进本仓库，不能从该命令推断本仓库已经具备可运行后端。实际适配器应将结果转换为 [`../contract.md`](../contract.md) 定义的文件和 manifest。
+本目录只保留配置形状示例；完整 Skill 脚本未复制进本仓库。当前项目的 `src/research-topic/` 仅提供本次所需的最小“试检索”后端适配器，不能从该目录推断完整候选课题流水线已经迁入。所有实际适配器都应将结果转换为 [`../contract.md`](../contract.md) 定义的文件和 manifest。
 
 ## 后端接入
 
