@@ -1,0 +1,14 @@
+{
+  "runId": "run-example-openalex",
+  "researchInterest": "machine learning for computer vision",
+  "context": "教学演示输入，不代表真实研究结论",
+  "yearRange": { "from": 2022, "to": 2024 },
+  "documentTypes": ["conference-paper"],
+  "sourcePolicy": { "preferred": "openalex", "allowScopus": false },
+  "limits": { "maxItems": 100 },
+  "openalex": {
+    "venues": ["CVPR", "ECCV", "ICCV", "NeurIPS", "ICLR"],
+    "openAccessOnly": false,
+    "allowTextFallback": false
+  }
+}

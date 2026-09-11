@@ -40,6 +40,7 @@ import {
 } from '../conversation-branches/dto/conversation-branches.dto';
 import { REASONING_EFFORT_VALUES } from '../codex/dto/v2/openapi.schema';
 import { FilesService } from '../files/files.service';
+import { SkillsService } from '../skills/skills.service';
 import { ThreadsService } from './threads.service';
 import {
   CODEX_V2_EXTRA_MODELS,
@@ -94,6 +95,7 @@ export class ThreadsController {
     private readonly threadsService: ThreadsService,
     private readonly filesService: FilesService,
     private readonly chatUploadService: ChatUploadService,
+    private readonly skillsService: SkillsService,
   ) {}
 
   @Post()
@@ -351,7 +353,7 @@ export class ThreadsController {
     @Param('threadId') threadId: string,
     @Body() body: StartTurnDto,
   ) {
-    const input = await this.validateTurnInput(body.input);
+    const input = await this.validateTurnInput(body.input, threadId);
     const model = typeof body.model === 'string' ? body.model.trim() : null;
     if (body.model !== undefined && !model) {
       throw BusinessException.badRequest(
@@ -415,7 +417,7 @@ export class ThreadsController {
     return this.threadsService.steerTurn({
       threadId,
       expectedTurnId: turnId,
-      input: await this.validateTurnInput(body.input),
+      input: await this.validateTurnInput(body.input, threadId),
     });
   }
 
@@ -598,7 +600,10 @@ export class ThreadsController {
     return value;
   }
 
-  private async validateTurnInput(input: unknown): Promise<v2.UserInput[]> {
+  private async validateTurnInput(
+    input: unknown,
+    threadId: string,
+  ): Promise<v2.UserInput[]> {
     if (!Array.isArray(input) || input.length === 0) {
       throw BusinessException.badRequest(
         ErrorCode.threads.invalidInput,
@@ -608,7 +613,9 @@ export class ThreadsController {
 
     const validatedInput: v2.UserInput[] = [];
     for (const [index, item] of input.entries()) {
-      validatedInput.push(await this.validateTurnInputItem(item, index));
+      validatedInput.push(
+        await this.validateTurnInputItem(item, index, threadId),
+      );
     }
     return validatedInput;
   }
@@ -617,6 +624,7 @@ export class ThreadsController {
   private async validateTurnInputItem(
     item: unknown,
     index: number,
+    threadId: string,
   ): Promise<v2.UserInput> {
     if (!this.isRecord(item)) {
       throw BusinessException.badRequest(
@@ -634,7 +642,7 @@ export class ThreadsController {
       case 'localImage':
         return this.validateLocalImageInput(item, index);
       case 'skill':
-        return this.validateSkillInput(item, index);
+        return this.validateSkillInput(item, index, threadId);
       case 'mention':
         return this.validateMentionInput(item, index);
       default:
@@ -700,15 +708,37 @@ export class ThreadsController {
     };
   }
 
-  /** Validates skill mentions by shape; the skill source is resolved by skills/list. */
-  private validateSkillInput(
+  /** Resolves skill identity from app-server inventory for this thread's cwd. */
+  private async validateSkillInput(
     item: TurnInputRecord,
     index: number,
-  ): v2.UserInput {
+    threadId: string,
+  ): Promise<v2.UserInput> {
+    const requestedName = this.readRequiredString(item, 'name', index);
+    const requestedPath = this.readRequiredString(item, 'path', index);
+    const thread = await this.threadsService.readThread(threadId);
+    const response = await this.skillsService.listSkills({
+      cwds: [String(thread.thread.cwd)],
+    });
+    const available = response.data
+      .flatMap((entry) => entry.skills)
+      .find(
+        (skill) =>
+          skill.enabled &&
+          skill.name === requestedName &&
+          String(skill.path) === requestedPath,
+      );
+    if (!available) {
+      throw BusinessException.badRequest(
+        ErrorCode.threads.invalidInputField,
+        `input[${index}] does not identify an enabled skill for this thread`,
+        { index, field: 'skill' },
+      );
+    }
     return {
       type: 'skill',
-      name: this.readRequiredString(item, 'name', index),
-      path: this.readRequiredString(item, 'path', index),
+      name: available.name,
+      path: String(available.path),
     };
   }
 

@@ -11,12 +11,16 @@ describe('ThreadsController rich input validation', () => {
     steerTurn: vi.fn(),
     listLoadedThreads: vi.fn(),
     forkThread: vi.fn(),
+    readThread: vi.fn(),
   };
   const filesService = {
     resolveSafePath: vi.fn(),
   };
   const chatUploadService = {
     resolveStoredUploadPath: vi.fn(),
+  };
+  const skillsService = {
+    listSkills: vi.fn(),
   };
 
   beforeEach(() => {
@@ -32,6 +36,18 @@ describe('ThreadsController rich input validation', () => {
       data: ['thread1'],
       nextCursor: null,
     });
+    threadsService.readThread.mockResolvedValue({
+      thread: { id: 'thread1', cwd: '/workspace' },
+    });
+    skillsService.listSkills.mockResolvedValue({
+      data: [
+        {
+          cwd: '/workspace',
+          skills: [{ name: 'review', path: '/skills/review', enabled: true }],
+          errors: [],
+        },
+      ],
+    });
     filesService.resolveSafePath.mockResolvedValue('/workspace/file.ts');
     chatUploadService.resolveStoredUploadPath.mockResolvedValue(
       '/tmp/webui-uploads/image.png',
@@ -40,6 +56,7 @@ describe('ThreadsController rich input validation', () => {
       threadsService as never,
       filesService as never,
       chatUploadService as never,
+      skillsService as never,
     );
   });
 
@@ -118,7 +135,7 @@ describe('ThreadsController rich input validation', () => {
     });
   });
 
-  it('passes skill inputs by validated shape', async () => {
+  it('passes enabled skills resolved for the thread cwd', async () => {
     await controller.startTurn('thread1', {
       input: [{ type: 'skill', name: 'review', path: '/skills/review' }],
     } as never);
@@ -127,6 +144,20 @@ describe('ThreadsController rich input validation', () => {
       threadId: 'thread1',
       input: [{ type: 'skill', name: 'review', path: '/skills/review' }],
     });
+    expect(skillsService.listSkills).toHaveBeenCalledWith({
+      cwds: ['/workspace'],
+    });
+  });
+
+  it('rejects forged or disabled skill paths', async () => {
+    await expect(
+      controller.startTurn('thread1', {
+        input: [{ type: 'skill', name: 'review', path: '/tmp/forged' }],
+      } as never),
+    ).rejects.toMatchObject({
+      errorCode: ErrorCode.threads.invalidInputField,
+    });
+    expect(threadsService.startTurn).not.toHaveBeenCalled();
   });
 
   // `serviceTier` mirrors the app-server's `Option<Option<String>>`: absent,

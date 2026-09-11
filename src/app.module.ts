@@ -18,10 +18,12 @@ import { DatabaseModule } from './database/database.module';
 import { FilesModule } from './files/files.module';
 import { LogsModule } from './logs/logs.module';
 import { McpServersModule } from './mcp-servers/mcp-servers.module';
+import { ResearchTopicModule } from './research-topic/research-topic.module';
 import { ModelsModule } from './models/models.module';
 import { OnlyOfficeModule } from './onlyoffice/onlyoffice.module';
 import { PendingApprovalsModule } from './pending-approvals/pending-approvals.module';
 import { PluginsModule } from './plugins/plugins.module';
+import { ResearchWorkflowModule } from './research-workflow/research-workflow.module';
 import { SettingsModule } from './settings/settings.module';
 import { SkillsModule } from './skills/skills.module';
 import { TerminalModule } from './terminal/terminal.module';
@@ -126,12 +128,14 @@ const PINO_REDACT = {
     PendingApprovalsModule,
     TokenUsageModule,
     PluginsModule,
+    ResearchWorkflowModule,
     OnlyOfficeModule,
     TurnDiffModule,
     TurnErrorsModule,
     ModelsModule,
     LogsModule,
     McpServersModule,
+    ResearchTopicModule,
   ],
   controllers: [AppController],
   providers: [
