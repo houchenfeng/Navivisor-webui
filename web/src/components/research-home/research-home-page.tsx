@@ -1,16 +1,18 @@
 /**
  * Navivisor research home — journey hub for the four workflow modules.
- * Layout targets a single viewport: compact workspace strip + modules + demo cards.
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
+  BookOpenText,
   Compass,
+  FileText,
   FlaskConical,
   FolderInput,
   Newspaper,
   PenLine,
   Rocket,
+  Sparkles,
 } from 'lucide-react';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
@@ -54,14 +56,23 @@ const recentProjects = [
   {
     title: 'CrackSAM-MVE 裂缝分割复现',
     stage: '实验',
+    status: '进行中',
     updated: '2 小时前',
     icon: FlaskConical,
   },
   {
     title: '校园行人检测开题调研',
     stage: '开题',
+    status: '进行中',
     updated: '昨天',
     icon: Compass,
+  },
+  {
+    title: 'CVPR 风格方法章节草稿',
+    stage: '写作',
+    status: '草稿',
+    updated: '3 天前',
+    icon: FileText,
   },
 ] as const;
 
@@ -78,11 +89,19 @@ const arxivDigest = [
     venue: 'arXiv cs.CV',
     tag: 'SAM',
   },
+  {
+    id: '2401.15672',
+    title: 'Teaching Research Workflows to First-Year Undergraduates with AI',
+    venue: 'arXiv cs.HC',
+    tag: 'Edu',
+  },
 ] as const;
 
 const journeyStats = [
-  { label: '文献', value: 12 },
-  { label: '笔记', value: 8 },
+  { label: '文献阅读', value: 12, icon: BookOpenText },
+  { label: '笔记整理', value: 8, icon: Newspaper },
+  { label: '写作草稿', value: 3, icon: PenLine },
+  { label: '里程碑', value: 2, icon: Sparkles },
 ] as const;
 
 function JourneyCurve() {
@@ -90,11 +109,11 @@ function JourneyCurve() {
     'M8 28 C 130 8, 220 42, 255 24 S 380 4, 505 28 630 46, 752 20';
 
   return (
-    <div className="pointer-events-none absolute inset-x-[8%] top-0 z-0 hidden md:block">
-      <p className="mb-0.5 text-center text-[10px] font-extrabold tracking-[0.16em] text-[#1F4DCB]/80">
+    <div className="pointer-events-none absolute inset-x-[10%] top-2 z-0 hidden md:block">
+      <p className="mb-1 text-center text-xs font-extrabold tracking-[0.18em] text-[#1F4DCB]/80">
         点击开始尝试
       </p>
-      <svg className="mx-auto h-8 w-[88%] overflow-visible" viewBox="0 0 760 48" fill="none" aria-hidden="true">
+      <svg className="mx-auto h-12 w-[88%] overflow-visible" viewBox="0 0 760 48" fill="none" aria-hidden="true">
         <defs>
           <linearGradient id="home-journey-stroke" x1="0" y1="0" x2="760" y2="0" gradientUnits="userSpaceOnUse">
             <stop stopColor="#a9c7f5" />
@@ -136,27 +155,29 @@ function JourneyCurve() {
 }
 
 function ProgressRing({ value }: { value: number }) {
-  const radius = 20;
+  const radius = 26;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - value / 100);
 
   return (
-    <div className="relative grid size-12 shrink-0 place-items-center">
-      <svg viewBox="0 0 80 80" className="size-12 -rotate-90">
-        <circle cx="40" cy="40" r={radius} fill="none" stroke="#e8f0ff" strokeWidth="8" />
+    <div className="relative grid size-[68px] shrink-0 place-items-center">
+      <svg viewBox="0 0 80 80" className="size-[68px] -rotate-90">
+        <circle cx="40" cy="40" r={radius} fill="none" stroke="#e8f0ff" strokeWidth="7" />
         <circle
           cx="40"
           cy="40"
           r={radius}
           fill="none"
           stroke="#1F4DCB"
-          strokeWidth="8"
+          strokeWidth="7"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
         />
       </svg>
-      <div className="absolute text-[11px] font-black text-[#173778]">{value}%</div>
+      <div className="absolute text-center">
+        <div className="text-sm font-black text-[#173778]">{value}%</div>
+      </div>
     </div>
   );
 }
@@ -200,8 +221,8 @@ export function ResearchHomePage() {
       });
       setRegisterMessage(
         workspace.reused
-          ? `已复用 ${workspace.projectId.slice(0, 8)}…`
-          : `已注册 ${workspace.projectId.slice(0, 8)}…`,
+          ? `已复用项目 ${workspace.projectId}`
+          : `已注册项目 ${workspace.projectId}`,
       );
     } catch (error) {
       setRegisterMessage(error instanceof Error ? error.message : String(error));
@@ -211,36 +232,42 @@ export function ResearchHomePage() {
   }
 
   return (
-    <main className="navivisor-module scrollbar-hide flex h-full min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-      <section className="brand-enter mx-auto flex h-full w-full max-w-6xl min-h-0 flex-col justify-between gap-3">
-        {/* Hero — compact */}
-        <header className="shrink-0">
-          <p className="text-[11px] font-bold tracking-[0.18em] text-[#1F4DCB]">你好，研究者</p>
-          <h1 className="mt-1 text-2xl font-black tracking-[-0.04em] text-[#102c65] sm:text-3xl lg:text-[2.15rem]">
-            欢迎来到 Navivisor 研途启航
+    <main className="navivisor-module scrollbar-hide flex min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-7 lg:p-10">
+      <section className="brand-enter mx-auto flex w-full max-w-6xl flex-col py-4 lg:py-8">
+        <div className="mt-2 max-w-3xl">
+          <p className="text-sm font-bold tracking-[0.2em] text-[#1F4DCB]">你好，研究者</p>
+          <h1 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#102c65] sm:text-5xl lg:text-[3.4rem]">
+            欢迎来到Navivisor研途启航
           </h1>
-          <p className="mt-1 max-w-2xl text-sm font-medium text-[#55739f]">
-            从一个研究领域，让 AI 陪你走完完整的研究旅程。
+          <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-[#55739f] sm:text-lg">
+            从一个研究领域，让AI陪你走完完整的研究旅程。
           </p>
-        </header>
+        </div>
 
-        {/* Workspace — single compact strip */}
-        <div className="shrink-0 rounded-xl border border-[#d7e6fb] bg-white/80 px-3 py-2 shadow-[0_8px_20px_rgba(31,77,203,0.06)] backdrop-blur">
+        <div className="mt-6 rounded-xl border border-[#d7e6fb] bg-white/80 px-3 py-2.5 shadow-[0_8px_20px_rgba(31,77,203,0.06)] backdrop-blur">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="shrink-0 text-xs font-extrabold text-[#173778]">论文工作目录</h2>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xs font-extrabold text-[#173778]">论文工作目录</h2>
+              <p className="mt-0.5 truncate text-[11px] font-medium text-[#7890b6]">
+                选择服务端可访问目录；四模块共用同一 projectId
+              </p>
+            </div>
+            <LoadWorkspaceDemoButton compact />
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
               value={workspacePath}
               onChange={(event) => setWorkspacePath(event.target.value)}
-              placeholder="绝对路径，如 D:/Research/CameraVAD-SceneMemory"
+              placeholder="绝对路径，例如 D:/Research/CameraVAD-SceneMemory"
               aria-label="工作目录绝对路径"
-              className="min-w-[12rem] flex-1 rounded-lg border border-[#c9dbf8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
+              className="min-w-[14rem] flex-1 rounded-lg border border-[#c9dbf8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
             />
             <input
               value={workspaceTitle}
               onChange={(event) => setWorkspaceTitle(event.target.value)}
               placeholder="标题（可选）"
               aria-label="论文标题"
-              className="w-[8.5rem] shrink-0 rounded-lg border border-[#c9dbf8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
+              className="w-36 shrink-0 rounded-lg border border-[#c9dbf8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
             />
             <button
               type="button"
@@ -251,22 +278,21 @@ export function ResearchHomePage() {
               <FolderInput className="size-3.5" />
               {registerBusy ? '注册中…' : '注册目录'}
             </button>
-            <LoadWorkspaceDemoButton compact className="shrink-0" />
           </div>
-          {(registerMessage || project) && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              {registerMessage ? (
-                <p className="truncate text-[10px] font-medium text-[#55739f]">{registerMessage}</p>
-              ) : null}
-              <CurrentPaperCard compact className="min-w-0 flex-1" />
+          {registerMessage ? (
+            <p className="mt-1.5 truncate text-[11px] font-medium text-[#55739f]">{registerMessage}</p>
+          ) : null}
+          {project ? (
+            <div className="mt-1.5">
+              <CurrentPaperCard defaultOpen={false} />
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Four modules */}
-        <div className="relative min-h-0 flex-1 pt-5">
+        {/* Four module icon buttons + curved path */}
+        <div className="relative mt-10 pt-8">
           <JourneyCurve />
-          <div className="grid h-full grid-cols-2 content-center gap-x-3 gap-y-4 md:grid-cols-4 md:gap-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-6">
             {modules.map(({ title, copy, icon: Icon, to, tint }, index) => (
               <button
                 key={title}
@@ -277,15 +303,15 @@ export function ResearchHomePage() {
               >
                 <span
                   className={cn(
-                    'grid size-14 place-items-center rounded-[18px] bg-gradient-to-br text-white shadow-[0_10px_22px_rgba(31,77,203,0.26)] transition-all duration-300 sm:size-[60px]',
-                    'group-hover:-translate-y-1 group-hover:scale-105',
+                    'grid size-[72px] place-items-center rounded-[22px] bg-gradient-to-br text-white shadow-[0_14px_30px_rgba(31,77,203,0.28)] transition-all duration-300',
+                    'group-hover:-translate-y-1.5 group-hover:scale-105 group-hover:shadow-[0_18px_36px_rgba(31,77,203,0.36)]',
                     tint,
                   )}
                 >
-                  <Icon className="size-6 sm:size-7" strokeWidth={2.1} />
+                  <Icon className="size-8" strokeWidth={2.1} />
                 </span>
-                <span className="mt-2 text-sm font-extrabold text-[#173778]">{title}</span>
-                <span className="mt-0.5 max-w-[10.5rem] text-[11px] font-medium leading-4 text-[#6781aa]">
+                <span className="mt-4 text-base font-extrabold text-[#173778]">{title}</span>
+                <span className="mt-1.5 max-w-[11rem] text-sm font-medium leading-5 text-[#6781aa]">
                   {copy}
                 </span>
               </button>
@@ -293,28 +319,31 @@ export function ResearchHomePage() {
           </div>
         </div>
 
-        {/* Bottom demo cards — short row */}
-        <div className="grid shrink-0 gap-2 lg:grid-cols-3">
-          <article className="overflow-hidden rounded-xl border border-white/80 bg-white/75 px-2.5 py-2 shadow-[0_8px_18px_rgba(31,77,203,0.06)] backdrop-blur-xl">
-            <div className="mb-1 flex items-center justify-between">
-              <h2 className="text-xs font-extrabold text-[#173778]">最近项目</h2>
-              <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[9px] font-bold text-[#1F4DCB]">Demo</span>
+        {/* Bottom dashboard cards — compact (~1/4 height) */}
+        <div className="mt-8 grid max-h-[min(220px,26vh)] gap-3 lg:grid-cols-3">
+          <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-extrabold text-[#173778]">最近项目</h2>
+              <span className="rounded-full bg-[#e8f0ff] px-2 py-0.5 text-[10px] font-bold text-[#1F4DCB]">
+                Demo
+              </span>
             </div>
-            <ul className="space-y-1">
-              {recentProjects.map((item) => {
+            <ul className="min-h-0 space-y-1.5 overflow-hidden">
+              {recentProjects.slice(0, 2).map((item) => {
                 const Icon = item.icon;
                 return (
                   <li
                     key={item.title}
-                    className="flex items-center gap-2 rounded-lg border border-[#e4eefc] bg-[#f7faff] px-2 py-1"
+                    className="flex items-center gap-2.5 rounded-xl border border-[#e4eefc] bg-[#f7faff] px-2.5 py-2"
                   >
-                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-white text-[#1F4DCB]">
-                      <Icon className="size-3" />
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-[#1F4DCB] shadow-sm">
+                      <Icon className="size-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[11px] font-bold text-[#173778]">{item.title}</div>
-                      <div className="text-[9px] font-semibold text-[#7890b6]">
-                        {item.stage} · {item.updated}
+                      <div className="truncate text-xs font-bold text-[#173778]">{item.title}</div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold text-[#7890b6]">
+                        <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[#1F4DCB]">{item.stage}</span>
+                        <span>{item.updated}</span>
                       </div>
                     </div>
                   </li>
@@ -323,49 +352,49 @@ export function ResearchHomePage() {
             </ul>
           </article>
 
-          <article className="overflow-hidden rounded-xl border border-white/80 bg-white/75 px-2.5 py-2 shadow-[0_8px_18px_rgba(31,77,203,0.06)] backdrop-blur-xl">
-            <div className="mb-1 flex items-center justify-between">
-              <h2 className="text-xs font-extrabold text-[#173778]">arXiv 速递</h2>
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#7890b6]">
-                <Newspaper className="size-2.5" />
+          <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-extrabold text-[#173778]">arXiv 速递</h2>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#7890b6]">
+                <Newspaper className="size-3" />
                 Demo
               </span>
             </div>
-            <ul className="space-y-1">
-              {arxivDigest.map((paper) => (
+            <ul className="min-h-0 space-y-1.5 overflow-hidden">
+              {arxivDigest.slice(0, 2).map((paper) => (
                 <li
                   key={paper.id}
-                  className="rounded-lg border border-[#e4eefc] bg-[#f7faff] px-2 py-1"
+                  className="rounded-xl border border-[#e4eefc] bg-[#f7faff] px-2.5 py-2"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[9px] font-bold text-[#7890b6]">{paper.venue}</span>
-                    <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[8px] font-bold text-[#1F4DCB]">
+                    <span className="text-[10px] font-bold text-[#7890b6]">{paper.venue}</span>
+                    <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[9px] font-bold text-[#1F4DCB]">
                       {paper.tag}
                     </span>
                   </div>
-                  <p className="mt-0.5 line-clamp-1 text-[11px] font-bold text-[#173778]">{paper.title}</p>
+                  <p className="mt-1 line-clamp-2 text-xs font-bold leading-4 text-[#173778]">{paper.title}</p>
                 </li>
               ))}
             </ul>
           </article>
 
-          <article className="overflow-hidden rounded-xl border border-white/80 bg-white/75 px-2.5 py-2 shadow-[0_8px_18px_rgba(31,77,203,0.06)] backdrop-blur-xl">
-            <div className="mb-1 flex items-center justify-between">
-              <h2 className="text-xs font-extrabold text-[#173778]">我的研究旅程</h2>
-              <span className="text-[9px] font-bold text-[#7890b6]">Demo</span>
+          <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-extrabold text-[#173778]">我的研究旅程</h2>
+              <span className="text-[10px] font-bold text-[#7890b6]">Demo</span>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-[#e4eefc] bg-[#f7faff] p-1.5">
+            <div className="flex min-h-0 items-center gap-3 overflow-hidden rounded-xl border border-[#e4eefc] bg-[#f7faff] p-2.5">
               <ProgressRing value={72} />
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-bold text-[#173778]">本学期进度</p>
-                <p className="mt-0.5 line-clamp-1 text-[10px] font-medium text-[#6781aa]">
+                <p className="text-xs font-bold text-[#173778]">本学期进度</p>
+                <p className="mt-1 line-clamp-2 text-[11px] font-medium leading-4 text-[#6781aa]">
                   开题与实验已完成，写作推进中。
                 </p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {journeyStats.map(({ label, value }) => (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {journeyStats.slice(0, 2).map(({ label, value }) => (
                     <span
                       key={label}
-                      className="rounded-full bg-white px-1.5 py-px text-[9px] font-bold text-[#1F4DCB]"
+                      className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#1F4DCB] shadow-sm"
                     >
                       {label} {value}
                     </span>

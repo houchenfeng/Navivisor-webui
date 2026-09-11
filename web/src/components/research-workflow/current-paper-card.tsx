@@ -8,50 +8,20 @@ import { cn } from '@/lib/utils';
 
 export function CurrentPaperCard({
   className,
-  compact = false,
+  defaultOpen = true,
 }: {
   className?: string;
-  compact?: boolean;
+  defaultOpen?: boolean;
 }) {
   const project = useResearchProjectStore((s) => s.project);
-  const [open, setOpen] = useState(!compact);
+  const [open, setOpen] = useState(defaultOpen);
 
   if (!project) return null;
 
   const shortPath =
-    project.rootPath.length > (compact ? 36 : 48)
-      ? `…${project.rootPath.slice(compact ? -34 : -46)}`
+    project.rootPath.length > 48
+      ? `…${project.rootPath.slice(-46)}`
       : project.rootPath;
-
-  const demoLabel =
-    project.demoComplete == null
-      ? 'Demo 未载入'
-      : project.demoComplete
-        ? 'Demo 完整'
-        : `Demo 待补 ${project.missing?.length ?? 0}`;
-
-  if (compact) {
-    return (
-      <div
-        className={cn(
-          'inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-lg border border-[#e4eefc] bg-[#f7faff] px-2 py-1',
-          className,
-        )}
-        title={`${project.title}\n${project.rootPath}`}
-      >
-        <FileStack className="size-3 shrink-0 text-[#1F4DCB]" />
-        <span className="truncate text-[10px] font-bold text-[#173778]">
-          {project.title}
-        </span>
-        <span className="hidden truncate text-[10px] font-medium text-[#7890b6] sm:inline">
-          {shortPath}
-        </span>
-        <span className="shrink-0 rounded-full bg-[#e8f0ff] px-1.5 py-px text-[9px] font-bold text-[#1F4DCB]">
-          {demoLabel}
-        </span>
-      </div>
-    );
-  }
 
   return (
     <section
@@ -85,7 +55,14 @@ export function CurrentPaperCard({
       {open ? (
         <div className="mt-2 space-y-1.5 border-t border-[#e8f0ff] pt-2 text-[11px] font-medium text-[#55739f]">
           {project.description ? <p>{project.description}</p> : null}
-          <p>Demo：{demoLabel.replace(/^Demo\s/, '')}</p>
+          <p>
+            Demo：
+            {project.demoComplete == null
+              ? '未载入'
+              : project.demoComplete
+                ? '完整'
+                : `部分（待补 ${project.missing?.length ?? 0} 项）`}
+          </p>
           {(project.missing?.length ?? 0) > 0 ? (
             <ul className="list-disc pl-4 text-[#b45309]">
               {project.missing!.slice(0, 4).map((item) => (

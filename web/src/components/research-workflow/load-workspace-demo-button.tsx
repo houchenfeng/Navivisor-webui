@@ -56,25 +56,25 @@ export function LoadWorkspaceDemoButton({
   }
 
   return (
-    <div className={cn('inline-flex flex-col gap-0.5', className)}>
+    <div className={cn('flex flex-col gap-1', className)}>
       <button
         type="button"
         disabled={busy}
         onClick={() => void handleClick()}
         className={cn(
-          'inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#c9dbf8] bg-white font-bold text-[#1F4DCB] transition hover:bg-[#f3f8ff] disabled:opacity-60',
-          compact ? 'px-2.5 py-1.5 text-[11px]' : 'rounded-xl px-4 py-2.5 text-sm',
+          'inline-flex items-center justify-center gap-2 rounded-xl border border-[#c9dbf8] bg-white font-bold text-[#1F4DCB] transition hover:bg-[#f3f8ff] disabled:opacity-60',
+          compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm',
         )}
       >
         {busy ? (
-          <LoaderCircle className="size-3.5 animate-spin" />
+          <LoaderCircle className="size-4 animate-spin" />
         ) : (
-          <FolderOpen className="size-3.5" />
+          <FolderOpen className="size-4" />
         )}
-        {compact ? '载入 Demo' : '从工作目录载入 Demo'}
+        {compact ? '载入目录 Demo' : '从工作目录载入 Demo'}
       </button>
       {message ? (
-        <p className="max-w-[16rem] truncate text-[10px] font-medium leading-3 text-[#6781aa]">
+        <p className="text-[11px] font-medium leading-4 text-[#6781aa]">
           {message}
         </p>
       ) : null}
