@@ -102,41 +102,14 @@ export default function Step9Export({ data }: Props) {
     }
   };
 
-  // 一键编译 PDF
+  // 一键编译 PDF（服务端编译尚未接入；引导用户下载 zip）
   const handleCompile = async () => {
     setCompiling(true);
     setError("");
     try {
-      const files: Record<string, string> = {};
-      files["main.tex"] = tex;
-      files["main.bib"] = buildCvprBib(data);
-
-      const toDataUrl = async (url: string): Promise<string> => {
-        if (url.startsWith("data:")) return url;
-        const res = await fetch(url);
-        const blob = await res.blob();
-        return await new Promise<string>((resolve) => {
-          const r = new FileReader();
-          r.onload = () => resolve(String(r.result));
-          r.readAsDataURL(blob);
-        });
-      };
-
-      if (data.algorithmFlowImage) {
-        files["figures/algorithm_flow.png"] = await toDataUrl(
-          data.algorithmFlowImage
-        );
-      }
-      if (data.algorithmIllustImage) {
-        files["figures/algorithm_illustration.png"] = await toDataUrl(
-          data.algorithmIllustImage
-        );
-      }
-
-      void files;
-      throw new Error("PDF 编译尚未接入统一 Research Workflow/Codex，已阻止旧 localhost 接口调用");
-    } catch (e) {
-      setError(`编译失败：${String(e)}`);
+      setError(
+        "在线 PDF 编译尚未接入 Research Workflow。请先「下载文章 zip」，再用本地 CVPR 模板编译。",
+      );
     } finally {
       setCompiling(false);
     }
@@ -242,10 +215,10 @@ export default function Step9Export({ data }: Props) {
         </div>
         <ul className="ml-4 list-disc">
           <li>
-            <b>一键编译 PDF</b> — 后端自动套用 CVPR 模板，直接返回 PDF（推荐）
+            <b>一键编译 PDF</b> — 暂未接入（请用下方 zip + 本地 CVPR 模板）
           </li>
           <li>
-            <b>下载文章 zip</b> — 只包含你的文章（main.tex + main.bib + 图片），不含模板文件，用于备份或自行编译
+            <b>下载文章 zip</b> — 包含 main.tex + main.bib + 图片，用于备份或自行编译（推荐）
           </li>
         </ul>
       </section>

@@ -1,5 +1,6 @@
 # 四模块统一 Workflow 迁移 TODO
 
+> **用途**：四模块迁到统一 Research Workflow / Artifact / Codex Skill 的执行清单与进度记录。  
 > 目标：完成开题、实验、写作、投稿四个前端模块向统一 Research Workflow、Artifact 和 Codex Skill 调用链的迁移，移除投稿模块的 cpolar/localhost 旧服务依赖，使项目达到可合入 `main` 的状态。
 >
 > 执行分支：`integration/research-workflow`。禁止直接在 `main` 开发或 push。重大阶段必须独立 commit，验证通过后再 push 集成分支。

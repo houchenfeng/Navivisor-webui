@@ -1,5 +1,7 @@
 # Vendored upstream documentation
 
+> **用途**：锁定版本的上游 Codex app-server 协议文档副本，供对照实现，勿手改。  
+
 Files in this directory are **verbatim copies of upstream Codex documentation**,
 kept here so protocol questions can be answered from the exact revision this
 project is pinned to rather than from whatever `main` happens to say today.

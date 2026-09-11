@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
+import { fillWritingFromExperiment } from "@/components/research-writing/lib/fillFromExperiment";
 
 interface Props {
   data: WritingData;
@@ -10,8 +11,8 @@ export default function Step1Upload({ data, onChange }: Props) {
   const detailRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLInputElement>(null);
   const bibRef = useRef<HTMLInputElement>(null);
+  const [fillNote, setFillNote] = useState<string | null>(null);
 
-  // 读取文本文件为字符串
   const readTextFile = (file: File, callback: (text: string) => void) => {
     const reader = new FileReader();
     reader.onload = () => callback(String(reader.result ?? ""));
@@ -36,16 +37,40 @@ export default function Step1Upload({ data, onChange }: Props) {
     readTextFile(file, (text) => onChange({ bibContent: text }));
   };
 
+  const handleFillFromExperiment = () => {
+    const { patch, source, topic } = fillWritingFromExperiment();
+    onChange(patch);
+    setFillNote(
+      source === "demo-fallback"
+        ? `已载入 SAM Demo 实验素材，并填入课题「${topic}」。`
+        : `已根据实验模块产出填入课题「${topic}」及相关素材。`,
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h2 className="text-xl font-bold text-brand-700">上传素材</h2>
-        <p className="mt-1 text-sm text-ink-sub">
-          填写课题名称，并上传实验细节、实验结果和引用文献。
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-brand-700">上传素材</h2>
+          <p className="mt-1 text-sm text-ink-sub">
+            填写课题名称，并上传实验细节、实验结果和引用文献；也可一键填入实验模块产出。
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleFillFromExperiment}
+          className="rounded-lg bg-brand-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-brand-700"
+        >
+          填入实验素材
+        </button>
       </header>
 
-      {/* 课题名称 */}
+      {fillNote ? (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+          {fillNote}
+        </div>
+      ) : null}
+
       <section>
         <label className="mb-2 block text-sm font-semibold text-ink">
           课题名称 <span className="text-red-500">*</span>
@@ -59,7 +84,6 @@ export default function Step1Upload({ data, onChange }: Props) {
         />
       </section>
 
-      {/* 三个文件上传 */}
       <section className="grid gap-4">
         <FileUploadCard
           label="实验完整细节"

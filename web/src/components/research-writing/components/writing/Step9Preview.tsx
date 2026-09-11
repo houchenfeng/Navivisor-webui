@@ -64,7 +64,7 @@ export default function Step9Preview({ data, onChange }: Props) {
       }
       onChange(patch);
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setTranslating(null);
     }

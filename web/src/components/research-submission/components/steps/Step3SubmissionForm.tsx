@@ -1,5 +1,5 @@
 ﻿import { useState, useRef } from 'react';
-import { ArrowLeft, FileUp, Loader2, Sparkles, Lightbulb, AlertCircle } from 'lucide-react';
+import { ArrowLeft, FileUp, Loader2, Sparkles, Lightbulb, AlertCircle, X } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
 import { useSimulation } from '../../context/SimulationContext';
 import { submitPaper, extractPaperInfo } from '../../services/apiClient';
@@ -15,6 +15,7 @@ export default function Step3SubmissionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [showTopTip, setShowTopTip] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadingFields, setLoadingFields] = useState<Record<AIField, boolean>>({ title: false, authors: false, keywords: false, abstract: false, tldr: false });
 
@@ -65,7 +66,7 @@ export default function Step3SubmissionForm() {
       <button type="button" onClick={() => handleAIAssist(field)} disabled={isExtracting || loadingFields[field]} className="flex items-center gap-1.5 rounded-md border-2 border-[#800000] bg-[#fff5f5] px-3 py-1.5 text-sm font-bold text-[#800000] transition-colors hover:bg-[#ffe6e6] disabled:opacity-60">
         {isExtracting || loadingFields[field] ? <><Loader2 className="size-4 animate-spin" />{t.generating}</> : <><Sparkles className="size-4" />AI Assist</>}
       </button>
-      {showGuide && <GuideBubble text={t.guideAiAssist} position="right" />}
+      {showGuide && <GuideBubble text="点击 AI 辅助填写试试吧 👈" position="right" />}
     </span>
   );
 
@@ -86,6 +87,23 @@ export default function Step3SubmissionForm() {
           <span className="text-sm font-medium">CVPR 2026 Conference Submission</span>
         </div>
         <div className="mb-6 -mt-4 border border-[#ccc] bg-[#ebe5d5] px-3 py-1 text-xs text-[#666]">Submission start: Nov 1, 2025, 12:00 AM. Deadline: Nov 15, 2025, 11:59 PM Pacific Time</div>
+        {showTopTip && (
+          <div className="relative mb-5 flex items-start gap-3 rounded-xl border-2 border-[#f59e0b] bg-gradient-to-br from-[#fff7ed] via-[#fef3c7] to-[#fde68a] px-5 py-4 pr-12 text-base font-extrabold leading-relaxed text-[#7c2d12] shadow-[0_10px_28px_rgba(245,158,11,0.45)] ring-4 ring-[#fbbf24]/35 sm:text-lg">
+            <Lightbulb className="mt-0.5 size-7 shrink-0 text-[#d97706]" />
+            <span>
+              {t.pdfTip}
+              <span className="mt-1 block font-bold text-[#9a3412]">↓ 请向下翻到页面下方的 PDF 上传处</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowTopTip(false)}
+              className="absolute right-3 top-3 rounded-md p-1 text-[#9a3412] transition-colors hover:bg-[#f59e0b]/20"
+              aria-label="关闭提示"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+        )}
         {apiError && <div className="mb-4 flex items-start gap-2 rounded border border-[#e0b4b4] bg-[#fdecec] px-3 py-2 text-xs text-[#8b0000]"><AlertCircle className="mt-0.5 size-4 shrink-0" /><span><strong>提交失败：</strong> {apiError}</span></div>}
         <form onSubmit={handleSubmit} className="space-y-0 text-[#333]">
           <p className="mb-4 text-xs text-[#800000]">* denotes a required field</p>

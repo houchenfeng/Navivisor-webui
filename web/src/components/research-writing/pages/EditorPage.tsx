@@ -29,19 +29,14 @@ export default function EditorPage() {
 
   const currentStep = STEPS[stepIndex];
 
-  const canNext = (() => {
-    if (currentStep.key === "upload") return data.topic.trim().length > 0;
-    if (currentStep.key === "title-abstract")
-      return data.title.trim().length > 0 && data.abstract.trim().length > 0;
-    return true;
-  })();
+  const hasMaterials = [data.topic, data.experimentDetail, data.experimentResult, data.bibContent]
+    .some((value) => (value ?? "").trim().length > 0);
 
   const goPrev = () => {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
   };
 
   const goNext = () => {
-    if (!canNext) return;
     if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
   };
 
@@ -65,7 +60,7 @@ export default function EditorPage() {
           </span>
         </header>
 
-        {/* 步骤条 */}
+        {/* 步骤条：可任意跳转 */}
         <div className="flex items-center gap-1 border-b border-blue-100 bg-white/60 px-6 py-3">
           {STEPS.map((s, idx) => {
             const isDone = idx < stepIndex;
@@ -73,10 +68,9 @@ export default function EditorPage() {
             return (
               <div key={s.key} className="flex flex-1 items-center gap-1">
                 <button
-                  onClick={() => {
-                    if (idx <= stepIndex) setStepIndex(idx);
-                  }}
-                  className="flex items-center gap-2 transition-all"
+                  type="button"
+                  onClick={() => setStepIndex(idx)}
+                  className="flex cursor-pointer items-center gap-2 transition-all"
                   title={s.zh}
                 >
                   <span
@@ -85,8 +79,8 @@ export default function EditorPage() {
                       isActive
                         ? "bg-brand-500 text-white shadow-md"
                         : isDone
-                        ? "cursor-pointer bg-brand-100 text-brand-500"
-                        : "cursor-not-allowed bg-slate-100 text-slate-400"
+                        ? "bg-brand-100 text-brand-500 hover:bg-brand-200"
+                        : "bg-slate-100 text-slate-500 hover:bg-brand-100 hover:text-brand-500"
                     )}
                   >
                     {idx + 1}
@@ -118,7 +112,20 @@ export default function EditorPage() {
 
         {/* 内容区 */}
         <div className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-8">
-          <div className="mx-auto flex w-full max-w-[1100px] min-h-0 flex-1 flex-col">
+          <div className="mx-auto flex w-full max-w-[1100px] min-h-0 flex-1 flex-col gap-4">
+            {currentStep.key !== "upload" && !hasMaterials ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                暂未选择素材。可先返回「上传素材」填写课题或点击「填入实验素材」，也可继续浏览后续步骤。
+                <button
+                  type="button"
+                  onClick={() => setStepIndex(0)}
+                  className="ml-2 font-semibold text-brand-500 underline-offset-2 hover:underline"
+                >
+                  去上传素材
+                </button>
+              </div>
+            ) : null}
+
             {currentStep.key === "upload" && (
               <Step1Upload data={data} onChange={handleChange} />
             )}
@@ -187,11 +194,7 @@ export default function EditorPage() {
               ← 上一步
             </Button>
             {stepIndex < STEPS.length - 1 && (
-              <Button
-                className="h-9 px-5 text-sm"
-                onClick={goNext}
-                disabled={!canNext}
-              >
+              <Button className="h-9 px-5 text-sm" onClick={goNext}>
                 下一步 →
               </Button>
             )}

@@ -8,7 +8,6 @@ import {
   Compass,
   FileText,
   FlaskConical,
-  Lightbulb,
   Newspaper,
   PenLine,
   Rocket,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTimelineStore } from '@/stores/timeline-store';
 import { cn } from '@/lib/utils';
+import { SubmissionPrimerDialog } from '@/components/research-home/submission-primer-dialog';
 
 const modules = [
   {
@@ -198,6 +198,9 @@ export function ResearchHomePage() {
           <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-[#55739f] sm:text-lg">
             从一个研究领域，让AI陪你走完完整的研究旅程。
           </p>
+          <div className="mt-4">
+            <SubmissionPrimerDialog />
+          </div>
         </div>
 
         {/* Four module icon buttons + curved path */}
@@ -266,9 +269,9 @@ export function ResearchHomePage() {
           <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-sm font-extrabold text-[#173778]">arXiv 速递</h2>
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#1F4DCB]">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#7890b6]">
                 <Newspaper className="size-3" />
-                今日
+                Demo
               </span>
             </div>
             <ul className="min-h-0 space-y-1.5 overflow-hidden">
@@ -292,7 +295,7 @@ export function ResearchHomePage() {
           <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-sm font-extrabold text-[#173778]">我的研究旅程</h2>
-              <Lightbulb className="size-3.5 text-[#1F4DCB]" />
+              <span className="text-[10px] font-bold text-[#7890b6]">Demo</span>
             </div>
             <div className="flex min-h-0 items-center gap-3 overflow-hidden rounded-xl border border-[#e4eefc] bg-[#f7faff] p-2.5">
               <ProgressRing value={72} />

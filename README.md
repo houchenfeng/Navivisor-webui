@@ -32,17 +32,31 @@ cd web && pnpm install && cd ..
 
 cp .env.example .env
 # 编辑 .env，至少设置 WEBUI_API_KEY（Web 登录密钥，不是 ChatGPT 账号）
+# Windows 建议设置 CODEX_BIN 指向本机 codex.exe
 
 pnpm start:dev          # 后端，默认 8172
-cd web && pnpm dev      # 前端，http://localhost:5173
+cd web && pnpm dev      # 前端，常见 http://localhost:5173 或 5174
 ```
 
-打开 http://localhost:5173 ，用 `.env` 里的 `WEBUI_API_KEY` 登录 WebUI。
+打开前端地址，用 `.env` 里的 `WEBUI_API_KEY` 登录。
 
-要用 GPT 账号跑 Codex：进入 **设置 → 账户**，选择 **ChatGPT**，点「开始设备登录」，在打开的网页里用 ChatGPT 账号完成授权。
+要用 GPT 账号跑 Codex：进入 **设置 → 账户**，选择 **ChatGPT**，完成设备登录授权。
 
-更完整的安装、Docker、环境变量和功能说明见 [docs/codex-webui.md](./docs/codex-webui.md)（英文：[docs/codex-webui.en.md](./docs/codex-webui.en.md)）。
+## 简要使用说明
+
+登录后从侧栏进入科研模块（首页：`/research/home`）：
+
+| 模块 | 路径 | 怎么用 |
+|---|---|---|
+| 首页 | `/research/home` | 四模块入口；底栏卡片为 Demo |
+| 开题 | `/research/topic` | 填方向 → 试检索（OpenAlex）；Step2/3 暂为占位 |
+| 实验 | `/research/experiment` | 导入 SAM Demo → 模拟执行 → 查看/下载成果 |
+| 写作 | `/research/writing` | 填入实验素材 → 任意跳步 → AI 生成走 Codex |
+| 投稿 | `/research/submission` | 走完审稿 Demo（默认本地 mock） |
+
+写作 AI 需 Codex 已登录；PDF 请下载 zip 后本地编译。  
+缺口清单：[docs/research-modules-gap-report.md](./docs/research-modules-gap-report.md)。文档索引：[docs/README.md](./docs/README.md)。
 
 ## 上游项目
 
-本项目基于 [LimLLL/codex-webui](https://github.com/LimLLL/codex-webui) 二次开发。
+本项目基于 [LimLLL/codex-webui](https://github.com/LimLLL/codex-webui) 二次开发。完整安装与能力说明见 [docs/codex-webui.md](./docs/codex-webui.md)。

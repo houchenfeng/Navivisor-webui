@@ -40,7 +40,7 @@ export default function Step3To8Text({
       const text = await generateWithQwen(field, data);
       onChange({ [field]: text } as Partial<WritingData>);
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }

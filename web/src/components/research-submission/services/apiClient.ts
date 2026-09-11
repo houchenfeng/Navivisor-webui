@@ -1,11 +1,25 @@
-﻿// Backend API Client
-// All calls go to the real backend at API_BASE_URL. No mock fallback.
-// Base URL can be configured via VITE_API_BASE_URL environment variable
-
+﻿/**
+ * Submission API client.
+ *
+ * Default: local Demo mock (no external cpolar / localhost:3001).
+ * Optional remote: set VITE_SUBMISSION_API_BASE_URL to a full origin, e.g. https://example.com
+ */
 import type { IReviewer } from '../data/reviewersRound1';
-import type { IRound2Reviewer } from '../data/mockData';
+import { MOCK_REVIEWERS_ROUND1 } from '../data/reviewersRound1';
+import {
+  MOCK_PAPER_CONTENT,
+  MOCK_REBUTTAL_CONTENT,
+  MOCK_REVIEWERS_ROUND2,
+  type IRound2Reviewer,
+} from '../data/mockData';
 
-export const API_BASE_URL = 'https://6e20ae7d.r12.vip.cpolar.cn';
+export const API_BASE_URL = (import.meta.env.VITE_SUBMISSION_API_BASE_URL as string | undefined)?.trim() || '';
+
+const USE_REMOTE = Boolean(API_BASE_URL);
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function fetchJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -98,7 +112,25 @@ function mapBackendRound2Reviewer(br: any, index: number): IRound2Reviewer {
   };
 }
 
+function averageScore(reviewers: Array<{ score: number }>): number {
+  if (!reviewers.length) return 0;
+  return Number(
+    (reviewers.reduce((sum, reviewer) => sum + reviewer.score, 0) / reviewers.length).toFixed(2),
+  );
+}
+
 export async function submitPaper(payload: SubmitPaperPayload): Promise<ISubmitPaperResult> {
+  if (!USE_REMOTE) {
+    await delay(900);
+    const reviewers = MOCK_REVIEWERS_ROUND1;
+    return {
+      reviewers,
+      paperTitle: payload.title || MOCK_PAPER_CONTENT.title,
+      averageScore: averageScore(reviewers),
+      decision: 'Demo · Borderline (local mock)',
+    };
+  }
+
   const formData = new FormData();
   formData.append('title', payload.title);
   formData.append('authors', payload.authors);
@@ -125,6 +157,30 @@ export async function submitPaper(payload: SubmitPaperPayload): Promise<ISubmitP
 }
 
 export async function submitRebuttal(payload: SubmitRebuttalPayload): Promise<ISubmitRebuttalResponse> {
+  if (!USE_REMOTE) {
+    await delay(900);
+    const firstRoundAverage = averageScore(payload.round1Reviews);
+    const reviewers = MOCK_REVIEWERS_ROUND2.map((reviewer, index) => ({
+      ...reviewer,
+      id: reviewer.id || String(index + 1),
+      round1Score: payload.round1Reviews[index]?.score ?? reviewer.round1Score,
+    }));
+    const avg = Number(
+      (
+        reviewers.reduce((sum, reviewer) => sum + reviewer.round2Score, 0) /
+        Math.max(1, reviewers.length)
+      ).toFixed(2),
+    );
+    return {
+      reviewers,
+      averageScore: avg,
+      firstRoundAverage,
+      decision: 'Demo · Accept with minor revision (local mock)',
+      decisionType: 'accept',
+      enhancedRebuttal: payload.rebuttal || MOCK_REBUTTAL_CONTENT,
+    };
+  }
+
   const data = await fetchJson<any>('/api/submit-rebuttal', {
     method: 'POST',
     body: JSON.stringify({
@@ -158,6 +214,17 @@ export async function submitRebuttal(payload: SubmitRebuttalPayload): Promise<IS
 export async function extractPaperInfo(pdfFile: File): Promise<{
   title: string; authors: string; keywords: string; abstract: string; tldr: string;
 }> {
+  if (!USE_REMOTE) {
+    await delay(700);
+    return {
+      title: MOCK_PAPER_CONTENT.title || pdfFile.name.replace(/\.pdf$/i, ''),
+      authors: MOCK_PAPER_CONTENT.authors,
+      keywords: MOCK_PAPER_CONTENT.keywords,
+      abstract: MOCK_PAPER_CONTENT.abstract,
+      tldr: MOCK_PAPER_CONTENT.tldr,
+    };
+  }
+
   const formData = new FormData();
   formData.append('pdf', pdfFile);
   const response = await fetch(`${API_BASE_URL}/api/extract-paper-info`, {
@@ -184,6 +251,11 @@ export interface IGenerateRebuttalRequest {
 }
 
 export async function generateRebuttal(payload: IGenerateRebuttalRequest): Promise<string> {
+  if (!USE_REMOTE) {
+    await delay(800);
+    return payload.currentText?.trim() || MOCK_REBUTTAL_CONTENT;
+  }
+
   const data = await fetchJson<{ rebuttal: string }>('/api/generate-rebuttal', {
     method: 'POST',
     body: JSON.stringify({

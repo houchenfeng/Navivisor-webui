@@ -1,5 +1,9 @@
 ﻿export const apiConfig = {
-  baseUrl: 'https://6e20ae7d.r12.vip.cpolar.cn/api',
+  /**
+   * Remote submission API is opt-in via VITE_SUBMISSION_API_BASE_URL.
+   * Default client uses local Demo mocks (see services/apiClient.ts).
+   */
+  baseUrl: (import.meta.env.VITE_SUBMISSION_API_BASE_URL as string | undefined)?.trim() || '',
   timeout: 30000,
 } as const;
 
