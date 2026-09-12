@@ -2,7 +2,8 @@
 
 **Paper Title**: EviVAD: Verifiable Explanation and Degradation-Aware Gating for Large-Model Video Anomaly Detection in Surveillance Cameras
 **Review mode**: 3 reviewers, OpenReview 1–6 scale
-**Scores**: R1 = 5 (Weak Accept), R2 = 4 (Borderline Accept), R3 = 5 (Weak Accept) · mean 4.67
+**Scores**: R1 = 5 (Weak Accept), R2 = 4 (Borderline Accept), R3 = 5 (Weak Accept) · mean 4.67  
+**After rebuttal**: R2 raises +1 → 5 (Weak Accept); scores 5 / 5 / 5 · mean 5.00
 
 The official structured reviews (summary / strengths / weaknesses / questions / justification) are in `reviews.json`. This file is the same content in reading order.
 

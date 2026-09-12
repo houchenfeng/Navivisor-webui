@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, createContext, useContext } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { Check, ChevronLeft, ChevronRight, Code2, Database, Download, ExternalLink, FileText, FlaskConical, Loader2, Play, RotateCcw, Upload } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Code2, Download, ExternalLink, FileText, FlaskConical, Loader2, Play, RotateCcw, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ function useHydration(): ExperimentHydration {
       comparisonFigureUrl: null,
       architectureFigureUrl: null,
       ideas: [],
+      comparisonMethods: [],
       error: null,
     }
   );
@@ -178,14 +179,34 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
           <strong>{state.pdfAvailableCount}</strong>
           <span className="ml-1 text-muted-foreground">份 PDF 可用</span>
         </div>
-        <div className="mt-auto flex flex-col gap-2">
-          <div className="flex justify-between gap-2">
-            <Button variant="outline" onClick={state.loadDemo}><Database data-icon="inline-start" />离线回退：SAM Demo</Button>
-            <Button disabled={!canContinue} onClick={() => go('plan')}>生成实验方案<ChevronRight data-icon="inline-end" /></Button>
-          </div>
+        <div className="mt-auto flex justify-end">
+          <Button disabled={!canContinue} onClick={() => go('plan')}>生成实验方案<ChevronRight data-icon="inline-end" /></Button>
         </div>
       </section>
     </div>
+  );
+}
+
+function LinkedText({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <>
+      {parts.map((part, index) =>
+        /^https?:\/\//.test(part) ? (
+          <a
+            key={`${part}-${index}`}
+            href={part}
+            target="_blank"
+            rel="noreferrer"
+            className="break-all text-[#1F4DCB] underline"
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={`${part}-${index}`}>{part}</span>
+        ),
+      )}
+    </>
   );
 }
 
@@ -194,39 +215,49 @@ function PlanPage({ go }: { go: (step: ExperimentStep) => void }) {
   const hydration = useHydration();
   const [selectedIdea, setSelectedIdea] = useState<(typeof state.ideas)[number] | null>(null);
   const fromWorkspace = hydration.source === 'workspace';
-  const headline = fromWorkspace
-    ? hydration.planHeadline ||
-      '任务：摄像头视频异常检测 · Baseline B0：冻结 VLM + 文本侧打分 · 方法：EviVAD（DAA / EAD / DAG）'
-    : '任务：道路裂缝二分类语义分割 · Baseline：冻结 SAM ViT-B + 轻量 Mask Decoder · 对比：U-Net、DeepLabV3+';
-  const shortestPath = fromWorkspace
-    ? hydration.shortestPath ||
-      '先复现冻结 VLM Baseline B0，再按 DAA → EAD → DAG 三个单变量改动依次验证；只有单项通过 Go 标准后才做组合实验。'
-    : '先复现冻结 SAM Baseline，再分别验证“领域适配、边界监督、多尺度提示”三个单变量改动；只有单项通过 Go 标准后才做组合实验。';
+  const baselineText =
+    hydration.planHeadline ||
+    '完整方法 EviVAD = B0 + DAA + EAD + DAG。\n基线 B0（免训练）：OpenAI CLIP，视觉编码器 ViT-B/16（输入 224×224），文本编码器 CLIP Transformer；视觉/文本塔全部冻结。帧级图像嵌入与固定英文异常/正常提示做余弦相似度，再经一维时间平滑得到帧级分数。';
+  const comparisonMethods = hydration.comparisonMethods.length
+    ? hydration.comparisonMethods
+    : [
+        '深度自编码器重建式监控视频异常检测（2023），卷积自编码器骨干',
+        '弱监督片段级卷积–Transformer 检测（Sensors, 2023），I3D / ViT 片段特征',
+        'CLIP-TSA：OpenAI CLIP ViT-B/16 视觉特征 + 时间自注意力（Joo 等, ICIP 2023）',
+        'LAVAD：BLIP 类图像描述模型 + 大语言模型时序打分（Zanella 等, CVPR 2024）',
+        'VadCLIP：CLIP ViT-B/16 视觉语言弱监督视频异常检测（Wu 等, AAAI 2024）',
+        'Open-Vocabulary Video Anomaly Detection（Wu 等, CVPR 2024）',
+        'RAG4VAD：检索增强生成的免训练可解释检测（Sun 等, 2026）',
+      ];
   const protocolNote = fromWorkspace
     ? hydration.protocolNote ||
-      'UCF-Crime 为主评测，XD-Violence / UBnormal / MSAD 作跨域；32 帧 / 8 fps、三随机种子；报告 AUC / AP / mAP@0.5 / EAR / HR。'
-    : 'Crack500 固定划分 250/50/200，DeepCrack 537 张只作零微调外部测试；统一 1024×1024 输入、三随机种子、mIoU/Dice/Boundary-F1/Recall 和同一推理计时协议。';
+      '公开犯罪监控数据为主评测，跨域集合作补充；统一片段长度、随机种子与检测、解释、退化可靠性指标。'
+    : '公开裂缝数据集固定划分为主，外部测试集只作零微调评估；统一输入尺寸、随机种子和同一推理计时协议。';
   const dialogProtocol = fromWorkspace
     ? protocolNote
-    : 'Crack500（250/50/200）为主数据集，DeepCrack（537 张）为外部测试；输入、增强、轮数、种子和评测代码严格固定，禁止针对测试集调参。';
+    : '公开裂缝数据集固定划分为主，外部测试集只作零微调评估；输入、增强、轮数、种子和评测代码严格固定，禁止针对测试集调参。';
   return <div className="flex flex-col gap-5">
     <section className="rounded-2xl bg-white/90 p-6">
       <h2 className="text-xl font-semibold text-[#10204A]">实验方案确认</h2>
-      <p className="mt-2 text-sm text-muted-foreground">{headline}</p>
-      {hydration.planMarkdown ? (
-        <pre className="mt-4 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl bg-muted/60 p-4 text-sm leading-6">{hydration.planMarkdown}</pre>
-      ) : null}
-      {hydration.configJson ? (
-        <pre className="mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-xl border border-dashed border-[#c9dbf8] bg-white p-3 text-xs text-muted-foreground">{hydration.configJson}</pre>
-      ) : null}
-      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl bg-blue-50 p-4 text-sm"><strong>最短验证路径：</strong>{shortestPath}</div>
-        <div className="rounded-xl border border-blue-200 bg-white p-4 text-sm"><strong>统一数据与评测协议：</strong>{protocolNote}</div>
+      <p className="mt-2 text-sm text-muted-foreground">核对基线、对比算法与各创新点后，再确认方案。</p>
+      <div className="mt-4 grid gap-3">
+        <div className="rounded-xl bg-blue-50 p-4 text-sm leading-6">
+          <strong>基线算法</strong>
+          <p className="mt-2 whitespace-pre-wrap">{baselineText}</p>
+        </div>
+        <div className="rounded-xl border border-blue-200 bg-white p-4 text-sm leading-6">
+          <strong>对比算法</strong>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {comparisonMethods.map((method) => (
+              <li key={method}>{method}</li>
+            ))}
+          </ul>
+        </div>
       </div>
       <div className="mt-5 grid gap-3 lg:grid-cols-2">{state.ideas.map((idea) => <button type="button" key={idea.id} onClick={() => setSelectedIdea(idea)} className="rounded-xl border bg-white p-4 text-left transition hover:border-[#1F4DCB] hover:shadow-md"><div className="flex items-center justify-between"><Badge variant="secondary">{idea.layer}</Badge><span className="text-sm font-semibold text-[#16A36A]">预计 {idea.gain}</span></div><h3 className="mt-3 font-semibold">{idea.id} · {idea.name}</h3><p className="mt-1 text-sm text-muted-foreground">{idea.summary}</p><div className="mt-3 rounded-lg bg-muted/60 p-3 text-sm"><strong>具体修改：</strong>{idea.modification}</div><span className="mt-3 flex items-center gap-1 text-xs font-medium text-[#1F4DCB]">查看完整实验方案<ExternalLink className="size-3" /></span></button>)}</div>
     </section>
     <div className="flex justify-end"><Button onClick={() => { state.setFields({ planConfirmed: true }); go('mode'); }}><Check data-icon="inline-start" />确认方案</Button></div>
-    <Dialog open={Boolean(selectedIdea)} onOpenChange={(open) => { if (!open) setSelectedIdea(null); }}><DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-3xl">{selectedIdea ? <><DialogHeader><DialogTitle className="pr-8 text-xl">{selectedIdea.id} · {selectedIdea.name}</DialogTitle><DialogDescription>{selectedIdea.summary}</DialogDescription></DialogHeader><div className="flex flex-col gap-5"><section><h3 className="font-semibold text-[#1F4DCB]">0. 统一数据集与协议</h3><p className="mt-2 text-sm">{dialogProtocol}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">1. 步骤定位</h3><p className="mt-2">{selectedIdea.stepLocation}</p><p className="mt-2 text-sm text-muted-foreground"><strong>原始假设：</strong>{selectedIdea.hypothesis}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">2. 优化目标</h3><p className="mt-2">{selectedIdea.optimizationGoal}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">3. 主方案</h3><ol className="mt-2 flex list-decimal flex-col gap-2 pl-5">{selectedIdea.mainPlan.map((item) => <li key={item}>{item}</li>)}</ol></section><section><h3 className="font-semibold text-[#1F4DCB]">4. 备选战略与权衡</h3><div className="mt-2 grid gap-3">{selectedIdea.alternatives.map((alternative) => <div key={alternative.name} className="rounded-xl border p-3"><h4 className="font-medium">{alternative.name}</h4><p className="mt-1 text-sm">{alternative.approach}</p><p className="mt-2 text-sm text-[#16A36A]"><strong>优点：</strong>{alternative.pros}</p><p className="mt-1 text-sm text-[#DC3C4A]"><strong>缺点：</strong>{alternative.cons}</p></div>)}</div></section><section><h3 className="font-semibold text-[#1F4DCB]">5. 战略选择建议</h3><p className="mt-2">{selectedIdea.recommendation}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">6. 对资源清单的影响</h3><ul className="mt-2 list-disc pl-5">{selectedIdea.resources.map((item) => <li key={item}>{item}</li>)}</ul></section><section><h3 className="font-semibold text-[#1F4DCB]">7. 验证与检查点（Go / No-Go）</h3><ul className="mt-2 flex list-disc flex-col gap-2 pl-5">{selectedIdea.goNoGo.map((item) => <li key={item}>{item}</li>)}</ul></section><section className="rounded-xl bg-amber-50 p-4"><h3 className="font-semibold">知识库引用与核实要求</h3><ul className="mt-2 flex list-disc flex-col gap-2 pl-5 text-sm">{selectedIdea.references.map((item) => <li key={item}>{item}</li>)}</ul></section></div></> : null}</DialogContent></Dialog>
+    <Dialog open={Boolean(selectedIdea)} onOpenChange={(open) => { if (!open) setSelectedIdea(null); }}><DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-3xl">{selectedIdea ? <><DialogHeader><DialogTitle className="pr-8 text-xl">{selectedIdea.id} · {selectedIdea.name}</DialogTitle><DialogDescription>{selectedIdea.summary}</DialogDescription></DialogHeader><div className="flex flex-col gap-5"><section><h3 className="font-semibold text-[#1F4DCB]">0. 统一数据集与协议</h3><p className="mt-2 text-sm">{dialogProtocol}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">1. 步骤定位</h3><p className="mt-2">{selectedIdea.stepLocation}</p><p className="mt-2 text-sm text-muted-foreground"><strong>原始假设：</strong>{selectedIdea.hypothesis}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">2. 优化目标</h3><p className="mt-2">{selectedIdea.optimizationGoal}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">3. 主方案</h3><ol className="mt-2 flex list-decimal flex-col gap-2 pl-5">{selectedIdea.mainPlan.map((item) => <li key={item}>{item}</li>)}</ol></section><section><h3 className="font-semibold text-[#1F4DCB]">4. 备选战略与权衡</h3><div className="mt-2 grid gap-3">{selectedIdea.alternatives.map((alternative) => <div key={alternative.name} className="rounded-xl border p-3"><h4 className="font-medium">{alternative.name}</h4><p className="mt-1 text-sm">{alternative.approach}</p><p className="mt-2 text-sm text-[#16A36A]"><strong>优点：</strong>{alternative.pros}</p><p className="mt-1 text-sm text-[#DC3C4A]"><strong>缺点：</strong>{alternative.cons}</p></div>)}</div></section><section><h3 className="font-semibold text-[#1F4DCB]">5. 战略选择建议</h3><p className="mt-2">{selectedIdea.recommendation}</p></section><section><h3 className="font-semibold text-[#1F4DCB]">6. 对资源清单的影响</h3><ul className="mt-2 list-disc pl-5">{selectedIdea.resources.map((item) => <li key={item}>{item}</li>)}</ul></section><section><h3 className="font-semibold text-[#1F4DCB]">7. 验证与检查点（Go / No-Go）</h3><ul className="mt-2 flex list-disc flex-col gap-2 pl-5">{selectedIdea.goNoGo.map((item) => <li key={item}>{item}</li>)}</ul></section><section className="rounded-xl bg-amber-50 p-4"><h3 className="font-semibold">知识库引用与核实要求</h3><ul className="mt-2 flex list-disc flex-col gap-2 pl-5 text-sm">{selectedIdea.references.map((item) => <li key={item}><LinkedText text={item} /></li>)}</ul></section></div></> : null}</DialogContent></Dialog>
   </div>;
 }
 

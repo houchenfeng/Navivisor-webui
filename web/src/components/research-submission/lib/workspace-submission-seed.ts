@@ -33,6 +33,10 @@ type WorkspaceReviewer = {
   focus?: string;
   finalJustification?: string;
   final_justification?: string;
+  updatedRating?: number;
+  updated_rating?: number;
+  comment?: string;
+  round2Comment?: string;
 };
 
 type WorkspaceReviewsPayload = {
@@ -231,14 +235,17 @@ export async function loadSubmissionWorkspaceSeed(
   }
 
   let reviewers: IReviewer[] = [];
+  let rawReviewers: WorkspaceReviewer[] = [];
   let reviewsTitle = '';
   if (reviewsText) {
     try {
       const parsed = JSON.parse(reviewsText) as WorkspaceReviewsPayload;
       reviewsTitle = parsed.paper_title?.trim() || '';
-      reviewers = (parsed.reviewers ?? []).map(mapWorkspaceReviewer);
+      rawReviewers = parsed.reviewers ?? [];
+      reviewers = rawReviewers.map(mapWorkspaceReviewer);
     } catch {
       reviewers = [];
+      rawReviewers = [];
     }
   }
 
@@ -304,15 +311,35 @@ export async function loadSubmissionWorkspaceSeed(
       ? reviewers.reduce((sum, reviewer) => sum + reviewer.score, 0) / reviewers.length
       : 0;
 
-  const round2Reviewers: IRound2Reviewer[] = reviewers.map((reviewer) => ({
-    id: reviewer.id,
-    name: reviewer.name,
-    round1Score: reviewer.score,
-    round2Score: reviewer.score,
-    round1Comment: reviewer.summary,
-    round2Comment: reviewer.summary,
-    rebuttalResponse: '',
-  }));
+  const round2Reviewers: IRound2Reviewer[] = reviewers.map((reviewer, index) => {
+    const raw = rawReviewers[index];
+    const round2Score =
+      typeof raw?.updatedRating === 'number'
+        ? raw.updatedRating
+        : typeof raw?.updated_rating === 'number'
+          ? raw.updated_rating
+          : reviewer.score;
+    const round2Comment =
+      raw?.round2Comment?.trim() ||
+      raw?.comment?.trim() ||
+      (round2Score !== reviewer.score
+        ? `评分从 ${reviewer.score} 上调至 ${round2Score}（${ratingLabelForScore(round2Score)}）。作者回复中的实验承诺足以支撑这一轻微上调；终稿仍须兑现。`
+        : reviewer.summary);
+    return {
+      id: reviewer.id,
+      name: reviewer.name,
+      round1Score: reviewer.score,
+      round2Score,
+      round1Comment: reviewer.summary,
+      round2Comment,
+      rebuttalResponse: '',
+    };
+  });
+  const round2Avg =
+    round2Reviewers.length > 0
+      ? round2Reviewers.reduce((sum, reviewer) => sum + reviewer.round2Score, 0) /
+        round2Reviewers.length
+      : 0;
 
   return {
     source: 'workspace',
@@ -328,7 +355,7 @@ export async function loadSubmissionWorkspaceSeed(
     round2Reviewers,
     decision,
     round1AvgScore: avg,
-    round2AvgScore: avg,
+    round2AvgScore: round2Avg,
     error: null,
   };
 }

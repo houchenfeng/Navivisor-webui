@@ -204,12 +204,7 @@ export default function Step9Export({ data }: Props) {
       });
       if (response.ok) {
         const blob = await response.blob();
-        const demoPdf = await tryResolveDemoPaperPdf();
-        if (demoPdf) {
-          showPdf(demoPdf, null);
-        } else {
-          showPdf(null, URL.createObjectURL(blob));
-        }
+        showPdf(null, URL.createObjectURL(blob));
         return;
       }
       const detail = await response.text();

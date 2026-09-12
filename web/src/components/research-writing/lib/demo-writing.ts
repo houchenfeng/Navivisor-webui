@@ -182,22 +182,25 @@ export async function tryLoadDemoWritingSection(
 
 const FIGURE_FILES: Record<'algorithmFlowImage' | 'algorithmIllustImage', string[]> = {
   algorithmFlowImage: [
+    'experiment/figures/framework-generated-v2.png',
+    'writing/figures/framework-generated-v2.png',
     'writing/figures/architecture.png',
     'experiment/figures/architecture.png',
   ],
   algorithmIllustImage: [
+    'experiment/figures/qualitative-generated-v2.png',
+    'writing/figures/qualitative-generated-v2.png',
     'writing/figures/comparison.png',
     'experiment/figures/comparison.png',
   ],
 };
 
 const RESULT_FIGURE_GROUPS = [
-  ['writing/figures/comparison.png', 'experiment/figures/comparison.png'],
+  ['experiment/figures/qualitative-generated-v2.png', 'writing/figures/qualitative-generated-v2.png', 'writing/figures/comparison.png', 'experiment/figures/comparison.png'],
   ['writing/figures/curves.png', 'experiment/figures/curves.png'],
   [
-    'experiment/figures/qualitative-generated-v2.png',
-    'writing/figures/qualitative.png',
-    'experiment/figures/qualitative.png',
+    'experiment/figures/framework-generated-v2.png',
+    'writing/figures/framework-generated-v2.png',
   ],
 ];
 

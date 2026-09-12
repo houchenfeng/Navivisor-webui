@@ -47,6 +47,8 @@ interface ISimulationContext {
   pickDemoPdf: () => Promise<File | null>;
   fillDemoPaperField: (field: 'title' | 'authors' | 'keywords' | 'abstract' | 'tldr') => Promise<boolean>;
   fillDemoRebuttal: () => Promise<boolean>;
+  applyDemoRound1Reviews: () => boolean;
+  applyDemoRound2Outcome: () => boolean;
 }
 
 const SimulationContext = createContext<ISimulationContext | null>(null);
@@ -77,11 +79,15 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [apiError, setApiError] = useState<string | null>(null);
   const [paperPdfFile, setPaperPdfFile] = useState<File | null>(null);
   const [demoForm, setDemoForm] = useState<ISubmissionForm>(INITIAL_FORM);
+  const [demoRound1, setDemoRound1] = useState<IReviewer[]>([]);
+  const [demoRound1Avg, setDemoRound1Avg] = useState(0);
+  const [demoRound2, setDemoRound2] = useState<IRound2Reviewer[]>([]);
+  const [demoRound2Avg, setDemoRound2Avg] = useState(0);
+  const [demoDecision, setDemoDecision] = useState('');
   const [workspaceSeedSource, setWorkspaceSeedSource] = useState<
     'workspace' | 'local-mock' | 'loading'
   >('local-mock');
   const seededKeyRef = useRef<string | null>(null);
-  const seededProjectRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,35 +108,28 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         if (seed.source !== 'workspace') {
           setPaperPdfFile(null);
           setDemoForm(INITIAL_FORM);
+          setDemoRound1([]);
+          setDemoRound1Avg(0);
+          setDemoRound2([]);
+          setDemoRound2Avg(0);
+          setDemoDecision('');
           return;
         }
 
-        const workspaceForm = {
+        setDemoForm({
           title: seed.title,
           authors: seed.authors,
           keywords: seed.keywords,
           abstract: seed.abstract,
           tldr: seed.tldr,
           rebuttal: seed.rebuttal,
-        };
-        setDemoForm(workspaceForm);
-        if (demoLoaded && seededProjectRef.current !== projectId) {
-          setForm(workspaceForm);
-        }
-        seededProjectRef.current = projectId;
+        });
         setPaperPdfFile(seed.paperPdfFile);
-        if (seed.round1Reviewers.length > 0) {
-          setRound1Reviewers(seed.round1Reviewers);
-          setRound1AvgScore(seed.round1AvgScore);
-        }
-        if (seed.round2Reviewers.length > 0) {
-          setRound2Reviewers(seed.round2Reviewers);
-          setRound2AvgScore(seed.round2AvgScore);
-        }
-        if (seed.decision) {
-          setRound2DecisionState(seed.decision);
-        }
-        setSubmissionNumber((prev) => prev || `WS-${(projectId ?? 'demo').slice(0, 8)}`);
+        setDemoRound1(seed.round1Reviewers);
+        setDemoRound1Avg(seed.round1AvgScore);
+        setDemoRound2(seed.round2Reviewers);
+        setDemoRound2Avg(seed.round2AvgScore);
+        setDemoDecision(seed.decision);
       } catch (err) {
         if (!cancelled) {
           setWorkspaceSeedSource('local-mock');
@@ -230,6 +229,33 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     return demoLoaded;
   };
 
+  const demoRound1Ref = useRef<IReviewer[]>([]);
+  const demoRound2Ref = useRef<IRound2Reviewer[]>([]);
+  demoRound1Ref.current = demoRound1;
+  demoRound2Ref.current = demoRound2;
+  const demoRound1AvgRef = useRef(0);
+  const demoRound2AvgRef = useRef(0);
+  const demoDecisionRef = useRef('');
+  demoRound1AvgRef.current = demoRound1Avg;
+  demoRound2AvgRef.current = demoRound2Avg;
+  demoDecisionRef.current = demoDecision;
+
+  const applyDemoRound1Reviews = () => {
+    if (!demoLoaded || demoRound1Ref.current.length === 0) return false;
+    setRound1Reviewers(demoRound1Ref.current);
+    setRound1AvgScore(demoRound1AvgRef.current);
+    return true;
+  };
+
+  const applyDemoRound2Outcome = () => {
+    if (!demoLoaded || demoRound2Ref.current.length === 0) return false;
+    setRound2Reviewers(demoRound2Ref.current);
+    setRound2DecisionState(demoDecisionRef.current || 'Poster Accept');
+    setRound2AvgScore(demoRound2AvgRef.current || demoRound1AvgRef.current);
+    setRound1AvgScore(demoRound1AvgRef.current);
+    return true;
+  };
+
   const setRound2Decision = (decision: string, avgScore: number, firstRoundAvg: number) => {
     setRound2DecisionState(decision);
     setRound2AvgScore(avgScore);
@@ -248,8 +274,12 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     setApiError(null);
     setPaperPdfFile(null);
     setDemoForm(INITIAL_FORM);
+    setDemoRound1([]);
+    setDemoRound1Avg(0);
+    setDemoRound2([]);
+    setDemoRound2Avg(0);
+    setDemoDecision('');
     seededKeyRef.current = null;
-    seededProjectRef.current = null;
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -272,6 +302,8 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         pickDemoPdf,
         fillDemoPaperField,
         fillDemoRebuttal,
+        applyDemoRound1Reviews,
+        applyDemoRound2Outcome,
       }}
     >
       {children}

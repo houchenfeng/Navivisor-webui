@@ -15,13 +15,13 @@ export default function Step3SubmissionForm() {
     setFormField,
     goToStep,
     setRound1Reviewers,
-    round1Reviewers,
     setSubmissionNumber,
     apiError,
     setApiError,
     isDemoLoaded,
     pickDemoPdf,
     fillDemoPaperField,
+    applyDemoRound1Reviews,
   } = useSimulation();
   const [abstractTab, setAbstractTab] = useState<'write' | 'preview'>('write');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,7 +82,7 @@ export default function Step3SubmissionForm() {
     setIsSubmitting(true);
     setApiError(null);
     try {
-      if (demoReady && round1Reviewers.length > 0) {
+      if (demoReady && applyDemoRound1Reviews()) {
         const subNum = String(Math.floor(10000 + Math.random() * 90000));
         setSubmissionNumber(subNum);
         goToStep(4);

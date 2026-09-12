@@ -42,6 +42,7 @@ export type ExperimentHydration = {
   comparisonFigureUrl: string | null;
   architectureFigureUrl: string | null;
   ideas: ExperimentIdea[];
+  comparisonMethods: string[];
   error: string | null;
 };
 
@@ -51,7 +52,7 @@ const emptyHydration = (): ExperimentHydration => ({
   source: 'offline-fallback',
   loading: false,
   planMarkdown: DEMO_PLAN_MARKDOWN,
-  planHeadline: 'EviVAD = B0 + DAA + EAD + DAG · Baseline B0：冻结 VLM + 文本侧打分',
+  planHeadline: '完整方法 EviVAD = B0 + DAA + EAD + DAG。\n基线 B0（免训练）：OpenAI CLIP，视觉编码器 ViT-B/16，文本编码器 CLIP Transformer，权重全部冻结；帧级图像–文本余弦相似度加一维时间平滑。',
   shortestPath: '先复现冻结 VLM Baseline B0，再按 DAA → EAD → DAG 单变量接入。',
   protocolNote: 'UCF-Crime 主评测；XD-Violence / UBnormal / MSAD 跨域；指标 AUC / AP / EAR / HR。',
   resultsMarkdown: DEMO_RESULTS_MARKDOWN,
@@ -64,6 +65,15 @@ const emptyHydration = (): ExperimentHydration => ({
   comparisonFigureUrl: null,
   architectureFigureUrl: null,
   ideas: [],
+  comparisonMethods: [
+    '深度自编码器重建式监控视频异常检测（2023），卷积自编码器骨干',
+    '弱监督片段级卷积–Transformer 检测（Sensors, 2023），I3D / ViT 片段特征',
+    'CLIP-TSA：OpenAI CLIP ViT-B/16 视觉特征 + 时间自注意力（Joo 等, ICIP 2023）',
+    'LAVAD：BLIP 类图像描述模型 + 大语言模型时序打分（Zanella 等, CVPR 2024）',
+    'VadCLIP：CLIP ViT-B/16 视觉语言弱监督视频异常检测（Wu 等, AAAI 2024）',
+    'Open-Vocabulary Video Anomaly Detection（Wu 等, CVPR 2024）',
+    'RAG4VAD：检索增强生成的免训练可解释检测（Sun 等, 2026）',
+  ],
   error: null,
 });
 
@@ -108,6 +118,7 @@ function mapWorkspaceIdeas(raw: string): {
   planHeadline: string;
   shortestPath: string;
   protocolNote: string;
+  comparisonMethods: string[];
 } | null {
   try {
     const parsed = JSON.parse(raw) as {
@@ -115,6 +126,7 @@ function mapWorkspaceIdeas(raw: string): {
       method?: string;
       protocol?: string;
       shortestPath?: string;
+      comparisons?: unknown;
       items?: Array<Record<string, unknown>>;
     };
     const items = parsed.items;
@@ -160,9 +172,10 @@ function mapWorkspaceIdeas(raw: string): {
     });
     return {
       ideas,
-      planHeadline: [parsed.method, parsed.baseline].filter(Boolean).join(' · '),
+      planHeadline: String(parsed.baseline ?? [parsed.method, parsed.baseline].filter(Boolean).join(' · ')),
       shortestPath: parsed.shortestPath ?? '',
       protocolNote: parsed.protocol ?? '',
+      comparisonMethods: asStringList(parsed.comparisons),
     };
   } catch {
     return null;
@@ -202,18 +215,28 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
       }
 
       const plan =
-        findLatestByPathHint(artifacts, 'experiment/plan.md') ??
-        artifacts
-          .filter(
-            (artifact) =>
-              artifact.role === 'experiment-plan' && /\.md$/i.test(artifact.path),
-          )
-          .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))[0];
+        artifacts.find((artifact) =>
+          artifact.path.replace(/\\/g, '/').toLowerCase().endsWith('/experiment/plan.md'),
+        ) ??
+        artifacts.find((artifact) =>
+          artifact.path.replace(/\\/g, '/').toLowerCase().endsWith('/plan.md'),
+        );
       const innovations =
         findLatestByPathHint(artifacts, 'experiment/innovations.json') ??
         findLatestByPathHint(artifacts, 'innovations.json');
-      const results = findLatestByRole(artifacts, 'experiment-results');
-      const architecture = findLatestByRole(artifacts, 'method-architecture');
+      const results =
+        artifacts.find((artifact) =>
+          artifact.path.replace(/\\/g, '/').toLowerCase().endsWith('/experiment/results.md'),
+        ) ??
+        artifacts.find(
+          (artifact) =>
+            artifact.role === 'experiment-results' &&
+            artifact.path.replace(/\\/g, '/').toLowerCase().endsWith('/results.md'),
+        );
+      const architecture =
+        artifacts.find((artifact) =>
+          artifact.path.replace(/\\/g, '/').toLowerCase().endsWith('/experiment/algorithm-details.md'),
+        ) ?? findLatestByRole(artifacts, 'method-architecture');
       const config = findLatestByRole(artifacts, 'experiment-config');
       const confirmed = findLatestByRole(artifacts, 'confirmed-topic');
       const coreReferences =
@@ -307,9 +330,6 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
             };
             if (parsed.seeds?.[0] != null) patch.seed = parsed.seeds[0];
             if (parsed.seeds?.length) patch.repeatCount = parsed.seeds.length;
-            if (parsed.mode === 'simulated' || parsed.mode === 'real') {
-              patch.runMode = parsed.mode;
-            }
           } catch {
             // ignore
           }
@@ -367,6 +387,9 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
             ? artifactContentUrl(projectId, architectureFigure.artifactId)
             : null,
           ideas: mappedIdeas?.ideas ?? [],
+          comparisonMethods: mappedIdeas?.comparisonMethods?.length
+            ? mappedIdeas.comparisonMethods
+            : emptyHydration().comparisonMethods,
           error: null,
         });
       } catch (err) {

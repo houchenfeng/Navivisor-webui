@@ -13,7 +13,7 @@
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{framework.png}
+\includegraphics[width=\linewidth]{framework-generated-v2.png}
 \caption{\evivad{} 算法流程框架图。输入为摄像头视频流（$32$ 帧 / 片段、$8$~fps 采样），可选注入退化网格；主干为全部冻结的视觉编码器，其上由 DAA 注入 Q/V 低秩增量；DAG 依据质量探针的输出在「常规路径」与「检索/先验主导路径」之间调制打分权重并输出弃权；EAD 把打分结果解码为带时间区间与视觉线索引用的结构化解释。最终输出四类结果：帧级异常分数曲线、异常时间区间、证据引用解释、置信度与弃权标志。}
 \label{fig:framework}
 \end{figure*}

@@ -9,7 +9,7 @@
 - **跨域验证数据集**：XD-Violence（多类异常）、UBnormal（合成异常）、MSAD（多场景）；全部只做**零微调外测**。
 - **退化验证网格**：4 类退化（低光/低对比、雨雾/大气散射、视频压缩、相机抖动与遮挡）× 3 个强度等级 = 12 种配置，在评测阶段离线生成并固定随机种子。
 - **Baseline（B0）**：冻结 VLM 视觉塔（CLIP ViT-B/16）+ 文本侧异常 prompt 相似度打分 + 时间平滑；**免训练**，无解释约束、无退化处理。
-- **对比算法**：重建类（深度自编码器监控视频异常检测，2023）、弱监督 CNN-ViT 片段级检测（Sensors, 2023）、CLIP 系零样本（CLIP-TSA, 2022）、免训练 LLM 流程（Harnessing LLMs for Training-free VAD, 2024）。
+- **对比算法**：深度自编码器重建式监控视频异常检测（2023）、弱监督片段级卷积–Transformer 视频异常检测（Sensors, 2023）、CLIP-TSA：基于对比语言图像预训练模型的时间注意力零样本检测（2022）、Harnessing Large Language Models for Training-Free Video Anomaly Detection（Zanella 等, CVPR 2024）、Open-Vocabulary Video Anomaly Detection（Wu 等, CVPR 2024）、RAG4VAD: A training-free retrieval-augmented generation framework for explainable video anomaly detection（Sun 等, 2026）。
 - **主指标**：帧级 AUC ↑、帧级 AP ↑、时序定位 mAP@0.5 ↑。
 - **辅助指标**：EAR ↑（证据归因召回）、CFS ↑（反事实可反证分）、HR ↓（幻觉率）、TCR ↑（时序一致性率）、ECE ↓（置信度校准误差）、RPR ↑（退化相对性能保持率）。
 - **效率指标**：可训练参数量（M）、端到端延迟（ms / 32 帧片段）、显存占用（GB）、FPS。

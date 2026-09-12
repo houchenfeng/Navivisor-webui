@@ -13,7 +13,7 @@ The data flow of \evivad{} is shown in Fig.~\ref{fig:framework}. A raw clip firs
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{framework.png}
+\includegraphics[width=\linewidth]{framework-generated-v2.png}
 \caption{Algorithmic framework of \evivad{} (illustrative). The input is a surveillance stream ($32$ frames per clip, $8$~fps); a degradation grid can optionally be injected. The backbone is a fully frozen vision encoder, on top of which DAA injects Q/V low-rank increments. DAG uses the quality probe to re-weight a regular path against a retrieval/prior-driven path and to emit an abstention flag; EAD decodes the score into a structured explanation with temporal intervals and visual cues. Four outputs are produced: a frame-level score curve, temporal intervals, an evidence-cited explanation, and confidence/abstention flags.}
 \label{fig:framework}
 \end{figure*}

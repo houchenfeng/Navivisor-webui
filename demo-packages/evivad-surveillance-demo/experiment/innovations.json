@@ -1,8 +1,17 @@
 {
   "schemaVersion": 1,
   "simulated": true,
-  "baseline": "B0：冻结 VLM 视觉/文本塔 + 文本侧异常打分 + 时间平滑（免训练）",
+  "baseline": "完整方法 EviVAD = B0 + DAA + EAD + DAG。\n基线 B0（免训练、0 可训练参数）：OpenAI CLIP，视觉编码器 ViT-B/16（patch 16、输入 224×224），文本编码器为 CLIP 文本 Transformer；视觉塔与文本塔权重全部冻结。\n打分流程：对 32 帧 / 8 fps 片段提取帧级图像嵌入，与固定英文提示（正常场景 / 异常事件）的文本嵌入做余弦相似度，再经一维时间平滑得到帧级异常分数。B0 不含领域适配、证据槽位解码或退化门控。",
   "method": "EviVAD = B0 + DAA + EAD + DAG",
+  "comparisons": [
+    "深度自编码器重建式监控视频异常检测（2023），卷积自编码器骨干",
+    "弱监督片段级卷积–Transformer 检测（Sensors, 2023），I3D / ViT 片段特征",
+    "CLIP-TSA：OpenAI CLIP ViT-B/16 视觉特征 + 时间自注意力（Joo 等, ICIP 2023）",
+    "LAVAD：BLIP 类图像描述模型 + 大语言模型时序打分（Zanella 等, CVPR 2024；仓库 lucazanella/lavad）",
+    "VadCLIP：CLIP ViT-B/16 视觉语言弱监督视频异常检测（Wu 等, AAAI 2024；仓库 nwpu-zxr/VadCLIP）",
+    "Open-Vocabulary Video Anomaly Detection（Wu 等, CVPR 2024），对照实现取同组 VadCLIP",
+    "RAG4VAD：检索增强生成的免训练可解释检测（Sun 等, 2026）；可运行对照为 FAISS 正常性记忆检索"
+  ],
   "protocol": "UCF-Crime 主评测；XD-Violence / UBnormal / MSAD 作跨域；32 帧 / 8 fps；种子 42、3407、2026；指标 AUC / AP / mAP@0.5 / EAR / HR / TCR。",
   "shortestPath": "先复现冻结 VLM Baseline B0，再按 DAA → EAD → DAG 单变量接入；单项通过 Go 标准后才做组合实验。",
   "items": [
@@ -51,8 +60,9 @@
         "No-Go：AUC 提升 < 0.5 个百分点，或三种子标准差大于平均增益。"
       ],
       "references": [
-        "experiment/plan.md §3 DAA",
-        "experiment/algorithm-details.md"
+        "开源代码：CLIP 冻结视觉/文本塔 https://github.com/openai/CLIP",
+        "开源代码：Hugging Face PEFT / LoRA https://github.com/huggingface/peft",
+        "对比实现：CLIP-TSA https://github.com/joos2010kj/CLIP-TSA"
       ]
     },
     {
@@ -99,7 +109,8 @@
         "No-Go：EAR 提升 < 5 个百分点，或帧级 AUC 下降 > 1 个百分点。"
       ],
       "references": [
-        "experiment/plan.md §4 EAD"
+        "开源代码：LAVAD 免训练大模型视频异常检测 https://github.com/lucazanella/lavad",
+        "开源代码：VadCLIP 解释/弱监督对照 https://github.com/nwpu-zxr/VadCLIP"
       ]
     },
     {
@@ -146,7 +157,8 @@
         "No-Go：干净集 AUC 下降 > 1 个百分点。"
       ],
       "references": [
-        "experiment/plan.md §5 DAG"
+        "开源代码：CLIP 主干与文本打分 https://github.com/openai/CLIP",
+        "开源代码：LAVAD 免训练流程对照 https://github.com/lucazanella/lavad"
       ]
     },
     {
@@ -186,7 +198,8 @@
         "No-Go：跨域子集出现负增益。"
       ],
       "references": [
-        "experiment/plan.md §1 Idea 4"
+        "开源代码：FAISS 近邻检索 https://github.com/facebookresearch/faiss",
+        "开源代码：CLIP 冻结特征 https://github.com/openai/CLIP"
       ]
     },
     {
@@ -225,7 +238,7 @@
         "No-Go：延迟增加 > 50%。"
       ],
       "references": [
-        "experiment/plan.md §1 Idea 5"
+        "开源代码：MMAction2 时序定位工具 https://github.com/open-mmlab/mmaction2"
       ]
     },
     {
@@ -264,7 +277,7 @@
         "No-Go：延迟 > 2×。"
       ],
       "references": [
-        "experiment/plan.md §1 Idea 6"
+        "开源代码：CLIP 推理主干 https://github.com/openai/CLIP"
       ]
     },
     {
@@ -302,7 +315,7 @@
         "No-Go：无法在统一评测协议下复现。"
       ],
       "references": [
-        "experiment/plan.md §1 Idea 7"
+        "开源代码：UCF-Crime 单摄像头评测协议 https://github.com/WaqasSultani/AnomalyDetectionCVPR2018"
       ]
     }
   ]

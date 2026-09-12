@@ -15,7 +15,7 @@
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{comparison.png}
+\includegraphics[width=\linewidth]{qualitative-generated-v2.png}
 \caption{与 Baseline 的检测效果对比（同一测试样本，\textbf{示意}）。上排四个面板依次为输入帧、Ground Truth（红框标注「行人倒地」，GT 异常区间 $5.4$--$9.1$\,s）、Baseline 预测（漏检倒地行人并在一名正常行人处产生误报）与 \evivad{} 预测（命中并输出证据引用）。下排为同一片段的异常分数曲线：红色阴影为 GT 异常区间，虚线为判定阈值 $0.5$。图中画面与曲线均为示意，非真实实拍与真实推理结果。}
 \label{fig:comparison}
 \end{figure*}
@@ -71,11 +71,12 @@ $\checkmark$ & $\checkmark$ & $\checkmark$ & \textbf{82.1} & \textbf{74.3} & \te
 
 值得注意的是，DAG 属于「主要贡献体现在输入退化条件下」的模块：如果只报告干净集指标，它的价值会被严重低估。这也是我们主张把退化鲁棒性作为独立评测维度、而非附属于主指标的原因。
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\small
+\scriptsize
 \caption{退化鲁棒性（结果）。轻/中/重为三个退化强度等级，每格为该强度下 $4$ 类退化的对应取值。}
 \label{tab:degradation}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccc}
 \toprule
 退化配置 & B0 AUC $\uparrow$ & +DAG AUC $\uparrow$ & B0 HR $\downarrow$ & +DAG HR $\downarrow$ \\
@@ -89,8 +90,9 @@ $\checkmark$ & $\checkmark$ & $\checkmark$ & \textbf{82.1} & \textbf{74.3} & \te
 \textbf{退化网格平均} & \textbf{62.5} & \textbf{71.3} & \textbf{41.2} & \textbf{31.5} \\
 RPR（相对干净集）   & 0.81 & \textbf{0.92} & -- & -- \\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{tabular}%
+}
+\end{table*}
 
 \begin{figure*}[t]
 \centering

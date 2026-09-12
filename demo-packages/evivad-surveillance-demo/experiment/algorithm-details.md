@@ -508,6 +508,21 @@ evivad/
 | `evaluate.py` | 推理与评测入口：干净集、退化集、跨域集三类评测均由该入口执行。 |
 | `tests/test_tensor_shapes.py` | 断言各环节张量尺寸与 schema 结构，防止改动破坏数据流契约。 |
 
+### 参考代码仓库
+
+本方案工程目录是自研实现骨架；下列 GitHub 仓库提供主干权重、适配器库和对比算法官方代码。
+
+| 用途 | GitHub |
+|---|---|
+| CLIP ViT-B/16 冻结视觉/文本塔 | https://github.com/openai/CLIP |
+| LoRA / PEFT（DAA） | https://github.com/huggingface/peft |
+| UCF-Crime 数据划分 | https://github.com/WaqasSultani/AnomalyDetectionCVPR2018 |
+| CLIP-TSA | https://github.com/joos2010kj/CLIP-TSA |
+| LAVAD（Training-free LLM VAD） | https://github.com/lucazanella/lavad |
+| VadCLIP | https://github.com/nwpu-zxr/VadCLIP |
+| RTFM | https://github.com/tianyu0207/RTFM |
+| FAISS（RAM） | https://github.com/facebookresearch/faiss |
+
 ---
 
 ## 8. 复现检查清单

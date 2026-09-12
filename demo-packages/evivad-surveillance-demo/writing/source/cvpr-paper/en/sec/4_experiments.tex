@@ -35,7 +35,7 @@ Baseline B0 (frozen VLM + text scoring) & 76.8 & 68.2 & 24.1 & 41.5 & 26.4 & 118
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{comparison.png}
+\includegraphics[width=\linewidth]{qualitative-generated-v2.png}
 \caption{Qualitative comparison with the baseline on the same test sample (\textbf{illustrative only}). Top row, left to right: the input frame; Ground Truth (the red box marks ``person falling'', GT interval $5.4$--$9.1$\,s); the baseline prediction (it misses the falling person and raises a false alarm on an ordinary pedestrian); and the \evivad{} prediction (a hit, together with an evidence citation). Bottom row: the anomaly score curves for the same clip, with the GT interval shaded and the decision threshold $0.5$ drawn as a dashed line. All frames and curves are illustrative placeholders, not real footage or real inference outputs.}
 \label{fig:comparison}
 \end{figure*}
@@ -71,11 +71,12 @@ Table~\ref{tab:degradation} reports the $12$ degradation configurations. DAG yie
 
 It is worth stressing that DAG is a module whose value is invisible on clean data: reporting clean-set metrics alone would severely understate it. This is precisely why we argue for degradation robustness as a standalone evaluation dimension rather than an appendix to the main metric.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\small
+\scriptsize
 \caption{Degradation robustness. Light / medium / heavy are the three severity levels; each cell corresponds to that severity across the four degradation types.}
 \label{tab:degradation}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccc}
 \toprule
 Configuration & B0 AUC $\uparrow$ & +DAG AUC $\uparrow$ & B0 HR $\downarrow$ & +DAG HR $\downarrow$ \\
@@ -89,8 +90,9 @@ Shake (L/M/H) & 67.8 / 62.9 / 57.6 & 75.4 / 72.1 / 67.4 & 32.9 / 41.1 / 49.6 & 2
 \textbf{Degradation-grid average} & \textbf{62.5} & \textbf{71.3} & \textbf{41.2} & \textbf{31.5} \\
 RPR (vs.\ clean) & 0.81 & \textbf{0.92} & -- & -- \\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{tabular}%
+}
+\end{table*}
 
 \begin{figure*}[t]
 \centering

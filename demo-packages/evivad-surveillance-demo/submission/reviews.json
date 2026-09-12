@@ -65,7 +65,9 @@
         "Single-view only; no camera-network consistency (Mishra et al. multi-view dementia care is cited but not tested). No per-seed raw scores. Degradation types omit snow, glare, IR, and PTZ zoom—the grid is not exhaustive. Explanation metrics do not scale without the codebook you have not released."
       ],
       "ethical_concerns": "No experimental ethics issues. Storing a retrieval memory of surveillance clips has privacy implications (cf. federated VAD, Li et al.); one sentence on on-prem index and retention would help.",
-      "final_justification": "Borderline Accept (4). The experimental skeleton is the right shape (ablation + corruption + explanation metrics + failure modes). It is not yet a CVPR-complete empirical paper because the literature baselines are placeholders, the degradations are uncalibrated, and the explanation scores lack IAA. I will raise my score if the camera-ready (or a supplementary) contains a matched SOTA table, PEFT/r–α sweeps, κ on EAR, and at least one real night/rain check. Without those, the numbers should not be used as ‘proof’ of the three modules."
+      "final_justification": "Borderline Accept (4). The experimental skeleton is the right shape (ablation + corruption + explanation metrics + failure modes). It is not yet a CVPR-complete empirical paper because the literature baselines are placeholders, the degradations are uncalibrated, and the explanation scores lack IAA. I will raise my score if the camera-ready (or a supplementary) contains a matched SOTA table, PEFT/r–α sweeps, κ on EAR, and at least one real night/rain check. Without those, the numbers should not be used as ‘proof’ of the three modules.",
+      "updatedRating": 5,
+      "comment": "After rebuttal I raise my score by 1, from Borderline Accept (4) to Weak Accept (5). The authors committed to a protocol-matched SOTA table, PEFT / r–α sweeps, IAA (κ) on EAR, and at least one real night/rain check. That is enough for a modest bump; the camera-ready must still deliver those experiments."
     },
     {
       "id": 3,

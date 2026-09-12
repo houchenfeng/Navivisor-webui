@@ -89,6 +89,23 @@
 - 完整方法 **EviVAD**：B0 + DAA + EAD + DAG。
 - 解释三项机制：**EAR**（证据归因召回）、**CFS**（反事实可反证分）、**HR**（幻觉率）。
 
+### 参考代码（GitHub）
+
+完整实验方案复现时，以下仓库作为主干、适配器和对比算法的官方实现入口（权重与超参以各仓库 README 为准，评测仍走本方案统一协议）。
+
+| 用途 | 仓库 |
+|---|---|
+| 冻结视觉/文本塔（B0 主干） | https://github.com/openai/CLIP |
+| 低秩适配器实现（DAA） | https://github.com/huggingface/peft |
+| UCF-Crime 官方划分与评测脚本 | https://github.com/WaqasSultani/AnomalyDetectionCVPR2018 |
+| 对比：CLIP-TSA 时间注意力零样本/弱监督检测 | https://github.com/joos2010kj/CLIP-TSA |
+| 对比：LAVAD 免训练大模型视频异常检测（Zanella 等, CVPR 2024） | https://github.com/lucazanella/lavad |
+| 对比：VadCLIP 视觉语言模型弱监督检测（Wu 等, AAAI 2024） | https://github.com/nwpu-zxr/VadCLIP |
+| 对比：RTFM 弱监督片段级检测 | https://github.com/tianyu0207/RTFM |
+| RAM 正常性记忆检索 | https://github.com/facebookresearch/faiss |
+
+Open-Vocabulary Video Anomaly Detection（Wu 等, CVPR 2024）与 RAG4VAD（Sun 等, 2026）在公开检索时未找到独立官方代码仓；对比实验分别以同组 VadCLIP 实现、以及本方案内检索增强备选（FAISS）作为可运行对照。
+
 ---
 
 ## 3. 创新点一完整实验方案：DAA 低秩领域适配（Domain Low-rank Adapter）

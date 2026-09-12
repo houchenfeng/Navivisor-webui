@@ -73,7 +73,7 @@
           "role": "candidate-topics",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "386c45fd092b11417f84e100f95f0cd6edd7e9baa0effab8067687ea2abd8949"
+          "sha256": "6b32fc9fef154d39ca2889b2709c4dfc36685a56d35cd448490d1a54138fcedb"
         },
         {
           "key": "candidate-topics-md",
@@ -81,7 +81,7 @@
           "role": "candidate-topics",
           "mediaType": "text/markdown",
           "required": false,
-          "sha256": "2e0e6e5b6514c815edf803ad0ed5ca61a382be0cb303aff89c5abb7f0c89bc41"
+          "sha256": "54a2aafbf9bcb89dae47a2ec37ea10889fe8f2891dff1226f65c7c5471deb108"
         }
       ]
     },
@@ -98,7 +98,7 @@
           "role": "confirmed-topic",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "2a95089c12ac9217284700b9816f7689d7b4bc6913d7e79768e973fc7615ebaf"
+          "sha256": "406ea01effc0139ba150dce5a57a94038a3610542217ebcec6508dedcfe21bef"
         }
       ]
     },
@@ -413,7 +413,7 @@
           "role": "experiment-plan",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "8d6f6117def0c05a9938274518e7cd9b357f05489f8435558688d6bb4305f022"
+          "sha256": "0b8db85296c8f362c46ce471fe3f676dc31535682bb96499af2381af2b317bec"
         },
         {
           "key": "experiment-config",
@@ -437,7 +437,7 @@
           "role": "experiment-plan",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "83c549cad13094d848fe9bfd581861cdd020f2b188726854e4b029cc05fdebaf"
+          "sha256": "d1de1206ceea67d5408fe6b7113fc2792499f964cff316cba53ff04f3a0bd3d4"
         },
         {
           "key": "experiment-suite-plan-00",
@@ -544,7 +544,7 @@
           "role": "experiment-results",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "c3a27734f5ad259217b18fe9eb730428009f73b5e2d0a5c7a84cb5e7f50d5fa4"
+          "sha256": "f19fc54075863375d0145a80a67f2386178f6d7be6f899669d5206e484400caf"
         },
         {
           "key": "algorithm",
@@ -552,7 +552,7 @@
           "role": "method-architecture",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "869704a045e3ee6949dd29aafb72a8ac42febb1a5aebbd2ac5bf29570e4f0356"
+          "sha256": "617e329f3adecffd4c41a56d2c80ea3071a1c810e216a14b78f11f8e2502b2c4"
         },
         {
           "key": "metrics-main",
@@ -560,7 +560,7 @@
           "role": "experiment-results",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "e4aae53d6ca32b081793144b2d9e94c54a044703a55ce0b2ea53bda919f00b43"
+          "sha256": "414377834cf52bdd678a256cbfc0d3aa255089bb4140539d46cefc66b263cca5"
         },
         {
           "key": "metrics-ablation",
