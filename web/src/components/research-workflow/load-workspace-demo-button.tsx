@@ -73,7 +73,7 @@ export function LoadWorkspaceDemoButton({
         ) : (
           <FolderOpen className="size-4" />
         )}
-        {compact ? '载入目录 Demo' : '从工作目录载入 Demo'}
+        载入Demo
       </button>
       {message ? (
         <p className="text-[11px] font-medium leading-4 text-[#6781aa]">
