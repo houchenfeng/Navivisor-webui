@@ -100,7 +100,7 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
               <Check className="size-8 text-[#16A36A]" />
               <span className="font-medium text-[#16A36A]">{csvName}</span>
               <span className="text-xs text-muted-foreground">
-                已使用 Demo / 工作目录核心文献 · {state.paperCount} 篇论文 · 点击可更换
+                已选择 · {state.paperCount} 篇论文 · 点击可更换
               </span>
             </>
           ) : (
@@ -718,7 +718,7 @@ export function ExperimentDemo() {
             <div>
               <h1 className="text-2xl font-semibold">实验智能体</h1>
               <p className="text-sm text-[#10204A]/70">
-                从核心文献到可复现方案；无工作目录时使用离线回退
+                从核心文献到可复现方案
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

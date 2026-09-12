@@ -96,7 +96,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
     try {
       const images = await tryLoadDemoResultFigures();
       if (images.length === 0) {
-        setImgError("当前 Demo 中没有找到结果效果图，请手动上传。");
+        setImgError("没有找到结果效果图，请手动上传。");
         return;
       }
       setResultImages(images);
@@ -234,7 +234,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <ImageSlot
           title="算法框架流程图"
-          description="载入 Demo 后点击生成，会直接读取 Demo 中的算法框架流程图"
+          description="点击生成算法框架流程图"
           image={data.algorithmFlowImage}
           loading={imgLoadingFlow}
           prompt={promptFlow}
@@ -254,7 +254,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
           <div>
             <div className="text-sm font-semibold text-ink">结果展示图</div>
             <div className="mt-0.5 text-xs text-ink-sub">
-              不支持 AI 生成。点击载入会读取 Demo 中的对比/曲线/定性效果图，也可手动上传。
+              不支持 AI 生成。可载入或手动上传结果效果图。
             </div>
           </div>
           <input
@@ -270,7 +270,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
           />
           {resultLoading ? (
             <div className="flex min-h-[180px] items-center justify-center rounded-lg border border-dashed border-blue-200 bg-[#f7faff] text-xs text-ink-sub">
-              正在载入 Demo 结果图…
+              正在载入结果图…
             </div>
           ) : resultImages.length > 0 ? (
             <div className="grid min-h-[180px] grid-cols-2 gap-2 rounded-lg border border-dashed border-blue-200 bg-[#f7faff] p-2">
@@ -290,7 +290,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
               onClick={() => void handleLoadResultFigures()}
               className="flex min-h-[180px] w-full flex-col items-center justify-center rounded-lg border border-dashed border-blue-200 bg-[#f7faff] p-2 text-center text-xs text-ink-sub"
             >
-              点击此处从 Demo 载入结果效果图
+              点击此处载入结果效果图
             </button>
           )}
           <div className="flex flex-wrap gap-2">
@@ -300,7 +300,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
               disabled={resultLoading}
               className="flex-1 rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-brand-700 disabled:opacity-50"
             >
-              {resultLoading ? "载入中..." : resultImages.length ? "重新载入 Demo 图" : "载入 Demo 图"}
+              {resultLoading ? "载入中..." : resultImages.length ? "重新载入" : "载入图片"}
             </button>
             <button
               type="button"
@@ -323,7 +323,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       </section>
 
       <p className="text-xs text-ink-sub">
-        ⓘ 算法框架图可生成或上传；结果展示图仅从 Demo 载入或上传，不调用 AI 生图。
+        ⓘ 算法框架图可生成或上传；结果展示图仅支持载入或上传。
       </p>
 
       {preview && <Lightbox src={preview} onClose={() => setPreview(null)} />}

@@ -155,7 +155,7 @@ export default function Step6Experiment({ data, onChange }: Props) {
         <div>
           <h2 className="text-xl font-bold text-brand-700">实验结果</h2>
           <p className="mt-1 text-sm text-ink-sub">
-            说明实验设置、对比方法与结果分析。载入 Demo 后点击 AI 生成，会读入 Demo 中的结果表与消融表。
+            说明实验设置、对比方法与结果分析。
           </p>
         </div>
         <button
@@ -193,7 +193,7 @@ export default function Step6Experiment({ data, onChange }: Props) {
 
       {tables.length === 0 ? (
         <section className="rounded-lg border border-dashed border-blue-200 bg-[#f8fbff] px-4 py-8 text-center text-sm text-ink-sub">
-          尚未载入结果表格。选择 Demo 后点击「AI 生成」，会显示 Demo 中的结果表格和消融实验表格。
+          尚未载入结果表格。点击「AI 生成」可生成结果表格和消融实验表格。
         </section>
       ) : (
         tables.map((table, tableIndex) => (
@@ -283,7 +283,7 @@ export default function Step6Experiment({ data, onChange }: Props) {
       )}
 
       <p className="text-xs text-ink-sub">
-        ⓘ 点击「✨ AI 生成」会从 Demo 载入正文和全部结果表；单元格也可手动编辑。
+        ⓘ 点击「✨ AI 生成」会同时生成正文和表格；单元格也可手动编辑。
       </p>
     </div>
   );
