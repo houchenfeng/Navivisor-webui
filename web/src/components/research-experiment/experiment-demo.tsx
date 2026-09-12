@@ -101,7 +101,6 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
         {error ? <p className="text-sm text-[#DC3C4A]">{error}</p> : null}
         <div className="rounded-xl bg-muted/50 p-3 text-center"><strong>{state.paperCount}</strong><small className="ml-2 text-muted-foreground">篇论文；PDF 可用性以 CSV 的 pdf_path 和工作目录 manifest 为准</small></div>
         <div className="mt-auto flex flex-col gap-2">
-          <p className="text-[11px] font-medium text-muted-foreground">无工作目录产物时，可手动载入离线 SAM Demo 作为回退。</p>
           <div className="flex justify-between gap-2">
             <Button variant="outline" onClick={state.loadDemo}><Database data-icon="inline-start" />离线回退：SAM Demo</Button>
             <Button disabled={!canContinue} onClick={() => go('plan')}>生成实验方案<ChevronRight data-icon="inline-end" /></Button>
@@ -253,8 +252,9 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
   const rootPath = useResearchProjectStore((s) => s.project?.rootPath ?? '');
   const runtime = state.realRuntime;
+  const setFields = state.setFields;
   const patch = (fields: Partial<typeof runtime>) =>
-    state.setFields({ realRuntime: { ...runtime, ...fields } });
+    setFields({ realRuntime: { ...runtime, ...fields } });
 
   useEffect(() => {
     if (!rootPath) return;
@@ -263,8 +263,10 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
     if (runtime.codeDir === './experiment/code') next.codeDir = `${root}/experiment/code`;
     if (runtime.dataDir === './experiment/datasets') next.dataDir = `${root}/experiment/datasets`;
     if (runtime.resultsDir === './experiment/results') next.resultsDir = `${root}/experiment/results`;
-    if (Object.keys(next).length) patch(next);
-  }, [rootPath]);
+    if (Object.keys(next).length) {
+      setFields({ realRuntime: { ...runtime, ...next } });
+    }
+  }, [rootPath, runtime, setFields]);
 
   const canContinue =
     Boolean(runtime.codeDir.trim() && runtime.dataDir.trim() && runtime.resultsDir.trim() && runtime.documentDir?.trim() && runtime.condaEnv?.trim() && state.experimentDocument.trim()) &&
@@ -459,26 +461,27 @@ function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
   const [sshJob, setSshJob] = useState<SshExperimentJob | null>(null);
   const [sshError, setSshError] = useState<string | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<ResearchArtifact | null>(null);
+  const setFields = state.setFields;
   useEffect(() => {
     if (isReal) return;
     if (progress >= 100) return;
     const timer = window.setInterval(() => setProgress((v) => Math.min(100, v + 10)), 280);
     return () => window.clearInterval(timer);
-  }, [progress, isReal, state.setFields]);
-  useEffect(() => {
-    if (!isReal && progress === 100) state.setFields({ completed: true });
   }, [progress, isReal]);
+  useEffect(() => {
+    if (!isReal && progress === 100) setFields({ completed: true });
+  }, [progress, isReal, setFields]);
   useEffect(() => {
     if (!sshJob || ['completed', 'failed'].includes(sshJob.status)) return;
     const timer = window.setInterval(() => {
       void researchWorkflowClient.getSshExperiment(sshJob.jobId).then((job) => {
         setSshJob(job);
-        if (job.status === 'completed') state.setFields({ completed: true, sshPassword: '' });
-        if (job.status === 'failed') state.setFields({ sshPassword: '' });
+        if (job.status === 'completed') setFields({ completed: true, sshPassword: '' });
+        if (job.status === 'failed') setFields({ sshPassword: '' });
       }).catch((error) => setSshError(error instanceof Error ? error.message : String(error)));
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [sshJob?.jobId, sshJob?.status]);
+  }, [sshJob, setFields]);
 
   if (isReal) {
     const runtime = state.realRuntime;
