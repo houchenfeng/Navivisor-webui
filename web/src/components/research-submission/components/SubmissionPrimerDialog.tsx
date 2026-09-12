@@ -8,8 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-const STORAGE_KEY = 'navivisor-submission-primer-seen';
-
 const steps = [
   {
     title: '1. 选会议、看截止时间',
@@ -34,24 +32,7 @@ const steps = [
 ] as const;
 
 export function SubmissionPrimerDialog() {
-  const [open, setOpen] = useState(() => {
-    try {
-      return !localStorage.getItem(STORAGE_KEY);
-    } catch {
-      return true;
-    }
-  });
-
-  const handleOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      try {
-        localStorage.setItem(STORAGE_KEY, '1');
-      } catch {
-        // ignore
-      }
-    }
-  };
+  const [open, setOpen] = useState(false);
 
   return (
     <>
@@ -64,7 +45,7 @@ export function SubmissionPrimerDialog() {
         投稿科普
       </button>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-[#9a2c22]">会议投稿大致怎么走</DialogTitle>

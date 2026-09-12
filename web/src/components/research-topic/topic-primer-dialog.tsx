@@ -8,8 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-const STORAGE_KEY = 'navivisor-topic-primer-seen';
-
 const steps = [
   {
     title: '1. 写下模糊的研究领域',
@@ -26,24 +24,7 @@ const steps = [
 ] as const;
 
 export function TopicPrimerDialog() {
-  const [open, setOpen] = useState(() => {
-    try {
-      return !localStorage.getItem(STORAGE_KEY);
-    } catch {
-      return true;
-    }
-  });
-
-  const handleOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      try {
-        localStorage.setItem(STORAGE_KEY, '1');
-      } catch {
-        // ignore
-      }
-    }
-  };
+  const [open, setOpen] = useState(false);
 
   return (
     <>
@@ -56,7 +37,7 @@ export function TopicPrimerDialog() {
         查看开题教程
       </button>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="scrollbar-hide max-h-[85vh] overflow-y-auto border border-[#c9dbf8] bg-[#f7fbff] sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-[#102f72]">开题教程</DialogTitle>
@@ -89,7 +70,7 @@ export function TopicPrimerDialog() {
 
           <button
             type="button"
-            onClick={() => handleOpenChange(false)}
+            onClick={() => setOpen(false)}
             className="mt-1 inline-flex items-center justify-center rounded-xl bg-[#1f4dcb] px-4 py-2 text-sm font-black text-white hover:bg-[#11357f]"
           >
             知道了，开始开题

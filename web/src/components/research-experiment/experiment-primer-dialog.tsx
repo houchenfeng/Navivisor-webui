@@ -8,8 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-const STORAGE_KEY = 'navivisor-experiment-primer-seen';
-
 const steps = [
   {
     title: '1. 核对开题交接过来的核心文献',
@@ -30,24 +28,7 @@ const steps = [
 ] as const;
 
 export function ExperimentPrimerDialog() {
-  const [open, setOpen] = useState(() => {
-    try {
-      return !localStorage.getItem(STORAGE_KEY);
-    } catch {
-      return true;
-    }
-  });
-
-  const handleOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      try {
-        localStorage.setItem(STORAGE_KEY, '1');
-      } catch {
-        // ignore
-      }
-    }
-  };
+  const [open, setOpen] = useState(false);
 
   return (
     <>
@@ -60,7 +41,7 @@ export function ExperimentPrimerDialog() {
         查看实验说明
       </button>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="scrollbar-hide max-h-[85vh] overflow-y-auto border border-[#c9dbf8] bg-[#f7fbff] sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-[#102f72]">实验大概怎么走</DialogTitle>
@@ -83,7 +64,7 @@ export function ExperimentPrimerDialog() {
 
           <button
             type="button"
-            onClick={() => handleOpenChange(false)}
+            onClick={() => setOpen(false)}
             className="mt-1 inline-flex items-center justify-center rounded-xl bg-[#1f4dcb] px-4 py-2 text-sm font-black text-white hover:bg-[#11357f]"
           >
             知道了，开始实验
