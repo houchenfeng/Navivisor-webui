@@ -68,6 +68,35 @@ function splitCsv(text: string): { headers: string[]; rows: string[][] } {
   return { headers: all[0], rows: all.slice(1) };
 }
 
+function countLiteraturePdfs(
+  artifacts: Array<{ role: string; path: string; mediaType: string }>,
+): number {
+  const seen = new Set<string>();
+  for (const artifact of artifacts) {
+    const isPdf =
+      artifact.role === 'literature-pdf' ||
+      artifact.role === 'paper-pdf' ||
+      (artifact.mediaType === 'application/pdf' && /(?:^|[/\\])papers[/\\]/i.test(artifact.path));
+    if (!isPdf) continue;
+    seen.add(artifact.path.replace(/\\/g, '/').toLowerCase());
+  }
+  return seen.size;
+}
+
+function countCsvPdfHints(rows: string[][]): number {
+  if (rows.length < 2) return 0;
+  const headers = rows[0].map((header) => header.trim().toLowerCase());
+  const pathIndex = headers.indexOf('pdf_path');
+  const refIndex = headers.indexOf('pdf_artifact_ref');
+  let count = 0;
+  for (const row of rows.slice(1)) {
+    const path = pathIndex >= 0 ? String(row[pathIndex] ?? '').trim() : '';
+    const ref = refIndex >= 0 ? String(row[refIndex] ?? '').trim() : '';
+    if (path || ref) count += 1;
+  }
+  return count;
+}
+
 export function useExperimentWorkspaceHydration(): ExperimentHydration {
   const { projectId, artifacts, loading, error } = useWorkspaceArtifacts();
   const setFields = useExperimentStore((s) => s.setFields);
@@ -190,6 +219,9 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           if (referenceRows.length > 1) patch.paperCount = referenceRows.length - 1;
           const fromPath = coreReferences?.path.split(/[/\\]/).pop();
           patch.csvFileName = coreReferences?.name || fromPath || 'core-references.csv';
+          const workspacePdfs = countLiteraturePdfs(artifacts);
+          const csvPdfs = countCsvPdfHints(referenceRows);
+          patch.pdfAvailableCount = workspacePdfs || csvPdfs;
         }
         if (Object.keys(patch).length > 0) setFields(patch);
 

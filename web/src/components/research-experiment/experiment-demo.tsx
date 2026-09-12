@@ -77,8 +77,9 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
     if (missing.length) { setError(`缺少必填列：${missing.join('、')}`); return; }
     const ids = rows.map((row) => String(row.paper_id));
     if (new Set(ids).size !== ids.length) { setError('paper_id 必须唯一'); return; }
+    const pdfAvailableCount = rows.filter((row) => String(row.pdf_path ?? row.pdf_artifact_ref ?? '').trim()).length;
     setError('');
-    state.setFields({ paperCount: rows.length, csvFileName: file.name });
+    state.setFields({ paperCount: rows.length, csvFileName: file.name, pdfAvailableCount });
   };
   const canContinue = state.projectName.trim() && state.researchTopic.trim() && state.paperCount > 0;
   return (
@@ -113,7 +114,12 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
           <input type="file" accept=".csv" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readCsv(file); }} />
         </label>
         {error ? <p className="text-sm text-[#DC3C4A]">{error}</p> : null}
-        <div className="rounded-xl bg-muted/50 p-3 text-center"><strong>{state.paperCount}</strong><small className="ml-2 text-muted-foreground">篇论文；PDF 可用性以 CSV 的 pdf_path 和工作目录 manifest 为准</small></div>
+        <div className="rounded-xl bg-muted/50 p-3 text-center text-sm">
+          <strong>{state.paperCount}</strong>
+          <span className="ml-1 text-muted-foreground">篇文献，</span>
+          <strong>{state.pdfAvailableCount}</strong>
+          <span className="ml-1 text-muted-foreground">份 PDF 可用</span>
+        </div>
         <div className="mt-auto flex flex-col gap-2">
           <div className="flex justify-between gap-2">
             <Button variant="outline" onClick={state.loadDemo}><Database data-icon="inline-start" />离线回退：SAM Demo</Button>

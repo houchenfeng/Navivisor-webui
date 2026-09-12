@@ -52,6 +52,7 @@ interface ExperimentState {
   researchGoal: string;
   paperCount: number;
   csvFileName: string;
+  pdfAvailableCount: number;
   planConfirmed: boolean;
   disclaimerAccepted: boolean;
   runMode: ExperimentRunMode;
@@ -152,7 +153,7 @@ const defaultRealRuntime: ExperimentRealRuntimeConfig = {
 };
 
 const initial = {
-  projectName: '', researchTopic: '', researchGoal: '', paperCount: 0, csvFileName: '',
+  projectName: '', researchTopic: '', researchGoal: '', paperCount: 0, csvFileName: '', pdfAvailableCount: 0,
   planConfirmed: false, disclaimerAccepted: false, runMode: 'simulated' as ExperimentRunMode,
   seed: 42, repeatCount: 3, realRuntime: defaultRealRuntime,
   sshPassword: '',
@@ -171,6 +172,7 @@ export const useExperimentStore = create<ExperimentState>()(
         researchGoal: '基于 Segment Anything 的可提示分割能力，设计适用于道路裂缝的低成本领域适配方案，重点提升细长结构连续性和小裂缝召回率，并通过消融实验验证各模块贡献。',
         paperCount: 1,
         csvFileName: 'core-references.csv',
+        pdfAvailableCount: 1,
         planConfirmed: false,
         disclaimerAccepted: false,
         runMode: 'simulated',
