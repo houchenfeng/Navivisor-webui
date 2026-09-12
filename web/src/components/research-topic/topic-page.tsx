@@ -4,7 +4,10 @@ import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, FileSearch, FlaskC
 import { Button } from '@/components/ui/button';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { fetchArtifactText, findLatestByRole, parseCsvRows, useWorkspaceArtifacts } from '@/components/research-workflow/use-research-project';
-import { useResearchProjectStore } from '@/stores/research-project-store';
+import {
+  isResearchDemoMode,
+  useResearchProjectStore,
+} from '@/stores/research-project-store';
 import { getApiToken } from '@/auth-token';
 import { withBasePath } from '@/base-path';
 import { demoTaskSnapshot } from './data';
@@ -73,18 +76,7 @@ export function TopicPage() {
         const candidates = findLatestByRole(artifacts, 'candidate-papers');
         if (candidates) {
           const rows = parseCsvRows(await fetchArtifactText(projectId, candidates.artifactId));
-          const headers = rows[0]?.map((value) => value.trim().toLowerCase()) ?? [];
-          const index = (name: string) => headers.indexOf(name);
-          const papers = rows.slice(1).map((row, offset) => ({
-            openalexId: row[index('paper_id')] || `workspace-${offset + 1}`,
-            title: row[index('title')] || '无标题',
-            authors: (row[index('authors')] || '').split(/[;|]/).map((value) => value.trim()).filter(Boolean),
-            institutions: [], source: row[index('source')] || 'workspace-artifact',
-            publicationYear: Number(row[index('year')]) || null,
-            citedByCount: Number(row[index('citation_count')]) || 0,
-            abstract: row[index('abstract')] || '', doi: row[index('doi')] || '',
-            landingUrl: row[index('source_url')] || '', sourceStatus: 'openalex_public_api' as const,
-          }));
+          const papers = parseCandidatePapers(rows);
           const topicsArtifact = findArtifactFile(artifacts, 'candidate-topics', '.json');
           const confirmedArtifact = findArtifactFile(artifacts, 'confirmed-topic', '.json');
           const coreArtifact = findArtifactFile(artifacts, 'core-references', '.csv');
@@ -93,7 +85,33 @@ export function TopicPage() {
           const confirmed = confirmedArtifact ? JSON.parse(await fetchArtifactText(projectId, confirmedArtifact.artifactId)) as { title?: string } : undefined;
           const coreLiterature = coreArtifact ? parseCoreLiterature(parseCsvRows(await fetchArtifactText(projectId, coreArtifact.artifactId))) : [];
           const isDemoArtifacts = topicsValue?.simulated === true && coreLiterature.length > 0;
-          if (!cancelled && papers.length) setTask({ runId: isDemoArtifacts ? 'workspace-demo' : 'workspace-candidate-papers', stage: 'first-search', status: 'completed', files: [{ name: 'candidate-papers.csv', path: 'topic/candidate-papers.csv', kind: 'csv' }], errors: [], papers, counts: { papers: papers.length, previewed: papers.length, deduplicated: papers.length, returned: papers.length, requested: papers.length, targetReached: true }, candidateStatus: isDemoArtifacts && topics.length === 3 ? 'completed' : 'idle', candidates: isDemoArtifacts && topics.length === 3 ? topics : undefined, coreStatus: isDemoArtifacts ? 'completed' : 'idle', coreManifest: isDemoArtifacts ? { status: 'completed', files: ['core-references.csv'], counts: { references: coreLiterature.length, pdfDownloaded: 0 } } : undefined, demoCoreLiterature: isDemoArtifacts ? coreLiterature : undefined, isDemo: isDemoArtifacts });
+          if (!cancelled && papers.length) {
+            const demoSearch = isDemoArtifacts
+              ? await loadDemoFirstSearchSnapshot(projectId, artifacts)
+              : null;
+            setTask({
+              runId: isDemoArtifacts ? 'workspace-demo' : 'workspace-candidate-papers',
+              stage: 'first-search',
+              status: 'completed',
+              files: [{ name: 'candidate-papers.csv', path: 'topic/candidate-papers.csv', kind: 'csv' }],
+              errors: [],
+              papers: demoSearch?.papers ?? papers,
+              counts: demoSearch?.counts ?? {
+                papers: papers.length,
+                previewed: papers.length,
+                deduplicated: papers.length,
+                returned: papers.length,
+                requested: papers.length,
+                targetReached: true,
+              },
+              candidateStatus: isDemoArtifacts && topics.length === 3 ? 'completed' : 'idle',
+              candidates: isDemoArtifacts && topics.length === 3 ? topics : undefined,
+              coreStatus: isDemoArtifacts ? 'completed' : 'idle',
+              coreManifest: isDemoArtifacts ? { status: 'completed', files: ['core-references.csv'], counts: { references: coreLiterature.length, pdfDownloaded: 0 } } : undefined,
+              demoCoreLiterature: isDemoArtifacts ? coreLiterature : undefined,
+              isDemo: isDemoArtifacts,
+            });
+          }
           if (!cancelled && confirmed?.title && topics.length === 3) {
             const selected = topics.find((candidate) => candidate.title === confirmed.title);
             if (selected) setSelectedCandidate(selected.label);
@@ -114,6 +132,26 @@ export function TopicPage() {
     setPage(1);
     setError('');
     setTask({ runId: 'pending', stage: 'first-search', status: 'running', files: [], errors: [] });
+    const demoProject = useResearchProjectStore.getState().project;
+    if (isResearchDemoMode(demoProject) && projectId) {
+      try {
+        const snapshot = await loadDemoFirstSearchSnapshot(projectId, artifacts);
+        setTask((current) => ({
+          ...snapshot,
+          candidateStatus: current?.candidates?.length === 3 ? current.candidateStatus : 'idle',
+          candidates: current?.candidates,
+          coreStatus: current?.isDemo ? current.coreStatus : 'idle',
+          coreManifest: current?.isDemo ? current.coreManifest : undefined,
+          demoCoreLiterature: current?.isDemo ? current.demoCoreLiterature : undefined,
+          isDemo: true,
+        }));
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : '无法读取 Demo 试检索结果。';
+        setError(message);
+        setTask({ runId: 'failed', stage: 'first-search', status: 'failed', files: [], errors: [{ message }] });
+      }
+      return;
+    }
     try {
       const response = await fetch(withBasePath('/api/research/topic/first-search'), {
         method: 'POST',
@@ -240,7 +278,7 @@ function OpenAlexQueryCard({ query, context, isRunning }: { query: string; conte
   );
 }
 
-function ResultsCard({ task, isRunning, isComplete, onRetry }: { task: ResearchTaskSnapshot | null; isRunning: boolean; isComplete: boolean; onRetry: () => Promise<void> }) { const papers = task?.papers ?? []; const counts = task?.counts; const insufficient = isComplete && counts?.targetReached === false; return <section className="min-w-0 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">OpenAlex trial search</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">试检索结果</h2></div><div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><FileSearch className="size-5" /></div></div><p className="mt-4 text-sm font-semibold leading-6 text-[#617da9]">这里只展示前 20 条公开元数据和摘要节选。</p>{isRunning ? <div className="mt-7 rounded-2xl border border-[#c9dcf7] bg-[#f5f9ff] p-6" role="status"><div className="flex items-center gap-3 text-sm font-black text-[#285c9f]"><LoaderCircle className="size-5 animate-spin" />正在从 OpenAlex 获取公开资料</div><p className="mt-3 text-xs font-semibold leading-5 text-[#7089ac]">任务已提交，正在按目标数量分页获取并去重。你可以取消本次检索。</p><div className="mt-5 h-2 overflow-hidden rounded-full bg-[#dfebfb]"><div className="h-full w-2/3 animate-pulse rounded-full bg-[#1f4dcb]" /></div></div> : task?.status === 'failed' ? <State icon={AlertCircle} title="这次试检索没有完成" description={task.errors[0]?.message ?? '公开资料服务暂时不可用，请稍后重试。'} action={<Button variant="outline" onClick={onRetry} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><RotateCcw />重新试检索</Button>} /> : isComplete && papers.length === 0 ? <State icon={Search} title="没有返回可展示的论文" description="OpenAlex 已完成本次试检索，但没有符合条件的记录。可以修改左侧描述后重试。" action={<Button variant="outline" onClick={onRetry} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><RotateCcw />重新试检索</Button>} /> : papers.length === 0 ? <State icon={Search} title="等待你的研究兴趣" description="输入研究方向后，点击“开始试检索”。结果会显示在这里。" /> : <div className="mt-7 space-y-3"><div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#eef5ff] px-4 py-3 text-xs font-bold text-[#55749f]"><span>已去重 {counts?.deduplicated ?? counts?.papers ?? papers.length} 条 · 已获取原始记录 {counts?.returned ?? '—'} 条 · 目标 {counts?.requested ?? '300'} 条</span><span className="text-[#4775b2]">来源：OpenAlex 公共 API · 预览 {counts?.previewed ?? papers.length} 条</span></div>{insufficient && <div className="rounded-xl border border-[#f0d6a5] bg-[#fff8e9] px-4 py-3 text-xs font-bold leading-5 text-[#8b641e]" role="status">结果不足：实际去重后仅 {counts?.deduplicated ?? papers.length} 条，不能按 {counts?.requested ?? 300} 条目标完成。没有填充或伪造论文。</div>}{papers.map((paper) => <article key={paper.openalexId} className="rounded-2xl border border-[#d8e5f6] bg-[#fbfdff] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 flex-1 text-sm font-black leading-6 text-[#244a7d]">{paper.title || '无标题'}</h3><span className="rounded-lg bg-[#e6f0ff] px-2 py-1 text-[11px] font-black text-[#3b6fae]">OpenAlex · 待核验</span></div><p className="mt-2 text-xs font-semibold leading-5 text-[#6c84a5]">{paper.publicationYear ?? '年份未知'} · {paper.authors.slice(0, 4).join('、') || '作者信息缺失'}{paper.authors.length > 4 ? ' 等' : ''} · {paper.source || '来源信息缺失'}{paper.citedByCount > 0 ? ` · 被引 ${paper.citedByCount}` : ''}</p><p className="mt-3 text-xs font-semibold leading-5 text-[#526e98]">{paper.abstract ? `${paper.abstract.slice(0, 320)}${paper.abstract.length > 320 ? '…' : ''}` : '暂无摘要'}</p><div className="mt-3 flex flex-wrap gap-4 text-xs font-black"><a href={paper.doi || paper.landingUrl || paper.openalexId} target="_blank" rel="noreferrer" className="text-[#1f4dcb] underline underline-offset-2">{paper.doi ? '打开 DOI' : '打开 OpenAlex 来源'}</a>{paper.doi && <a href={paper.landingUrl || paper.openalexId} target="_blank" rel="noreferrer" className="text-[#5b7fae] underline underline-offset-2">打开 OpenAlex 来源</a>}</div></article>)}</div>}</section>; }
+function ResultsCard({ task, isRunning, isComplete, onRetry }: { task: ResearchTaskSnapshot | null; isRunning: boolean; isComplete: boolean; onRetry: () => Promise<void> }) { const papers = (task?.papers ?? []).slice(0, 20); const counts = task?.counts; const insufficient = isComplete && counts?.targetReached === false; return <section className="min-w-0 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">OpenAlex trial search</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">试检索结果</h2></div><div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><FileSearch className="size-5" /></div></div><p className="mt-4 text-sm font-semibold leading-6 text-[#617da9]">这里只展示前 20 条公开元数据和摘要节选。</p>{isRunning ? <div className="mt-7 rounded-2xl border border-[#c9dcf7] bg-[#f5f9ff] p-6" role="status"><div className="flex items-center gap-3 text-sm font-black text-[#285c9f]"><LoaderCircle className="size-5 animate-spin" />正在从 OpenAlex 获取公开资料</div><p className="mt-3 text-xs font-semibold leading-5 text-[#7089ac]">任务已提交，正在按目标数量分页获取并去重。你可以取消本次检索。</p><div className="mt-5 h-2 overflow-hidden rounded-full bg-[#dfebfb]"><div className="h-full w-2/3 animate-pulse rounded-full bg-[#1f4dcb]" /></div></div> : task?.status === 'failed' ? <State icon={AlertCircle} title="这次试检索没有完成" description={task.errors[0]?.message ?? '公开资料服务暂时不可用，请稍后重试。'} action={<Button variant="outline" onClick={onRetry} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><RotateCcw />重新试检索</Button>} /> : isComplete && papers.length === 0 ? <State icon={Search} title="没有返回可展示的论文" description="OpenAlex 已完成本次试检索，但没有符合条件的记录。可以修改左侧描述后重试。" action={<Button variant="outline" onClick={onRetry} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><RotateCcw />重新试检索</Button>} /> : papers.length === 0 ? <State icon={Search} title="等待你的研究兴趣" description="输入研究方向后，点击“开始试检索”。结果会显示在这里。" /> : <div className="mt-7 space-y-3"><div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#eef5ff] px-4 py-3 text-xs font-bold text-[#55749f]"><span>已去重 {counts?.deduplicated ?? counts?.papers ?? papers.length} 条 · 已获取原始记录 {counts?.returned ?? '—'} 条 · 目标 {counts?.requested ?? '300'} 条</span><span className="text-[#4775b2]">来源：OpenAlex 公共 API · 预览 {counts?.previewed ?? papers.length} 条</span></div>{insufficient && <div className="rounded-xl border border-[#f0d6a5] bg-[#fff8e9] px-4 py-3 text-xs font-bold leading-5 text-[#8b641e]" role="status">结果不足：实际去重后仅 {counts?.deduplicated ?? papers.length} 条，不能按 {counts?.requested ?? 300} 条目标完成。没有填充或伪造论文。</div>}{papers.map((paper) => <article key={paper.openalexId} className="rounded-2xl border border-[#d8e5f6] bg-[#fbfdff] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 flex-1 text-sm font-black leading-6 text-[#244a7d]">{paper.title || '无标题'}</h3><span className="rounded-lg bg-[#e6f0ff] px-2 py-1 text-[11px] font-black text-[#3b6fae]">OpenAlex · 待核验</span></div><p className="mt-2 text-xs font-semibold leading-5 text-[#6c84a5]">{paper.publicationYear ?? '年份未知'} · {paper.authors.slice(0, 4).join('、') || '作者信息缺失'}{paper.authors.length > 4 ? ' 等' : ''} · {paper.source || '来源信息缺失'}{paper.citedByCount > 0 ? ` · 被引 ${paper.citedByCount}` : ''}</p><p className="mt-3 text-xs font-semibold leading-5 text-[#526e98]">{paper.abstract ? `${paper.abstract.slice(0, 320)}${paper.abstract.length > 320 ? '…' : ''}` : '暂无摘要'}</p><div className="mt-3 flex flex-wrap gap-4 text-xs font-black"><a href={paper.doi || paper.landingUrl || paper.openalexId} target="_blank" rel="noreferrer" className="text-[#1f4dcb] underline underline-offset-2">{paper.doi ? '打开 DOI' : '打开 OpenAlex 来源'}</a>{paper.doi && <a href={paper.landingUrl || paper.openalexId} target="_blank" rel="noreferrer" className="text-[#5b7fae] underline underline-offset-2">打开 OpenAlex 来源</a>}</div></article>)}</div>}</section>; }
 
 function CandidatesPage({ task, selectedCandidate, setSelectedCandidate, error, onGenerate, onBack, onNext }: { task: ResearchTaskSnapshot | null; selectedCandidate: string | null; setSelectedCandidate: (value: string | null) => void; error: string; onGenerate: () => Promise<void>; onBack: () => void; onNext: () => Promise<void> }) {
   const candidates = task?.candidates ?? [];
@@ -266,6 +304,75 @@ function GoToExperimentButton() {
 }
 
 function Info({ label, value }: { label: string; value: string }) { return <div className="mt-4"><p className="text-[11px] font-black tracking-wide text-[#6b89b3]">{label}</p><p className="mt-1 text-xs font-semibold leading-5 text-[#526e98]">{value}</p></div>; }
+
+function parseCandidatePapers(rows: string[][]): NonNullable<ResearchTaskSnapshot['papers']> {
+  const headers = rows[0]?.map((value) => value.trim().toLowerCase()) ?? [];
+  const index = (name: string) => headers.indexOf(name);
+  return rows.slice(1).map((row, offset) => ({
+    openalexId: row[index('paper_id')] || `workspace-${offset + 1}`,
+    title: row[index('title')] || '无标题',
+    authors: (row[index('authors')] || '').split(/[;|]/).map((value) => value.trim()).filter(Boolean),
+    institutions: [],
+    source: row[index('source')] || 'workspace-artifact',
+    publicationYear: Number(row[index('year')]) || null,
+    citedByCount: Number(row[index('citation_count')]) || 0,
+    abstract: row[index('abstract')] || '',
+    doi: row[index('doi')] || '',
+    landingUrl: row[index('source_url')] || '',
+    sourceStatus: 'openalex_public_api' as const,
+  })).filter((paper) => paper.title !== '无标题');
+}
+
+function parseFirstBatchCount(iterationsText: string, fallback: number): number {
+  for (const line of iterationsText.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    try {
+      const row = JSON.parse(line) as { iterationId?: string; returnedCount?: number };
+      if (row.iterationId === 'round-1' && Number(row.returnedCount) > 0) {
+        return Number(row.returnedCount);
+      }
+    } catch {
+      continue;
+    }
+  }
+  return fallback;
+}
+
+async function loadDemoFirstSearchSnapshot(
+  projectId: string,
+  artifacts: Parameters<typeof findLatestByRole>[0],
+): Promise<ResearchTaskSnapshot> {
+  const candidates = findLatestByRole(artifacts, 'candidate-papers');
+  if (!candidates) throw new Error('Demo 工作区缺少第一批试检索文献。');
+  const papers = parseCandidatePapers(
+    parseCsvRows(await fetchArtifactText(projectId, candidates.artifactId)),
+  );
+  if (!papers.length) throw new Error('Demo 试检索文献为空。');
+  const iterations = findLatestByRole(artifacts, 'search-iterations');
+  const firstBatch = iterations
+    ? parseFirstBatchCount(
+        await fetchArtifactText(projectId, iterations.artifactId),
+        papers.length,
+      )
+    : papers.length;
+  const preview = papers.slice(0, 20);
+  return {
+    runId: 'workspace-demo',
+    stage: 'first-search',
+    status: 'completed',
+    files: [{ name: 'candidate-papers.csv', path: 'topic/candidate-papers.csv', kind: 'csv' }],
+    errors: [],
+    papers: preview,
+    counts: {
+      papers: preview.length,
+      previewed: preview.length,
+      deduplicated: firstBatch,
+      returned: firstBatch,
+      requested: 300,
+      targetReached: firstBatch >= 300,
+    },
+  };
+}
 
 function parseCandidateTopics(value: unknown): NonNullable<ResearchTaskSnapshot['candidates']> {
   const raw = value && typeof value === 'object' && Array.isArray((value as { candidates?: unknown }).candidates) ? (value as { candidates: unknown[] }).candidates : [];

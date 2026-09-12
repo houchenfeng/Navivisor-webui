@@ -35,7 +35,8 @@ export function ResearchProjectRestorer({ children }: { children: ReactNode }) {
       .catch(() => {
         if (
           !cancelled &&
-          useResearchProjectStore.getState().activeProjectId === activeProjectId
+          useResearchProjectStore.getState().activeProjectId === activeProjectId &&
+          !useResearchProjectStore.getState().project?.rootPath
         )
           clearProject();
       });

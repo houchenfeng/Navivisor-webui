@@ -48,6 +48,17 @@ export const useResearchProjectStore = create<ResearchProjectState>()(
         activeProjectId: state.activeProjectId,
         project: state.project,
       }),
+      storage: {
+        getItem: (name) => localStorage.getItem(name),
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, value);
+          } catch {
+            // Writing demo payloads may already fill quota; keep in-memory project.
+          }
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      },
     },
   ),
 );

@@ -15,9 +15,13 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
+import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
 import { ConversationEventCards } from '@/components/research-workflow/conversation-event-cards';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
-import { useResearchProjectStore } from '@/stores/research-project-store';
+import {
+  isResearchDemoMode,
+  useResearchProjectStore,
+} from '@/stores/research-project-store';
 import { useTimelineStore } from '@/stores/timeline-store';
 import './research-home.css';
 
@@ -229,12 +233,20 @@ export function ResearchHomePage() {
                 {project ? '当前论文工作目录' : '新论文工作目录'}
               </h2>
               <p className="mt-0.5 text-[11px] font-medium text-[#7890b6]">
-                {project?.demoComplete != null
-                  ? 'Demo 模式已开启：四模块使用已载入的研究数据。卸载后可恢复空白工作流。'
+                {isResearchDemoMode(project)
+                  ? 'Demo 模式已开启：工作目录与摘要已从研究数据载入。'
                   : '选择服务端可访问目录，四模块所有数据均储存在此目录。'}
               </p>
             </div>
-            <LoadWorkspaceDemoButton compact allowUnload />
+            <LoadWorkspaceDemoButton
+              compact
+              allowUnload
+              onLoaded={() => {
+                const next = useResearchProjectStore.getState().project;
+                setWorkspacePath(next?.rootPath ?? '');
+                setWorkspaceTitle(next?.title ?? '');
+              }}
+            />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
@@ -267,10 +279,11 @@ export function ResearchHomePage() {
             </p>
           ) : null}
           {project ? (
-            <div className="mt-1.5 space-y-2">
+            <div className="mt-2 space-y-2">
               <p className="break-all font-mono text-[11px] text-[#173778]">
                 {project.rootPath}
               </p>
+              <CurrentPaperCard defaultOpen />
               <ConversationEventCards />
             </div>
           ) : null}
