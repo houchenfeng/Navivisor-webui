@@ -699,9 +699,7 @@ export function ExperimentDemo() {
             <div>
               <h1 className="text-2xl font-semibold">实验智能体</h1>
               <p className="text-sm text-[#10204A]/70">
-                {hydration.source === 'workspace'
-                  ? '已绑定当前工作目录产物（Demo 载入后自动刷新）'
-                  : '从核心文献到可复现方案；无工作目录时使用离线回退'}
+                从核心文献到可复现方案；无工作目录时使用离线回退
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
