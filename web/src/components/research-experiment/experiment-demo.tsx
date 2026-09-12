@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, createContext, useContext } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { Check, ChevronLeft, ChevronRight, Code2, Download, ExternalLink, FileText, FlaskConical, Loader2, Play, RotateCcw, Upload } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Code2, Download, ExternalLink, FileText, FlaskConical, Loader2, Play, RotateCcw, Sparkles, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -127,7 +127,17 @@ function DemoRealRunTerminal() {
 function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
   const [error, setError] = useState('');
+  const [suggestion, setSuggestion] = useState<{ projectName: string; researchTopic: string; researchGoal: string } | null>(null);
   const csvName = state.csvFileName;
+  const generateSuggestion = () => {
+    const direction = state.researchTopic.trim();
+    if (!direction) return;
+    setSuggestion({
+      projectName: `${direction.slice(0, 24)}实验研究`,
+      researchTopic: direction,
+      researchGoal: state.researchGoal.trim() || `围绕“${direction}”设计可复现的实验方案，明确数据集、评价指标和对比基线。`,
+    });
+  };
   const readCsv = async (file: File) => {
     const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
@@ -146,6 +156,34 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
       <section className="rounded-2xl border border-white/70 bg-white/90 p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-[#10204A]">课题与文献</h2>
         <p className="mt-1 text-sm text-muted-foreground">填写研究信息，并上传包含核心论文摘要和 PDF 路径的 CSV。</p>
+        {state.researchTopic.trim() ? (
+          <div className="mt-4 rounded-xl border border-[#c9dcf7] bg-[#f5f9ff] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-[#315a98]">需要一点填写思路？</p>
+                <p className="mt-1 text-xs leading-5 text-[#7189aa]">根据你填写的研究方向生成建议示例，仅供参考，不会自动修改表单。</p>
+              </div>
+              <Button type="button" variant="outline" onClick={generateSuggestion} className="rounded-lg border-[#9bbce8] text-xs font-semibold text-[#1f4dcb]">
+                <Sparkles className="size-4" />生成建议示例
+              </Button>
+            </div>
+            {suggestion ? (
+              <div className="mt-3 space-y-2 text-xs">
+                {([
+                  ['项目名称', 'projectName'],
+                  ['研究题目', 'researchTopic'],
+                  ['研究目标', 'researchGoal'],
+                ] as const).map(([label, key]) => (
+                  <div key={key} className="flex items-start gap-2 rounded-lg bg-white/80 px-3 py-2">
+                    <span className="w-16 shrink-0 font-semibold text-[#6b89b3]">{label}</span>
+                    <span className="min-w-0 flex-1 leading-5 text-[#526e98]">{suggestion[key]}</span>
+                    <button type="button" onClick={() => state.setFields({ [key]: suggestion[key] })} className="shrink-0 font-semibold text-[#1f4dcb] underline underline-offset-2">采用</button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="mt-5 flex flex-col gap-4">
           <label className="flex flex-col gap-2 text-sm font-medium">项目名称<Input value={state.projectName} onChange={(e) => state.setFields({ projectName: e.target.value })} placeholder="例如：可信多智能体视觉协同" /></label>
           <label className="flex flex-col gap-2 text-sm font-medium">研究题目<Textarea value={state.researchTopic} onChange={(e) => state.setFields({ researchTopic: e.target.value })} placeholder="输入计算机视觉研究题目" /></label>
@@ -173,11 +211,11 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
           <input type="file" accept=".csv" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readCsv(file); }} />
         </label>
         {error ? <p className="text-sm text-[#DC3C4A]">{error}</p> : null}
-        <div className="rounded-xl bg-muted/50 p-3 text-center text-sm">
-          <strong>{state.paperCount}</strong>
-          <span className="ml-1 text-muted-foreground">篇文献，</span>
-          <strong>{state.pdfAvailableCount}</strong>
-          <span className="ml-1 text-muted-foreground">份 PDF 可用</span>
+        <div className="rounded-xl bg-[#edf4ff] p-3 text-center text-sm text-[#526e98]">
+          <strong className="text-[#183b70]">{state.paperCount}</strong>
+          <span className="ml-1">篇文献，</span>
+          <strong className="text-[#183b70]">{state.pdfAvailableCount}</strong>
+          <span className="ml-1">份 PDF 可用</span>
         </div>
         <div className="mt-auto flex justify-end">
           <Button disabled={!canContinue} onClick={() => go('plan')}>生成实验方案<ChevronRight data-icon="inline-end" /></Button>
@@ -600,27 +638,27 @@ function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
             下方终端可查看 SSH 会话与命令输出；启动后任务状态会同步到本页。
           </p>
           <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-            <div className="rounded-xl bg-muted/60 p-3">
-              <dt className="font-semibold">目标</dt>
-              <dd className="mt-1 text-muted-foreground">
+            <div className="rounded-xl border border-[#3d5579] bg-[#253954] p-3 text-white">
+              <dt className="font-semibold text-white">目标</dt>
+              <dd className="mt-1 break-words text-[#d9e8ff]">
                 {runtime.target === 'local'
                   ? '本地运行'
                   : `SSH ${runtime.sshUser}@${runtime.sshHost}:${runtime.sshPort}`}
               </dd>
             </div>
-            <div className="rounded-xl bg-muted/60 p-3">
-              <dt className="font-semibold">算力</dt>
-              <dd className="mt-1 text-muted-foreground">
+            <div className="rounded-xl border border-[#3d5579] bg-[#253954] p-3 text-white">
+              <dt className="font-semibold text-white">算力</dt>
+              <dd className="mt-1 break-words text-[#d9e8ff]">
                 CPU {runtime.cpuCores} · GPU {runtime.gpuCount}×{runtime.gpuModel} · 选用 {runtime.selectedGpus}
               </dd>
             </div>
-            <div className="rounded-xl bg-muted/60 p-3 sm:col-span-2">
-              <dt className="font-semibold">目录</dt>
-              <dd className="mt-1 space-y-1 text-muted-foreground">
-                <p>代码：{runtime.codeDir}</p>
-                <p>数据：{runtime.dataDir}</p>
-                <p>结果：{runtime.resultsDir}</p>
-                <p>文档：{runtime.documentDir}</p>
+            <div className="rounded-xl border border-[#3d5579] bg-[#253954] p-3 text-white sm:col-span-2">
+              <dt className="font-semibold text-white">目录</dt>
+              <dd className="mt-1 space-y-1 break-all text-[#d9e8ff]">
+                <p><span className="text-[#b8cdea]">代码：</span>{runtime.codeDir}</p>
+                <p><span className="text-[#b8cdea]">数据：</span>{runtime.dataDir}</p>
+                <p><span className="text-[#b8cdea]">结果：</span>{runtime.resultsDir}</p>
+                <p><span className="text-[#b8cdea]">文档：</span>{runtime.documentDir}</p>
               </dd>
             </div>
           </dl>

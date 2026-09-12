@@ -47,15 +47,30 @@ export class ResearchTopicController {
   @Post('tasks/:runId/core-literature')
   async generateCoreLiterature(@Param('runId') runId: string, @Req() request: FastifyRequest) {
     if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
-    const body = (request.body ?? {}) as { label?: string };
+    const body = (request.body ?? {}) as { label?: string; projectId?: string };
     try {
-      return await this.service.generateCoreLiterature(runId, body.label ?? '');
+      return await this.service.generateCoreLiterature(runId, body.label ?? '', body.projectId);
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       if (message === 'TASK_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
       if (message === 'TOPIC_NOT_CONFIRMED') throw new BadRequestException('请先完成候选课题生成。');
       if (message === 'CANDIDATE_NOT_FOUND') throw new BadRequestException('请选择有效的候选课题。');
       throw new BadRequestException('无法创建核心文献检索任务。');
+    }
+  }
+
+  @Post('tasks/:runId/import')
+  async importCoreLiterature(@Param('runId') runId: string, @Req() request: FastifyRequest) {
+    if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
+    const body = (request.body ?? {}) as { projectId?: string };
+    if (typeof body.projectId !== 'string' || !body.projectId.trim()) throw new BadRequestException('研究项目无效。');
+    try {
+      return await this.service.importCoreLiterature(runId, body.projectId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'TASK_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
+      if (message === 'CORE_NOT_COMPLETED') throw new BadRequestException('核心文献任务尚未完成，暂时无法导入。');
+      throw new BadRequestException('核心文献导入实验工作区失败。');
     }
   }
 }

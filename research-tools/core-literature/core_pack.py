@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
-FIELDS = ["direction", "openalexId", "title", "authors", "source", "year", "doi", "abstract", "bibKey", "pdfPath", "downloadStatus", "sourceUrl"]
+FIELDS = ["direction", "openalexId", "paper_id", "title", "authors", "source", "year", "doi", "abstract", "bibKey", "pdfPath", "pdf_path", "downloadStatus", "sourceUrl"]
 TERMINAL_PREFIXES = ("http_error_401", "http_error_403", "http_error_404", "http_error_410", "unexpected_content_type", "invalid_pdf_content", "pdf_too_large", "pdf_host_not_allowlisted", "pdf_url_not_https")
 
 
@@ -206,7 +206,7 @@ def main():
     for paper in selected:
         key = key_for(paper); result = results.get(key, {"status": "not_needed_after_target", "pdfPath": "", "detail": {"bibKey": key, "attempted": False, "status": "not_needed_after_target"}})
         detail = result["detail"]; report.append(detail if "alternates" not in result else {"bibKey": key, "status": result["status"], "attempted": any(item.get("attempted") for item in result["alternates"]), "alternates": result["alternates"]})
-        row = {"direction": config.get("confirmedTopic", ""), "openalexId": paper["openalexId"], "title": paper["title"], "authors": paper["authors"], "source": paper["source"], "year": paper["year"], "doi": paper["doi"], "abstract": paper["abstract"], "bibKey": key, "pdfPath": result["pdfPath"], "downloadStatus": result["status"], "sourceUrl": paper["sourceUrl"]}; rows.append(row)
+        row = {"direction": config.get("confirmedTopic", ""), "openalexId": paper["openalexId"], "paper_id": paper["openalexId"], "title": paper["title"], "authors": paper["authors"], "source": paper["source"], "year": paper["year"], "doi": paper["doi"], "abstract": paper["abstract"], "bibKey": key, "pdfPath": result["pdfPath"], "pdf_path": result["pdfPath"], "downloadStatus": result["status"], "sourceUrl": paper["sourceUrl"]}; rows.append(row)
         bibliography.append(f"@{entry_type(paper)}{{{key},\n  title = {{{bib_escape(row['title'])}}},\n  author = {{{bib_escape(row['authors'])}}},\n  year = {{{bib_escape(row['year'])}}},\n  journal = {{{bib_escape(row['source'])}}},\n  doi = {{{bib_escape(row['doi'])}}},\n  url = {{{bib_escape(row['sourceUrl'])}}}\n}}\n")
     with (output / "references.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS); writer.writeheader(); writer.writerows([{name: text(row.get(name, "")) for name in FIELDS} for row in rows])

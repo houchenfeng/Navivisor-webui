@@ -56,7 +56,9 @@ export type ResearchTopicCounts = {
 
 export type ResearchTopicTask = {
   runId: string;
+  projectId?: string;
   researchInterest?: string;
+  researchContext?: string;
   status: ResearchTopicTaskStatus;
   files: ResearchTopicFile[];
   errors: Array<{ code?: string; message: string }>;

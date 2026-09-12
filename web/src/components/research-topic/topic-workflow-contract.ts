@@ -9,6 +9,8 @@ export type ResearchTaskStatus =
 
 export interface ResearchTaskSnapshot {
   runId: string;
+  researchInterest?: string;
+  researchContext?: string;
   stage: 'first-search' | 'core-literature' | 'paper-thinking' | 'experiment-plan';
   status: ResearchTaskStatus;
   files: Array<{

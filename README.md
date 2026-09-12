@@ -79,6 +79,18 @@ bibtex --version
 
 共同输入输出格式见 `research-tools/contract.md`。演示用数据包在 `demo-packages/evivad-surveillance-demo/`（监控视频异常检测 EviVAD 全链路样例，随仓库提交）。
 
+## 最近交接说明（main-clean）
+
+本次交接补充了开题到实验的数据链路：核心文献 CSV 同时提供 `paper_id` / `pdf_path` 兼容列；完成核心文献任务后可登记到研究项目，并从开题页点击“导入开题数据并进入实验”。实验页会优先读取项目 artifact 中的核心文献、课题和实验产物；没有真实实验产物时仍会显示明确的 Demo 回退内容。
+
+实验页的“建议示例”必须由用户主动点击生成和采用，不会自动覆盖用户填写的研究方向、题目或目标。投稿 Step 3 的 Email Sharing 使用可取消的 checkbox。
+
+### SSH runner 与 GPU 验证边界
+
+SSH runner 需要目标机器可访问、SSH 服务已启动、认证信息有效，并且目标机具备配置的代码/数据/结果/文档目录和 `yolo26` Conda 环境。运行器会选择低占用 GPU；没有符合条件的 GPU 时回退 CPU。只有日志出现 SSH 连接成功、`conda run -n yolo26` 执行成功、`cuda_available=True` 和具体 GPU 型号，才算完成 GPU 验证。
+
+本次验证已完成前端 Vite 构建和 Python 语法检查；协作者服务器 `10.61.48.10:22` 当时连接超时，因此尚未完成远程 Conda/GPU 验证。未提交 `.env`、密钥或令牌。
+
 ---
 
 ## 科研模块使用说明

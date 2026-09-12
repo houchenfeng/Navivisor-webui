@@ -28,6 +28,7 @@ import {
 import { FilesService } from '../files/files.service';
 import type {
   PortableProjectIndex,
+  ResearchArtifact,
   ResearchArtifactRole,
   ResearchModule,
   ResearchRunMode,
@@ -505,6 +506,62 @@ export class ResearchWorkspaceService {
       createdAt: new Date().toISOString(),
     });
     return artifact;
+  }
+
+  async importCoreLiteraturePackage(
+    projectId: string,
+    sourceDirectory: string,
+    sourceRunId?: string,
+  ) {
+    this.requireProject(projectId);
+    const files: Array<{ absolutePath: string; relativePath: string; role: ResearchArtifactRole }> = [];
+    const roleFor = (relativePath: string): ResearchArtifactRole | null => {
+      const normalized = relativePath.replaceAll('\\', '/').toLowerCase();
+      if (normalized === 'references.csv') return 'core-references';
+      if (normalized === 'references.bib') return 'literature-bib';
+      if (normalized === 'manifest.json') return 'paper-manifest';
+      if (normalized === 'handoff.md') return 'literature-handoff';
+      if (normalized === 'download-report.json' || normalized === 'download-state.json') return 'diagnostics';
+      if (normalized.startsWith('pdf/') && normalized.endsWith('.pdf')) return 'literature-pdf';
+      return null;
+    };
+    await this.walkFiles(resolve(sourceDirectory), async (absolutePath) => {
+      const relativePath = relative(resolve(sourceDirectory), absolutePath).replaceAll('\\', '/');
+      const role = roleFor(relativePath);
+      if (role) files.push({ absolutePath, relativePath, role });
+    });
+    if (!files.some((file) => file.role === 'core-references')) {
+      throw new BadRequestException('核心文献包缺少 references.csv');
+    }
+    const run = await this.workflow.createRun(projectId, 'topic.core-literature', 'real');
+    await this.workflow.transitionRun(run.runId, 'running', {
+      provenance: { importedFromTopicRunId: sourceRunId ?? null, sourceDirectory },
+    });
+    try {
+      const artifacts: ResearchArtifact[] = [];
+      for (const file of files) {
+        artifacts.push(await this.workflow.createArtifact(
+          run.runId,
+          file.role,
+          basename(file.relativePath),
+          guessMediaType(file.relativePath),
+          await readFile(file.absolutePath),
+          false,
+          { sourcePath: file.relativePath, importedFromTopicRunId: sourceRunId ?? null },
+        ));
+      }
+      await this.workflow.transitionRun(run.runId, 'validating');
+      await this.workflow.transitionRun(run.runId, 'completed', {
+        provenance: { importedArtifactCount: artifacts.length },
+      });
+      await this.rebuildPortableIndex(projectId);
+      return { runId: run.runId, artifacts };
+    } catch (error) {
+      await this.workflow.transitionRun(run.runId, 'failed', {
+        error: { code: 'CORE_LITERATURE_IMPORT_FAILED', message: error instanceof Error ? error.message : String(error) },
+      });
+      throw error;
+    }
   }
 
   async loadDemoFromWorkspace(projectId: string): Promise<LoadDemoResult> {

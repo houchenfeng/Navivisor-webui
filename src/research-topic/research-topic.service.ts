@@ -12,6 +12,8 @@ import type {
   ResearchTopicCandidate,
 } from './research-topic.types';
 import { buildOpenAlexQueryPlan, buildOpenAlexQueryPlans } from './openalex-query';
+import { translateResearchInterest } from './query-translation';
+import { ResearchWorkspaceService } from '../research-workflow/research-workspace.service';
 
 const OPENALEX_API_URL = 'https://api.openalex.org/';
 const OUTPUT_ROOT = join(process.cwd(), 'work', 'research-topic', 'runs');
@@ -35,7 +37,7 @@ type OpenAlexPayload = {
 export class ResearchTopicService implements OnModuleInit {
   private readonly tasks = new Map<string, ResearchTopicTask>();
 
-  constructor(private readonly config?: ConfigService) {}
+  constructor(private readonly config?: ConfigService, private readonly workspaces?: ResearchWorkspaceService) {}
 
   async onModuleInit(): Promise<void> {
     try {
@@ -58,6 +60,7 @@ export class ResearchTopicService implements OnModuleInit {
     const task: ResearchTopicTask = {
       runId,
       researchInterest: input.researchInterest,
+      researchContext: input.context,
       status: 'queued',
       files: [],
       errors: [],
@@ -90,7 +93,7 @@ export class ResearchTopicService implements OnModuleInit {
     return this.publicTask(task);
   }
 
-  async generateCoreLiterature(runId: string, label: string): Promise<ResearchTopicTask> {
+  async generateCoreLiterature(runId: string, label: string, projectId?: string): Promise<ResearchTopicTask> {
     await this.get(runId);
     const task = this.tasks.get(runId);
     if (!task) throw new Error('TASK_NOT_FOUND');
@@ -98,10 +101,27 @@ export class ResearchTopicService implements OnModuleInit {
     const candidate = task.candidates?.find((item) => item.label === label);
     if (!candidate) throw new Error('CANDIDATE_NOT_FOUND');
     if (task.coreStatus === 'running' || task.coreStatus === 'queued') return this.publicTask(task);
+    task.projectId = projectId?.trim() || undefined;
     task.coreStatus = 'queued'; task.coreError = undefined; task.coreManifest = undefined; task.coreRunId = randomUUID(); task.updatedAt = new Date().toISOString();
     await this.persistCandidateState(task);
     void this.executeCoreLiterature(task, candidate.title);
     return this.publicTask(task);
+  }
+
+  async importCoreLiterature(runId: string, projectId: string) {
+    await this.get(runId);
+    const task = this.tasks.get(runId);
+    if (!task) throw new Error('TASK_NOT_FOUND');
+    if (!['completed', 'partial'].includes(task.coreStatus ?? '')) throw new Error('CORE_NOT_COMPLETED');
+    if (!this.workspaces) throw new Error('WORKSPACE_UNAVAILABLE');
+    const result = await this.workspaces.importCoreLiteraturePackage(
+      projectId.trim(),
+      join(OUTPUT_ROOT, task.runId, 'core-literature'),
+      task.coreRunId,
+    );
+    task.projectId = projectId.trim();
+    await this.persistCandidateState(task);
+    return { taskRunId: task.runId, projectId: task.projectId, importedRunId: result.runId, artifactCount: result.artifacts.length };
   }
 
   private async executeCoreLiterature(task: ResearchTopicTask, confirmedTopic: string): Promise<void> {
@@ -114,9 +134,11 @@ export class ResearchTopicService implements OnModuleInit {
       await this.persistCandidateState(task);
       await mkdir(inputDirectory, { recursive: true });
       const coreSourceQueries: Array<Record<string, unknown>> = [];
-      const coreSearchText = [task.researchInterest, confirmedTopic].filter(Boolean).join(' ');
-      const queryPlan = buildOpenAlexQueryPlan(coreSearchText);
-      const papers = await this.searchCorePapers(coreSearchText, 100, coreSourceQueries);
+      const coreSearchText = [task.researchInterest, task.researchContext, confirmedTopic].filter(Boolean).join(' ');
+      const translation = await translateResearchInterest(coreSearchText);
+      coreSourceQueries.push({ source: 'query-translation', status: translation.status, terms: translation.terms, reason: translation.reason ?? null });
+      const queryPlan = buildOpenAlexQueryPlan(coreSearchText, { translatedTerms: translation.terms });
+      const papers = await this.searchCorePapers(coreSearchText, 100, coreSourceQueries, translation.terms);
       await writeFile(join(inputDirectory, 'papers.json'), JSON.stringify(papers, null, 2), 'utf8');
       await writeFile(configPath, JSON.stringify({
         runId: task.coreRunId, confirmedTopic,
@@ -133,21 +155,25 @@ export class ResearchTopicService implements OnModuleInit {
           try { task.coreManifest = JSON.parse(await readFile(join(runDirectory, 'manifest.json'), 'utf8')) as Record<string, unknown>; } catch { task.coreManifest = undefined; }
           if (code !== 0 && !task.coreManifest) { task.coreStatus = 'failed'; task.coreError = `核心文献 Skill 执行失败。${stderr.trim().slice(-300)}`; }
           else { task.coreStatus = task.coreManifest?.status === 'partial' ? 'partial' : 'completed'; task.coreError = undefined; }
+          if (task.projectId && this.workspaces && task.coreStatus !== 'failed') {
+            try { await this.workspaces.importCoreLiteraturePackage(task.projectId, runDirectory, task.coreRunId); }
+            catch (error) { task.coreError = `核心文献已生成，但导入实验工作区失败：${error instanceof Error ? error.message : String(error)}`; }
+          }
           task.updatedAt = new Date().toISOString(); await this.persistCandidateState(task); resolve();
         });
       });
     } catch (error) { task.coreStatus = 'failed'; task.coreError = error instanceof Error ? error.message : '核心文献检索失败。'; task.updatedAt = new Date().toISOString(); await this.persistCandidateState(task); }
   }
 
-  private async searchCorePapers(input: string, target: number, sourceQueries: Array<Record<string, unknown>>): Promise<Array<Record<string, unknown>>> {
-    const papers = await this.searchAdaptivePapers(input, target, sourceQueries);
+  private async searchCorePapers(input: string, target: number, sourceQueries: Array<Record<string, unknown>>, translatedTerms: string[] = []): Promise<Array<Record<string, unknown>>> {
+    const papers = await this.searchAdaptivePapers(input, target, sourceQueries, undefined, undefined, translatedTerms);
     return papers.map((paper) => ({ ...paper, year: paper.publicationYear, sourceUrl: paper.landingUrl, openAccessUrl: paper.pdfUrl, isOpenAccess: Boolean(paper.isOpenAccess), pdfUrl: paper.pdfUrl }));
   }
 
-  private async searchAdaptivePapers(input: string, target: number, sourceQueries: Array<Record<string, unknown>>, task?: ResearchTopicTask, dateFilter?: string): Promise<ResearchTopicPaper[]> {
+  private async searchAdaptivePapers(input: string, target: number, sourceQueries: Array<Record<string, unknown>>, task?: ResearchTopicTask, dateFilter?: string, translatedTerms: string[] = []): Promise<ResearchTopicPaper[]> {
     const papers: ResearchTopicPaper[] = [];
     const seenKeys = new Set<string>();
-    const plans = buildOpenAlexQueryPlans(input);
+    const plans = buildOpenAlexQueryPlans(input, { translatedTerms });
     for (const [planIndex, plan] of plans.entries()) {
       let cursor: string | null | undefined = '*';
       let page = 0;
@@ -202,6 +228,8 @@ export class ResearchTopicService implements OnModuleInit {
     const prompt = [
       '你是启航科研智能体的开题候选课题分析器。',
       `请读取本地 CSV：${inputPath}`,
+      `用户最初填写的研究方向：${task.researchInterest ?? '未保存'}`,
+      task.researchContext ? `用户补充上下文：${task.researchContext}` : '用户没有补充上下文。',
       'CSV 是第一环节从 OpenAlex 公开 API 检索并去重后的文献元数据，可能有几百条；只能把它当作证据，不得补写不存在的论文、作者、DOI、指标或实验结果。',
       '请生成且只生成三个候选课题，分类必须分别为“偏可行”“偏创新”“较平衡”。每个课题必须严格包含：title、oneSentenceDefinition、researchDesign、expectedInnovation、rationale。',
       'oneSentenceDefinition 是一句话定义；researchDesign 必须具体写出技术路线、数据集、对比/消融实验和评测指标；expectedInnovation 要写成待验证的候选创新性与实际价值；rationale 必须引用 CSV 中可定位的论文标题或 OpenAlex ID，如果摘要或证据不足，要明确写“待核验”，不能猜测。',
@@ -281,7 +309,9 @@ export class ResearchTopicService implements OnModuleInit {
         const to = input.yearRange.to ?? new Date().getUTCFullYear();
         dateFilter = `from_publication_date:${from}-01-01,to_publication_date:${to}-12-31`;
       }
-      const papers = await this.searchAdaptivePapers(input.researchInterest, input.targetCount, sourceQueries, task, dateFilter);
+      const translation = await translateResearchInterest(input.researchInterest);
+      sourceQueries.push({ source: 'query-translation', status: translation.status, terms: translation.terms, reason: translation.reason ?? null });
+      const papers = await this.searchAdaptivePapers(input.researchInterest, input.targetCount, sourceQueries, task, dateFilter, translation.terms);
       if (task.cancelRequested) task.status = 'cancelled';
       task.papers = papers;
       task.counts.papers = papers.length;
@@ -291,8 +321,12 @@ export class ResearchTopicService implements OnModuleInit {
     } catch (error) {
       task.status = task.cancelRequested ? 'cancelled' : 'failed';
       task.errors = [{ code: 'OPENALEX_REQUEST_FAILED', message: safeErrorMessage(error) }];
-      const queryPlan = buildOpenAlexQueryPlan(input.researchInterest);
-      sourceQueries.push({ source: 'OpenAlex', endpoint: OPENALEX_API_URL, tier: queryPlan.tier, oql: queryPlan.oql, includeTerms: queryPlan.includeTerms, excludeTitleTerms: queryPlan.excludeTitleTerms, targetCount: input.targetCount, status: 'failed' });
+      try {
+        const queryPlan = buildOpenAlexQueryPlan(input.researchInterest);
+        sourceQueries.push({ source: 'OpenAlex', endpoint: OPENALEX_API_URL, tier: queryPlan.tier, oql: queryPlan.oql, includeTerms: queryPlan.includeTerms, excludeTitleTerms: queryPlan.excludeTitleTerms, targetCount: input.targetCount, status: 'failed' });
+      } catch {
+        sourceQueries.push({ source: 'OpenAlex', endpoint: OPENALEX_API_URL, targetCount: input.targetCount, status: 'failed', reason: 'NO_SEARCH_TERMS' });
+      }
     }
     await this.persist(task, sourceQueries);
     if (task.status === 'running') {
@@ -344,6 +378,7 @@ export class ResearchTopicService implements OnModuleInit {
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'first-search-papers.csv'), toCsv(task.papers), 'utf8');
     await writeFile(join(directory, 'papers-preview.json'), JSON.stringify(task.papers.slice(0, PREVIEW_COUNT), null, 2), 'utf8');
+    await writeFile(join(directory, 'input.json'), JSON.stringify({ researchInterest: task.researchInterest ?? '', context: task.researchContext ?? '' }, null, 2), 'utf8');
     await writeFile(join(directory, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
   }
 
@@ -352,7 +387,9 @@ export class ResearchTopicService implements OnModuleInit {
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'candidate-state.json'), JSON.stringify({
       runId: task.runId,
+      projectId: task.projectId ?? null,
       researchInterest: task.researchInterest ?? null,
+      researchContext: task.researchContext ?? null,
       status: task.candidateStatus,
       candidates: task.candidates ?? null,
       error: task.candidateError ?? null,
@@ -376,13 +413,22 @@ export class ResearchTopicService implements OnModuleInit {
         // Older runs did not persist previews; counts and files remain recoverable.
       }
       const task: ResearchTopicTask = {
-        runId, researchInterest: undefined, status: manifest.status, files: manifest.files, errors: manifest.errors ?? [], papers,
+        runId, researchInterest: undefined, researchContext: undefined, status: manifest.status, files: manifest.files, errors: manifest.errors ?? [], papers,
         counts: manifest.counts, createdAt: manifest.createdAt, updatedAt: manifest.createdAt,
         cancelRequested: false, candidateStatus: 'idle',
       };
       try {
-        const state = JSON.parse(await readFile(join(OUTPUT_ROOT, runId, 'candidates', 'candidate-state.json'), 'utf8')) as { researchInterest?: string | null; status?: ResearchTopicTask['candidateStatus']; candidates?: ResearchTopicCandidate[] | null; error?: string | null; coreStatus?: ResearchTopicTask['coreStatus']; coreRunId?: string; coreManifest?: Record<string, unknown> | null; coreError?: string | null; updatedAt?: string };
+        const input = JSON.parse(await readFile(join(directory, 'input.json'), 'utf8')) as { researchInterest?: string; context?: string };
+        if (input.researchInterest) task.researchInterest = input.researchInterest;
+        if (input.context) task.researchContext = input.context;
+      } catch {
+        // Runs created before input persistence can still be restored from candidate state.
+      }
+      try {
+        const state = JSON.parse(await readFile(join(OUTPUT_ROOT, runId, 'candidates', 'candidate-state.json'), 'utf8')) as { projectId?: string | null; researchInterest?: string | null; researchContext?: string | null; status?: ResearchTopicTask['candidateStatus']; candidates?: ResearchTopicCandidate[] | null; error?: string | null; coreStatus?: ResearchTopicTask['coreStatus']; coreRunId?: string; coreManifest?: Record<string, unknown> | null; coreError?: string | null; updatedAt?: string };
+        if (state.projectId) task.projectId = state.projectId;
         if (state.researchInterest) task.researchInterest = state.researchInterest;
+        if (state.researchContext) task.researchContext = state.researchContext;
         if (state.status) task.candidateStatus = state.status;
         if (Array.isArray(state.candidates)) task.candidates = state.candidates;
         if (state.error) task.candidateError = state.error;
@@ -408,7 +454,7 @@ export class ResearchTopicService implements OnModuleInit {
   }
 
   private publicTask(task: ResearchTopicTask): ResearchTopicTask {
-    const { cancelRequested: _cancelRequested, researchInterest: _researchInterest, ...publicTask } = task;
+    const { cancelRequested: _cancelRequested, ...publicTask } = task;
     return { ...publicTask, papers: task.papers.slice(0, PREVIEW_COUNT), cancelRequested: false };
   }
 }

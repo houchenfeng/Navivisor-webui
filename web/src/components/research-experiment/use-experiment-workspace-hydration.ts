@@ -1,17 +1,9 @@
 /**
  * Minimal experiment-module hydration from workspace artifacts.
- * Keeps SAM offline demo as an explicit fallback; does not rewrite the demo UI.
+ * Hydrates only from the bound workspace.  Demo content is supplied by an
+ * explicitly loaded demo workspace, never as a fallback for empty data.
  */
 import { useEffect, useState } from 'react';
-import {
-  DEMO_ABLATION_HEADERS,
-  DEMO_ABLATION_ROWS,
-  DEMO_ARCHITECTURE_MARKDOWN,
-  DEMO_COMPARISON_HEADERS,
-  DEMO_COMPARISON_ROWS,
-  DEMO_PLAN_MARKDOWN,
-  DEMO_RESULTS_MARKDOWN,
-} from '@/components/research-experiment/demo-artifacts';
 import {
   artifactContentUrl,
   fetchArtifactText,
@@ -46,8 +38,6 @@ export type ExperimentHydration = {
   error: string | null;
 };
 
-const DEFAULT_ABLATION_HEADERS = [...DEMO_ABLATION_HEADERS];
-
 const vacantHydration = (): ExperimentHydration => ({
   source: 'offline-fallback',
   loading: false,
@@ -69,34 +59,7 @@ const vacantHydration = (): ExperimentHydration => ({
   error: null,
 });
 
-const emptyHydration = (): ExperimentHydration => ({
-  source: 'offline-fallback',
-  loading: false,
-  planMarkdown: DEMO_PLAN_MARKDOWN,
-  planHeadline: '完整方法 EviVAD = B0 + DAA + EAD + DAG。\n基线 B0（免训练）：OpenAI CLIP，视觉编码器 ViT-B/16，文本编码器 CLIP Transformer，权重全部冻结；帧级图像–文本余弦相似度加一维时间平滑。',
-  shortestPath: '先复现冻结 VLM Baseline B0，再按 DAA → EAD → DAG 单变量接入。',
-  protocolNote: 'UCF-Crime 主评测；XD-Violence / UBnormal / MSAD 跨域；指标 AUC / AP / EAR / HR。',
-  resultsMarkdown: DEMO_RESULTS_MARKDOWN,
-  architectureMarkdown: DEMO_ARCHITECTURE_MARKDOWN,
-  configJson: null,
-  comparisonHeaders: [...DEMO_COMPARISON_HEADERS],
-  comparisonRows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
-  ablationHeaders: [...DEFAULT_ABLATION_HEADERS],
-  ablationRows: DEMO_ABLATION_ROWS.map((row) => [...row]),
-  comparisonFigureUrl: null,
-  architectureFigureUrl: null,
-  ideas: [],
-  comparisonMethods: [
-    '深度自编码器重建式监控视频异常检测（2023），卷积自编码器骨干',
-    '弱监督片段级卷积–Transformer 检测（Sensors, 2023），I3D / ViT 片段特征',
-    'CLIP-TSA：OpenAI CLIP ViT-B/16 视觉特征 + 时间自注意力（Joo 等, ICIP 2023）',
-    'LAVAD：BLIP 类图像描述模型 + 大语言模型时序打分（Zanella 等, CVPR 2024）',
-    'VadCLIP：CLIP ViT-B/16 视觉语言弱监督视频异常检测（Wu 等, AAAI 2024）',
-    'Open-Vocabulary Video Anomaly Detection（Wu 等, CVPR 2024）',
-    'RAG4VAD：检索增强生成的免训练可解释检测（Sun 等, 2026）',
-  ],
-  error: null,
-});
+const emptyHydration = vacantHydration;
 
 function splitCsv(text: string): { headers: string[]; rows: string[][] } {
   const all = parseCsvRows(text);
@@ -279,7 +242,9 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         figureArtifacts.find((artifact) => /architecture/i.test(artifact.name + artifact.path)) ??
         null;
 
-      if (!plan && !innovations && !results && !config && !confirmed) {
+      // Core literature can be the first artifact imported from the opening
+      // stage; do not fall back to the empty demo state before reading it.
+      if (!plan && !innovations && !results && !config && !confirmed && !coreReferences) {
         if (!cancelled) {
           setHydration({
             ...emptyHydration(),
@@ -378,29 +343,29 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         setHydration({
           source: 'workspace',
           loading: false,
-          planMarkdown: planText || DEMO_PLAN_MARKDOWN,
+          planMarkdown: planText,
           planHeadline: mappedIdeas?.planHeadline ?? '',
           shortestPath: mappedIdeas?.shortestPath ?? '',
           protocolNote: mappedIdeas?.protocolNote ?? '',
-          resultsMarkdown: resultsText || DEMO_RESULTS_MARKDOWN,
-          architectureMarkdown: architectureText || DEMO_ARCHITECTURE_MARKDOWN,
+          resultsMarkdown: resultsText,
+          architectureMarkdown: architectureText,
           configJson: configText || null,
           comparisonHeaders:
             mainCsvParsed.headers.length > 0
               ? mainCsvParsed.headers
-              : [...DEMO_COMPARISON_HEADERS],
+              : [],
           comparisonRows:
             mainCsvParsed.rows.length > 0
               ? mainCsvParsed.rows
-              : DEMO_COMPARISON_ROWS.map((row) => [...row]),
+              : [],
           ablationHeaders:
             ablationCsvParsed.headers.length > 0
               ? ablationCsvParsed.headers
-              : [...DEFAULT_ABLATION_HEADERS],
+              : [],
           ablationRows:
             ablationCsvParsed.rows.length > 0
               ? ablationCsvParsed.rows
-              : DEMO_ABLATION_ROWS.map((row) => [...row]),
+              : [],
           comparisonFigureUrl: comparisonFigure
             ? artifactContentUrl(projectId, comparisonFigure.artifactId)
             : null,

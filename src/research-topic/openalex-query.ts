@@ -6,6 +6,10 @@ export type OpenAlexQueryPlan = {
   oql: string;
 };
 
+export type OpenAlexQueryOptions = {
+  translatedTerms?: string[];
+};
+
 const SEMANTIC_SEGMENTATION_TERMS = [
   'semantic segmentation',
   'semantic segmentations',
@@ -32,11 +36,11 @@ const VIDEO_ANOMALY_EXCLUSIONS = {
   broad: [],
 };
 
-export function buildOpenAlexQueryPlan(input: string): OpenAlexQueryPlan {
-  return buildOpenAlexQueryPlans(input)[0];
+export function buildOpenAlexQueryPlan(input: string, options?: OpenAlexQueryOptions): OpenAlexQueryPlan {
+  return buildOpenAlexQueryPlans(input, options)[0];
 }
 
-export function buildOpenAlexQueryPlans(input: string): OpenAlexQueryPlan[] {
+export function buildOpenAlexQueryPlans(input: string, options: OpenAlexQueryOptions = {}): OpenAlexQueryPlan[] {
   const normalized = input.toLowerCase();
   const videoAnomaly = (normalized.includes('视频异常') || normalized.includes('video anomaly') || normalized.includes('abnormal event')) && (normalized.includes('视频') || normalized.includes('video') || normalized.includes('surveillance'));
   const semanticSegmentation = normalized.includes('语义分割') || normalized.includes('semantic segmentation') || normalized.includes('scene parsing');
@@ -50,23 +54,27 @@ export function buildOpenAlexQueryPlans(input: string): OpenAlexQueryPlan[] {
     makePlan('balanced', [...SEMANTIC_SEGMENTATION_TERMS, 'pixel labeling', 'scene understanding'], ['instance segmentation', 'object detection'], '精准层结果不足，补充像素标注和场景理解表达。'),
     makePlan('broad', ['semantic segmentation', 'scene parsing', 'pixel labeling'], [], '前两层去重结果不足，使用保底主题词。'),
   ];
-  const terms = extractEnglishTerms(input);
+  const terms = [...new Set([...(options.translatedTerms ?? []), ...extractSearchTerms(input)])];
   return [
-    makePlan('focused', terms, [], '使用输入中可识别的英文命名词。'),
+    makePlan('focused', terms, [], '使用输入中可识别的英文命名词或中文关键词转换结果。'),
     makePlan('balanced', [...terms, 'research method', 'empirical study'], [], '精准层结果不足，补充常见研究表达。'),
   ];
 }
 
 function makePlan(tier: OpenAlexQueryPlan['tier'], includeTerms: string[], excludeTitleTerms: string[], reason: string): OpenAlexQueryPlan {
-  const safeIncludeTerms = includeTerms.length > 0 ? includeTerms : ['research topic'];
+  if (includeTerms.length === 0) throw new Error('NO_SEARCH_TERMS');
+  const safeIncludeTerms = includeTerms;
   const include = safeIncludeTerms.map(quote).join(' or ');
   const exclude = excludeTitleTerms.length > 0 ? ` and title has (not (${excludeTitleTerms.map(quote).join(' or ')}))` : '';
   return { tier, reason, includeTerms: safeIncludeTerms, excludeTitleTerms, oql: `works where title/abstract has (${include})${exclude}` };
 }
 
-function extractEnglishTerms(input: string): string[] {
+function extractSearchTerms(input: string): string[] {
   const phrases = input.match(/[A-Za-z][A-Za-z0-9]*(?:[ -][A-Za-z0-9]+){0,4}/g) ?? [];
-  return [...new Set(phrases.map((value) => value.trim().toLowerCase()).filter((value) => value.length >= 3))].slice(0, 5);
+  const english = [...new Set(phrases.map((value) => value.trim().toLowerCase()).filter((value) => value.length >= 3))];
+  if (english.length > 0) return english.slice(0, 5);
+  const chinese = input.match(/[\u3400-\u4dbf\u4e00-\u9fff]{2,}/g) ?? [];
+  return [...new Set(chinese.map((value) => value.trim()).filter(Boolean))].slice(0, 5);
 }
 
 function quote(value: string): string {
