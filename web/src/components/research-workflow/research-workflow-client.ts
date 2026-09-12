@@ -64,6 +64,12 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const researchWorkflowClient = {
+  async startSshExperiment(input: SshExperimentInput): Promise<SshExperimentJob> {
+    return apiJson('/api/research/ssh-experiments', { method: 'POST', body: JSON.stringify(input) });
+  },
+  async getSshExperiment(jobId: string): Promise<SshExperimentJob> {
+    return apiJson(`/api/research/ssh-experiments/${encodeURIComponent(jobId)}`);
+  },
   async listProjects(): Promise<ResearchProject[]> {
     return dataOf(await researchWorkflowListProjects({ throwOnError: true }));
   },
@@ -204,4 +210,17 @@ export const researchWorkflowClient = {
 
     throw new Error('Research run timed out while waiting for Codex to finish');
   },
+};
+
+export type SshExperimentInput = {
+  projectId: string; host: string; port: number; username: string; password: string;
+  codeDir: string; dataDir: string; resultsDir: string; documentDir: string;
+  condaEnv: string; experimentDocument: string;
+};
+
+export type SshExperimentJob = {
+  jobId: string; projectId: string;
+  status: 'queued' | 'connecting' | 'running' | 'downloading' | 'completed' | 'failed';
+  message: string; compute?: string; remoteResultsDir?: string; localRelativeDir?: string;
+  artifacts?: ResearchArtifact[]; startedAt: string; finishedAt?: string;
 };

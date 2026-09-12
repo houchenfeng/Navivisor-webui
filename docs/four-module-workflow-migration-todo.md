@@ -220,6 +220,14 @@ project.json 和 demo manifest 是根元数据，不必作为普通 stage 产物
 - 真实能力：GPT 图片由内置工具完成；`latexCompileWorker=unavailable`（无 pdflatex/cvpr.sty，Tectonic 依赖解析超时）；`realTrainingRunner=unavailable`；OpenAlex 试检索仍可用。
 - 投稿：三位审稿 + rebuttal + planned 证据映射已落盘；仅本地模拟。
 
+执行记录（2026-09-12，SSH runner 增量）：
+- [x] 接入 SSH 实验任务 API 和 WebUI：同一 `projectId` 启动，显示任务状态，完成后将结果报告、算法细节和指标登记为可打开的 workspace 版本。
+- [x] 凭证瞬时处理：密码不持久化，刷新清除；后端连接建立后及 finally 清空请求副本，错误信息脱敏。
+- [x] 远端命令创建约定目录，优先使用/创建 `yolo26`，选择显存 <512 MiB 且利用率 <10% 的首个 GPU，无空闲 GPU 自动回退 CPU。
+- [x] 本机实际运行确定性程序：1,200 条合成时序样本，seed=23，生成原始 CSV、metrics.csv、run.json、完整结果 MD 与算法细节 MD；明确标注“实际计算 + 合成数据”，artifact 保留 `simulated=true`。
+- [ ] 指定服务器真实验收：`10.61.48.10:22` 在 SSH 认证前网络超时，尚未在 `/home/hcf/test-code` 与 `/home/hcf/nas_hcf_data/test-data` 产出或回传远端文件。需恢复 VPN/校园网/SSH 端口后从 WebUI 点击“启动真实运行”重试。
+- 验证：runner 单测 2/2、后端生产构建、前端生产构建通过；不将本机结果冒充远端结果。
+
 ## 8. R7：必须通过的验收
 
 先完成有意义的 workspace service/导入契约测试，再跑实际本机服务和浏览器。使用临时测试项目，不修改用户论文或示例包本体。

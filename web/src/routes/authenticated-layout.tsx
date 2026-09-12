@@ -23,7 +23,7 @@ import { useLayoutStore } from '@/stores/layout-store';
 import { useTimelineStore } from '@/stores/timeline-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { cn } from '@/lib/utils';
-import { getSocket, resetSocket } from '@/socket';
+import { getSocket } from '@/socket';
 import { filesGetRoots, filesAddRoot } from '@/generated/api';
 import {
   pendingApprovalsListPending,

@@ -21,6 +21,10 @@ export default function Step3SubmissionForm() {
 
   const handleAIAssist = async (field: AIField) => {
     if (loadingFields[field]) return;
+    if (!selectedFile) {
+      setApiError('请先上传论文 PDF，再使用 AI Assist。');
+      return;
+    }
     if (selectedFile) {
       setIsExtracting(true);
       setApiError(null);
@@ -63,7 +67,7 @@ export default function Step3SubmissionForm() {
 
   const aiButton = (field: AIField, showGuide = false) => (
     <span className="relative inline-flex">
-      <button type="button" onClick={() => handleAIAssist(field)} disabled={isExtracting || loadingFields[field]} className="flex items-center gap-1.5 rounded-md border-2 border-[#800000] bg-[#fff5f5] px-3 py-1.5 text-sm font-bold text-[#800000] transition-colors hover:bg-[#ffe6e6] disabled:opacity-60">
+      <button type="button" onClick={() => handleAIAssist(field)} disabled={!selectedFile || isExtracting || loadingFields[field]} title={!selectedFile ? '请先上传论文 PDF' : undefined} className="flex items-center gap-1.5 rounded-md border-2 border-[#800000] bg-[#fff5f5] px-3 py-1.5 text-sm font-bold text-[#800000] transition-colors hover:bg-[#ffe6e6] disabled:opacity-60">
         {isExtracting || loadingFields[field] ? <><Loader2 className="size-4 animate-spin" />{t.generating}</> : <><Sparkles className="size-4" />AI Assist</>}
       </button>
       {showGuide && <GuideBubble text="点击 AI 辅助填写试试吧 👈" position="right" />}

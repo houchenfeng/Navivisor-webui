@@ -10,6 +10,8 @@ import { ResearchPathsService } from './research-paths.service';
 import { ResearchResultValidatorService } from './research-result-validator.service';
 import { ResearchRunEventsService } from './research-run-events.service';
 import { ResearchSkillRegistryService } from './research-skill-registry.service';
+import { ResearchSshRunnerController } from './research-ssh-runner.controller';
+import { ResearchSshRunnerService } from './research-ssh-runner.service';
 import { ResearchWorkspaceController } from './research-workspace.controller';
 import { ResearchWorkspaceService } from './research-workspace.service';
 import { ResearchWorkflowController } from './research-workflow.controller';
@@ -23,7 +25,7 @@ import { ResearchWorkflowService } from './research-workflow.service';
     SkillsModule,
     ThreadsModule,
   ],
-  controllers: [ResearchWorkflowController, ResearchWorkspaceController],
+  controllers: [ResearchWorkflowController, ResearchWorkspaceController, ResearchSshRunnerController],
   providers: [
     ResearchPathsService,
     ResearchResultValidatorService,
@@ -31,6 +33,7 @@ import { ResearchWorkflowService } from './research-workflow.service';
     ResearchAgentSessionService,
     ResearchCodexBridgeService,
     ResearchSkillRegistryService,
+    ResearchSshRunnerService,
     ResearchWorkflowService,
     ResearchWorkspaceService,
   ],

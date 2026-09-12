@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
 
 interface Props {
@@ -41,13 +41,15 @@ function parseBib(bib: string): { key: string; text: string }[] {
 
 export default function Step8References({ data, onChange }: Props) {
   const parsed = useMemo(() => parseBib(data.bibContent), [data.bibContent]);
+  const lastSyncedBib = useRef<string | null>(null);
 
   useEffect(() => {
-    if (parsed.length > 0 && data.references.length !== parsed.length) {
+    if (lastSyncedBib.current !== data.bibContent && parsed.length > 0) {
       onChange({ references: parsed });
     }
+    lastSyncedBib.current = data.bibContent;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsed.length, data.bibContent]);
+  }, [parsed, data.bibContent, onChange]);
 
   const removeRef = (idx: number) => {
     onChange({ references: data.references.filter((_, i) => i !== idx) });

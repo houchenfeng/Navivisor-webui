@@ -39,6 +39,8 @@ export interface ExperimentRealRuntimeConfig {
   codeDir: string;
   dataDir: string;
   resultsDir: string;
+  documentDir: string;
+  condaEnv: string;
   selectedGpus: string;
   apiEndpoint: string;
   apiKeyHint: string;
@@ -55,6 +57,8 @@ interface ExperimentState {
   seed: number;
   repeatCount: number;
   realRuntime: ExperimentRealRuntimeConfig;
+  sshPassword: string;
+  experimentDocument: string;
   completed: boolean;
   ideas: ExperimentIdea[];
   setFields: (fields: Partial<ExperimentState>) => void;
@@ -139,6 +143,8 @@ const defaultRealRuntime: ExperimentRealRuntimeConfig = {
   codeDir: './experiment/code',
   dataDir: './experiment/datasets',
   resultsDir: './experiment/results',
+  documentDir: './experiment/documents',
+  condaEnv: 'yolo26',
   selectedGpus: '0',
   apiEndpoint: '',
   apiKeyHint: '',
@@ -148,6 +154,8 @@ const initial = {
   projectName: '', researchTopic: '', researchGoal: '', paperCount: 0,
   planConfirmed: false, disclaimerAccepted: false, runMode: 'simulated' as ExperimentRunMode,
   seed: 42, repeatCount: 3, realRuntime: defaultRealRuntime,
+  sshPassword: '',
+  experimentDocument: '# 摄像头视频异常检测实验\n\n使用时序异常评分、场景记忆与按需复核，在确定性合成小样本上验证完整运行和产物链路。',
   completed: false, ideas: demoIdeas,
 };
 
@@ -165,11 +173,23 @@ export const useExperimentStore = create<ExperimentState>()(
         disclaimerAccepted: false,
         runMode: 'simulated',
         realRuntime: defaultRealRuntime,
+        sshPassword: '',
         completed: false,
         ideas: demoIdeas,
       }),
       reset: () => set(initial),
     }),
-    { name: 'navivisor-experiment-mvp' },
+    {
+      name: 'navivisor-experiment-mvp',
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<ExperimentState>;
+        return { ...current, ...saved, realRuntime: { ...defaultRealRuntime, ...saved.realRuntime }, sshPassword: '' };
+      },
+      partialize: (state) => ({
+        ...state,
+        realRuntime: { ...state.realRuntime, apiKeyHint: '' },
+        sshPassword: '',
+      }),
+    },
   ),
 );

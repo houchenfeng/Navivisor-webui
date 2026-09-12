@@ -48,6 +48,7 @@ lerna-debug.log*
 .tmp
 .tmp-e2e-project-*/
 .tmp-e2e.sqlite*
+.tmp-bug-qa.sqlite*
 
 # Runtime data
 pids

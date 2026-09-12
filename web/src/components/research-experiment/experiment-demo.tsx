@@ -9,8 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
+import { ArtifactPreviewDialog } from '@/components/research-workflow/artifact-preview-dialog';
+import { researchWorkflowClient, type SshExperimentJob } from '@/components/research-workflow/research-workflow-client';
+import type { ResearchArtifact } from '@/components/research-workflow/research-workflow-types';
 import { cn } from '@/lib/utils';
 import { type ExperimentStep, useExperimentStore } from '@/stores/experiment-store';
+import { useResearchProjectStore } from '@/stores/research-project-store';
 import {
   DEMO_ABLATION_ROWS,
   DEMO_ARCHITECTURE_MARKDOWN,
@@ -95,7 +99,7 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
         </label>
         {csvName ? <p className="text-sm text-[#16A36A]"><Check className="mr-1 inline size-4" />{csvName} · {state.paperCount} 篇论文</p> : null}
         {error ? <p className="text-sm text-[#DC3C4A]">{error}</p> : null}
-        <div className="grid grid-cols-3 gap-2 text-center"><div><strong>{state.paperCount}</strong><small className="block text-muted-foreground">论文总数</small></div><div><strong>{Math.max(0, state.paperCount - 3)}</strong><small className="block text-muted-foreground">PDF 可用</small></div><div><strong>{Math.min(3, state.paperCount)}</strong><small className="block text-muted-foreground">仅摘要</small></div></div>
+        <div className="rounded-xl bg-muted/50 p-3 text-center"><strong>{state.paperCount}</strong><small className="ml-2 text-muted-foreground">篇论文；PDF 可用性以 CSV 的 pdf_path 和工作目录 manifest 为准</small></div>
         <div className="mt-auto flex flex-col gap-2">
           <p className="text-[11px] font-medium text-muted-foreground">无工作目录产物时，可手动载入离线 SAM Demo 作为回退。</p>
           <div className="flex justify-between gap-2">
@@ -183,7 +187,7 @@ function ModePage({ go }: { go: (step: ExperimentStep) => void }) {
         <span>
           {selected === 'simulated'
             ? '我理解模拟结果仅用于 Demo 和方案比较，不能作为真实论文证据。'
-            : '我理解真实运行会在所选机器上执行命令并占用 GPU/磁盘；需自行核对路径、权限与数据许可，产出需带执行证据才可写入论文。'}
+            : '我理解当前仅保存真实运行目标，不会执行命令或占用 GPU；后续接入 runner 后仍需核对路径、权限与数据许可。'}
         </span>
       </label>
       <div className="mt-6 flex justify-end">
@@ -247,14 +251,25 @@ function ConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
 
 function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
+  const rootPath = useResearchProjectStore((s) => s.project?.rootPath ?? '');
   const runtime = state.realRuntime;
   const patch = (fields: Partial<typeof runtime>) =>
     state.setFields({ realRuntime: { ...runtime, ...fields } });
 
+  useEffect(() => {
+    if (!rootPath) return;
+    const root = rootPath.replace(/[\\/]+$/, '');
+    const next: Partial<typeof runtime> = {};
+    if (runtime.codeDir === './experiment/code') next.codeDir = `${root}/experiment/code`;
+    if (runtime.dataDir === './experiment/datasets') next.dataDir = `${root}/experiment/datasets`;
+    if (runtime.resultsDir === './experiment/results') next.resultsDir = `${root}/experiment/results`;
+    if (Object.keys(next).length) patch(next);
+  }, [rootPath]);
+
   const canContinue =
-    Boolean(runtime.codeDir.trim() && runtime.dataDir.trim() && runtime.resultsDir.trim()) &&
-    (runtime.target === 'local' ||
-      Boolean(runtime.sshHost.trim() && runtime.sshUser.trim() && runtime.sshPort.trim()));
+    Boolean(runtime.codeDir.trim() && runtime.dataDir.trim() && runtime.resultsDir.trim() && runtime.documentDir?.trim() && runtime.condaEnv?.trim() && state.experimentDocument.trim()) &&
+    runtime.target === 'ssh' &&
+    Boolean(runtime.sshHost.trim() && runtime.sshUser.trim() && runtime.sshPort.trim() && state.sshPassword);
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
@@ -264,24 +279,24 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
           <RealBadge />
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          选择本机或 SSH 远端，并确认算力与工作目录。当前先保存配置；真正拉起训练/SSH 会话仍按后续能力接入。
+          选择 SSH 远端并确认算力与工作目录。密码仅用于本次连接，不写入浏览器持久化状态或论文目录。
         </p>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2">
           <button
             type="button"
-            onClick={() => patch({ target: 'local' })}
+            disabled
             className={cn(
               'rounded-xl border-2 p-4 text-left',
               runtime.target === 'local' ? 'border-[#1F4DCB] bg-blue-50/60' : 'border-[#e4eefc]',
             )}
           >
             <h3 className="font-semibold">本地运行</h3>
-            <p className="mt-1 text-sm text-muted-foreground">使用本机进程与已配置的 workspace 路径执行。</p>
+            <p className="mt-1 text-sm text-muted-foreground">本机执行适配器尚未开放；本次使用 SSH runner。</p>
           </button>
           <button
             type="button"
-            onClick={() => patch({ target: 'ssh' })}
+            onClick={() => patch({ target: 'ssh', sshHost: runtime.sshHost || '10.61.48.10', sshUser: runtime.sshUser || 'hcf', codeDir: '/home/hcf/test-code', dataDir: '/home/hcf/nas_hcf_data/test-data/data', resultsDir: '/home/hcf/nas_hcf_data/test-data/results', documentDir: '/home/hcf/nas_hcf_data/test-data/documents', condaEnv: 'yolo26' })}
             className={cn(
               'rounded-xl border-2 p-4 text-left',
               runtime.target === 'ssh' ? 'border-[#1F4DCB] bg-blue-50/60' : 'border-[#e4eefc]',
@@ -313,6 +328,10 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
                 onChange={(e) => patch({ sshUser: e.target.value })}
                 placeholder="例如 researcher"
               />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium sm:col-span-3">
+              密码（仅本次会话）
+              <Input type="password" autoComplete="new-password" value={state.sshPassword} onChange={(e) => state.setFields({ sshPassword: e.target.value })} />
             </label>
           </div>
         ) : null}
@@ -349,7 +368,20 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
               placeholder="例如 0 或 0,1"
             />
           </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            文档目录
+            <Input value={runtime.documentDir ?? ''} onChange={(e) => patch({ documentDir: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            Conda 环境
+            <Input value={runtime.condaEnv ?? ''} onChange={(e) => patch({ condaEnv: e.target.value })} />
+          </label>
         </div>
+      </section>
+
+      <section className="rounded-2xl bg-white/90 p-6">
+        <h3 className="font-semibold text-[#10204A]">实验文档</h3>
+        <Textarea className="mt-4 min-h-48" value={state.experimentDocument} onChange={(e) => state.setFields({ experimentDocument: e.target.value })} />
       </section>
 
       <section className="rounded-2xl bg-white/90 p-6">
@@ -406,7 +438,7 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
       </section>
 
       <div className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">
-        配置将保存在浏览器状态中，供后续真实 runner / SSH 适配器读取。尚未建立远端会话前，请勿把模拟指标当作真实结果。
+        SSH runner 会自动选择首个低占用 GPU；没有空闲 GPU 时回退 CPU。合成输入产生的结果会保留 simulated 标记。
       </div>
 
       <div className="flex justify-end">
@@ -421,17 +453,32 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
 
 function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
+  const projectId = useResearchProjectStore((s) => s.project?.projectId);
   const isReal = state.runMode === 'real';
   const [progress, setProgress] = useState(state.completed ? 100 : 0);
+  const [sshJob, setSshJob] = useState<SshExperimentJob | null>(null);
+  const [sshError, setSshError] = useState<string | null>(null);
+  const [selectedArtifact, setSelectedArtifact] = useState<ResearchArtifact | null>(null);
   useEffect(() => {
     if (isReal) return;
     if (progress >= 100) return;
     const timer = window.setInterval(() => setProgress((v) => Math.min(100, v + 10)), 280);
     return () => window.clearInterval(timer);
-  }, [progress, isReal]);
+  }, [progress, isReal, state.setFields]);
   useEffect(() => {
     if (!isReal && progress === 100) state.setFields({ completed: true });
   }, [progress, isReal]);
+  useEffect(() => {
+    if (!sshJob || ['completed', 'failed'].includes(sshJob.status)) return;
+    const timer = window.setInterval(() => {
+      void researchWorkflowClient.getSshExperiment(sshJob.jobId).then((job) => {
+        setSshJob(job);
+        if (job.status === 'completed') state.setFields({ completed: true, sshPassword: '' });
+        if (job.status === 'failed') state.setFields({ sshPassword: '' });
+      }).catch((error) => setSshError(error instanceof Error ? error.message : String(error)));
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [sshJob?.jobId, sshJob?.status]);
 
   if (isReal) {
     const runtime = state.realRuntime;
@@ -443,7 +490,7 @@ function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
             <RealBadge />
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            已记录运行目标与资源；自动 SSH/本地训练 runner 尚未接入，因此本步不播放模拟进度条。
+            SSH runner 将上传实验文档与确定性验证程序，选择空闲 GPU（否则 CPU），执行后复制结果并登记为可预览版本。
           </p>
           <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
             <div className="rounded-xl bg-muted/60 p-3">
@@ -466,24 +513,29 @@ function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
                 <p>代码：{runtime.codeDir}</p>
                 <p>数据：{runtime.dataDir}</p>
                 <p>结果：{runtime.resultsDir}</p>
+                <p>文档：{runtime.documentDir}</p>
               </dd>
             </div>
           </dl>
           <div className="mt-5 rounded-xl bg-amber-50 p-4 text-sm">
-            请在确认路径与 GPU 空闲后，由后续真实 runner 启动任务；当前可先查看成果页中的模板交付物。
+            {sshError ?? sshJob?.message ?? '尚未启动。远端计算是真实执行；内置验证数据是明确标注的合成小样本。'}
           </div>
-          <div className="mt-6 flex justify-end">
+          {sshJob?.artifacts?.length ? <div className="mt-4 space-y-2">{sshJob.artifacts.map((artifact) => <button type="button" className="block text-sm text-blue-700 underline" key={artifact.artifactId} onClick={() => setSelectedArtifact(artifact)}>{artifact.name}（打开）</button>)}</div> : null}
+          <div className="mt-6 flex justify-end gap-3">
             <Button
-              onClick={() => {
-                state.setFields({ completed: true });
-                go('results');
-              }}
+              disabled={!projectId || !state.sshPassword || Boolean(sshJob && !['completed', 'failed'].includes(sshJob.status)) || runtime.target !== 'ssh'}
+              onClick={() => { if (!projectId) return; setSshError(null); void researchWorkflowClient.startSshExperiment({projectId,host:runtime.sshHost,port:Number(runtime.sshPort),username:runtime.sshUser,password:state.sshPassword,codeDir:runtime.codeDir,dataDir:runtime.dataDir,resultsDir:runtime.resultsDir,documentDir:runtime.documentDir,condaEnv:runtime.condaEnv,experimentDocument:state.experimentDocument}).then(setSshJob).catch((error) => setSshError(error instanceof Error ? error.message : String(error))); }}
             >
-              查看成果模板
+              {sshJob?.status === 'failed' ? '失败重试' : '启动真实运行'}
+              <Play data-icon="inline-start" />
+            </Button>
+            <Button variant="outline" disabled={sshJob?.status !== 'completed'} onClick={() => go('results')}>
+              查看成果
               <ChevronRight data-icon="inline-end" />
             </Button>
           </div>
         </section>
+        {selectedArtifact && projectId ? <ArtifactPreviewDialog projectId={projectId} artifact={selectedArtifact} onClose={() => setSelectedArtifact(null)} /> : null}
       </div>
     );
   }
@@ -568,6 +620,7 @@ function QualitativeFigure() {
 
 function ResultsPage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
+  const isUnexecutedRealRun = state.runMode === 'real' && !state.completed;
   const hydration = useHydration();
   const winners = state.ideas.filter((idea) => idea.status === '成功').slice(0, 3);
   const [document, setDocument] = useState<'architecture' | 'results' | null>(null);
@@ -580,7 +633,7 @@ function ResultsPage({ go }: { go: (step: ExperimentStep) => void }) {
   const activeDocument = document === 'architecture' ? architectureDocument : resultsDocument;
   const fromWorkspace = hydration.source === 'workspace';
   return <div className="flex flex-col gap-5">
-    <section className="rounded-2xl bg-white/90 p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-semibold text-[#10204A]">成果交付</h2><p className="mt-1 text-sm text-muted-foreground">{fromWorkspace ? '已优先展示工作目录 experiment-results / 指标表 / 图（缺项仍回退离线 Demo）。' : '论文级结构：算法、协议、主实验、消融、资源和定性效果（离线 Demo 回退）'}</p></div><SimulatedBadge /></div><div className="mt-5 grid gap-3 lg:grid-cols-3">{winners.map((idea, index) => <article key={idea.id} className="rounded-xl border-l-4 border-[#1F4DCB] bg-blue-50 p-4"><span className="text-xs text-muted-foreground">创新点 {index + 1}</span><h3 className="mt-1 font-semibold">{idea.name}</h3><p className="mt-2 text-sm">{idea.hypothesis}</p><p className="mt-3 text-sm font-semibold text-[#16A36A]">模拟贡献 {idea.gain}</p></article>)}</div></section>
+    <section className="rounded-2xl bg-white/90 p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-semibold text-[#10204A]">{isUnexecutedRealRun ? '成果模板（未执行）' : '成果交付'}</h2><p className="mt-1 text-sm text-muted-foreground">{isUnexecutedRealRun ? '真实 runner 尚未接入；以下仅展示交付结构和 Demo 数据，不能视为真实运行结果。' : fromWorkspace ? '已优先展示工作目录 experiment-results / 指标表 / 图（缺项仍回退离线 Demo）。' : '论文级结构：算法、协议、主实验、消融、资源和定性效果（离线 Demo 回退）'}</p></div>{isUnexecutedRealRun ? <Badge className="border-slate-300 bg-slate-100 text-slate-700">未执行</Badge> : <SimulatedBadge />}</div><div className="mt-5 grid gap-3 lg:grid-cols-3">{winners.map((idea, index) => <article key={idea.id} className="rounded-xl border-l-4 border-[#1F4DCB] bg-blue-50 p-4"><span className="text-xs text-muted-foreground">创新点 {index + 1}</span><h3 className="mt-1 font-semibold">{idea.name}</h3><p className="mt-2 text-sm">{idea.hypothesis}</p><p className="mt-3 text-sm font-semibold text-[#16A36A]">模拟贡献 {idea.gain}</p></article>)}</div></section>
     <section className="grid gap-4 lg:grid-cols-2"><article className="rounded-2xl border-2 border-[#1F4DCB] bg-white p-5"><Code2 className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">算法完整详细架构</h3><p className="mt-2 text-sm text-muted-foreground">含数学定义、张量尺寸、DLA/BED/CMP 全模块、损失函数、训练推理逻辑、工程目录、伪代码与失败处理。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('architecture')}><ExternalLink data-icon="inline-start"/>打开架构 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(architectureDocument, '算法架构.md')}><Download data-icon="inline-start"/>下载</Button></div></article><article className="rounded-2xl border bg-white p-5"><FileText className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">完整实验结果文件</h3><p className="mt-2 text-sm text-muted-foreground">含数据划分、三个随机种子、超参数、GPU/CPU 环境、主实验、跨数据集、消融、敏感性和效率分析。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('results')}><ExternalLink data-icon="inline-start"/>打开结果 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(resultsDocument, '实验结果.md')}><Download data-icon="inline-start"/>下载</Button></div></article></section>
     {hydration.architectureFigureUrl ? (
       <figure className="rounded-2xl bg-white/90 p-5">
@@ -611,9 +664,22 @@ export function ExperimentDemo() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const hydration = useExperimentWorkspaceHydration();
+  const experiment = useExperimentStore();
   const activeStep = (pathname.split('/').at(-1) || 'intake') as ExperimentStep;
   const index = Math.max(0, steps.findIndex((step) => step.id === activeStep));
   const go = (step: ExperimentStep) => void navigate({ to: stepPath(step) });
+  const canAdvance =
+    activeStep === 'intake'
+      ? Boolean(experiment.projectName.trim() && experiment.researchTopic.trim() && experiment.paperCount > 0)
+      : activeStep === 'plan'
+        ? experiment.planConfirmed
+        : activeStep === 'mode'
+          ? experiment.disclaimerAccepted
+          : activeStep === 'simulate'
+            ? experiment.runMode === 'simulated' || Boolean(experiment.realRuntime.codeDir.trim() && experiment.realRuntime.dataDir.trim() && experiment.realRuntime.resultsDir.trim() && (experiment.realRuntime.target === 'local' || (experiment.realRuntime.sshHost.trim() && experiment.realRuntime.sshUser.trim() && experiment.realRuntime.sshPort.trim())))
+            : activeStep === 'run'
+              ? experiment.runMode === 'real' || experiment.completed
+              : false;
   const pages = {
     intake: <IntakePage go={go} />,
     plan: <PlanPage go={go} />,
@@ -639,7 +705,11 @@ export function ExperimentDemo() {
               <CurrentPaperCard defaultOpen={false} className="w-full max-w-sm" />
               <LoadWorkspaceDemoButton compact />
               <Badge className="bg-[#1F4DCB] text-white">
-                {hydration.source === 'workspace' ? 'Workspace' : 'Demo · 离线回退'}
+                {experiment.runMode === 'real'
+                  ? '真实目标配置 · runner 未接入'
+                  : hydration.source === 'workspace'
+                    ? 'Workspace · 模拟产物'
+                    : 'Demo · 离线模拟'}
               </Badge>
             </div>
           </header>
@@ -647,7 +717,8 @@ export function ExperimentDemo() {
             {steps.map((step, i) => (
               <button
                 key={step.id}
-                onClick={() => (i <= index || i === index + 1 ? go(step.id) : undefined)}
+                disabled={i > index && (i !== index + 1 || !canAdvance)}
+                onClick={() => (i <= index || (i === index + 1 && canAdvance) ? go(step.id) : undefined)}
                 className={cn(
                   'flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm',
                   i === index
@@ -675,7 +746,7 @@ export function ExperimentDemo() {
               <span />
             )}
             {index < steps.length - 1 ? (
-              <Button variant="ghost" onClick={() => go(steps[index + 1].id)}>
+              <Button variant="ghost" disabled={!canAdvance} onClick={() => go(steps[index + 1].id)}>
                 下一步
                 <ChevronRight data-icon="inline-end" />
               </Button>
