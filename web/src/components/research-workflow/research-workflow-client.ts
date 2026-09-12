@@ -286,6 +286,7 @@ export type SshExperimentJob = {
     | 'completed'
     | 'failed';
   message: string;
+  transcript: string[];
   compute?: string;
   remoteResultsDir?: string;
   localRelativeDir?: string;

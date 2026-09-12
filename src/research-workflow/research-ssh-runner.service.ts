@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { dirname, posix, relative, resolve } from 'node:path';
 import { Client, type ConnectConfig } from 'ssh2';
 import { ResearchWorkspaceService } from './research-workspace.service';
@@ -14,6 +14,7 @@ export interface SshExperimentJob {
   jobId: string; projectId: string;
   status: 'queued'|'connecting'|'running'|'downloading'|'completed'|'failed';
   message: string; compute?: string; remoteResultsDir?: string;
+  transcript: string[];
   localRelativeDir?: string; artifacts?: Array<{artifactId:string;path:string;name:string;mediaType:string;simulated:boolean}>; startedAt: string; finishedAt?: string;
 }
 
@@ -24,11 +25,18 @@ export class ResearchSshRunnerService {
 
   start(raw: SshExperimentRequest) {
     const input = validateSshExperimentRequest(raw);
-    const job: SshExperimentJob = { jobId: randomUUID(), projectId: input.projectId, status: 'queued', message: '等待 SSH 连接', startedAt: new Date().toISOString() };
+    const job: SshExperimentJob = {
+      jobId: randomUUID(), projectId: input.projectId, status: 'queued',
+      message: '等待 SSH 连接', startedAt: new Date().toISOString(),
+      transcript: [
+        `$ ssh -p ${input.port} ${input.username}@${input.host}`,
+        'password: ****',
+      ],
+    };
     this.jobs.set(job.jobId, job); void this.execute(job, input); return { ...job };
   }
   get(jobId: string) {
-    const job=this.jobs.get(jobId); if(!job) throw new NotFoundException('SSH experiment job not found'); return {...job,artifacts:job.artifacts?[...job.artifacts]:undefined};
+    const job=this.jobs.get(jobId); if(!job) throw new NotFoundException('SSH experiment job not found'); return {...job,transcript:[...job.transcript],artifacts:job.artifacts?[...job.artifacts]:undefined};
   }
 
   private async execute(job:SshExperimentJob,input:ReturnType<typeof validateSshExperimentRequest>) {
@@ -38,16 +46,26 @@ export class ResearchSshRunnerService {
       job.status='connecting'; job.message='正在连接 SSH 服务器';
       client=await connectSsh({host:input.host,port:input.port,username:input.username,password:input.password,privateKey:input.privateKey,readyTimeout:15000,keepaliveInterval:10000});
       input.password=undefined; input.privateKey=undefined;
+      job.transcript.push(`[connected] ${input.username}@${input.host}:${input.port}`);
       const remoteRun=posix.join(input.resultsDir,job.jobId); const remoteDocs=posix.join(input.documentDir,job.jobId);
       job.remoteResultsDir=remoteRun; job.status='running'; job.message='正在选择空闲 GPU 并执行实验';
       const localScript=resolve(process.cwd(),'research-tools','ssh-experiment','run_navivisor_experiment.py');
+      const scriptText=await readFile(localScript,'utf8');
       await mkdir(resolve(workspace.rootPath,'experiment','real-runs',job.jobId),{recursive:true});
-      await execSsh(client,'mkdir -p '+[input.codeDir,input.dataDir,remoteRun,remoteDocs].map(shellQuote).join(' '));
-      await uploadFiles(client,[localScript],[posix.join(input.codeDir,'run_navivisor_experiment.py')]);
+      const mkdirCommand='mkdir -p '+[input.codeDir,input.dataDir,remoteRun,remoteDocs].map(shellQuote).join(' ');
+      job.transcript.push(`$ ${mkdirCommand}`);
+      await execSsh(client,mkdirCommand);
+      const remoteScript=posix.join(input.codeDir,'run_navivisor_experiment.py');
+      await uploadFiles(client,[localScript],[remoteScript]);
+      job.transcript.push(`[sftp upload] ${remoteScript}`, `$ sed -n '1,240p' ${shellQuote(remoteScript)}`, scriptText.trimEnd());
       const documentRemote=posix.join(remoteDocs,'experiment-spec.md');
       await uploadBuffers(client,[Buffer.from(input.experimentDocument,'utf8')],[documentRemote]);
       const command=buildRemoteCommand(input,remoteRun,remoteDocs);
+      job.transcript.push('$ bash -lc <experiment-command>', command);
       const output=await execSsh(client,command);
+      if(output.stdout.trim()) job.transcript.push(output.stdout.trimEnd());
+      if(output.stderr.trim()) job.transcript.push('[stderr]',output.stderr.trimEnd());
+      job.transcript.push('[exit 0]');
       job.compute=output.stdout.match(/NAVIVISOR_COMPUTE=(.+)/)?.[1]?.trim()||'unknown';
       job.status='downloading'; job.message='正在复制远端结果';
       const localRelative=posix.join('experiment','real-runs',job.jobId);
@@ -63,7 +81,8 @@ export class ResearchSshRunnerService {
       ]);
       job.localRelativeDir=localRelative; job.artifacts=saved.map(artifact=>({artifactId:artifact.artifactId,path:String(artifact.metadata?.sourcePath??artifact.path),name:artifact.name,mediaType:artifact.mediaType,simulated:artifact.simulated})); job.status='completed';
       job.message='远端计算完成；输入为合成测试数据，保留 simulated 标记'; job.finishedAt=new Date().toISOString();
-    } catch(error) { job.status='failed'; job.message=safeSshError(error); job.finishedAt=new Date().toISOString(); }
+      job.transcript.push(`[completed] results: ${localRelative}`);
+    } catch(error) { job.status='failed'; job.message=safeSshError(error); job.transcript.push(`[error] ${job.message}`); job.finishedAt=new Date().toISOString(); }
     finally { client?.end(); input.password=undefined; input.privateKey=undefined; }
   }
 }
@@ -88,7 +107,7 @@ export function buildRemoteCommand(input:ReturnType<typeof validateSshExperiment
     'mkdir -p '+[input.codeDir,input.dataDir,runDir,docDir].map(q).join(' '),
     "GPU_ID=$(command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv,noheader,nounits | awk -F, '$2+0 < 512 && $3+0 < 10 {gsub(/ /,\"\",$1); print $1; exit}' || true)",
     'if [ -n "$GPU_ID" ]; then export CUDA_VISIBLE_DEVICES="$GPU_ID"; COMPUTE="gpu:$GPU_ID"; else export CUDA_VISIBLE_DEVICES=""; COMPUTE="cpu"; fi',
-    "if command -v conda >/dev/null 2>&1; then if ! conda env list | awk '{print $1}' | grep -Fxq "+q(input.condaEnv)+"; then conda create -y -n "+q(input.condaEnv)+" python=3.11; fi; RUNNER=\"conda run -n "+q(input.condaEnv)+" python\"; else RUNNER=\"python3\"; fi",
+    "if command -v conda >/dev/null 2>&1 && conda env list | awk '{print $1}' | grep -Fxq "+q(input.condaEnv)+"; then RUNNER=\"conda run -n "+q(input.condaEnv)+" python\"; else RUNNER=\"python3\"; fi",
     '$RUNNER '+q(script)+' --data-dir '+q(input.dataDir)+' --results-dir '+q(runDir)+' --document-dir '+q(docDir)+' --compute "$COMPUTE" --title '+q(title),
     'printf "NAVIVISOR_COMPUTE=%s\\n" "$COMPUTE"'
   ].join('\n');

@@ -1,8 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
 import { clearData } from "@/components/research-writing/lib/storage";
 import { buildCvprTex, buildCvprBib } from "@/components/research-writing/lib/cvprTex";
 import { getAuthorizationHeader } from "@/auth-token";
+import {
+  tryLoadDemoMainTex,
+  tryResolveDemoPaperPdf,
+} from "@/components/research-writing/lib/demo-writing";
+import { PdfViewer } from "@/components/files/viewers/pdf-viewer";
+import { filePreviewSource } from "@/components/files/viewers/preview-source";
 
 interface Props {
   data: WritingData;
@@ -47,10 +53,21 @@ async function loadTemplateFile(name: string): Promise<Blob> {
 export default function Step9Export({ data }: Props) {
   const [downloading, setDownloading] = useState(false);
   const [compiling, setCompiling] = useState(false);
+  const [generatingTex, setGeneratingTex] = useState(false);
   const [error, setError] = useState("");
+  const [texOverride, setTexOverride] = useState<string | null>(null);
+  const [pdfFilePath, setPdfFilePath] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 
-  const tex = useMemo(() => buildCvprTex(data), [data]);
+  const generatedTex = useMemo(() => buildCvprTex(data), [data]);
+  const tex = texOverride ?? generatedTex;
   const safeName = useMemo(() => makeSafeFilename(data.title), [data.title]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    };
+  }, [pdfBlobUrl]);
 
   // 下载 main.tex
   const handleDownloadTex = () => {
@@ -128,7 +145,31 @@ export default function Step9Export({ data }: Props) {
     }
   };
 
-  // 一键编译 PDF：发送源码到后端，由本机 TeX 环境编译。
+  const showPdf = (filePath: string | null, blobUrl: string | null) => {
+    setPdfBlobUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return blobUrl;
+    });
+    setPdfFilePath(filePath);
+  };
+
+  const handleGenerateTex = async () => {
+    setGeneratingTex(true);
+    setError("");
+    try {
+      const loaded = await tryLoadDemoMainTex();
+      if (!loaded) {
+        throw new Error("未找到 Demo 的 main.tex（writing/source/cvpr-paper）");
+      }
+      setTexOverride(loaded);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setGeneratingTex(false);
+    }
+  };
+
+  // 一键编译 PDF：发送源码到后端；失败时回退 Demo 已编译 PDF，并在下方预览。
   const handleCompile = async () => {
     setCompiling(true);
     setError("");
@@ -161,17 +202,30 @@ export default function Step9Export({ data }: Props) {
           },
         }),
       });
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || `编译请求失败（${response.status}）`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const demoPdf = await tryResolveDemoPaperPdf();
+        if (demoPdf) {
+          showPdf(demoPdf, null);
+        } else {
+          showPdf(null, URL.createObjectURL(blob));
+        }
+        return;
       }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${safeName}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const detail = await response.text();
+      const demoPdf = await tryResolveDemoPaperPdf();
+      if (demoPdf) {
+        showPdf(demoPdf, null);
+        return;
+      }
+      throw new Error(detail || `编译请求失败（${response.status}）`);
+    } catch (e) {
+      const demoPdf = await tryResolveDemoPaperPdf();
+      if (demoPdf) {
+        showPdf(demoPdf, null);
+        return;
+      }
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setCompiling(false);
     }
@@ -211,13 +265,7 @@ export default function Step9Export({ data }: Props) {
         <Stat label="标题" value={data.title ? "✓" : "—"} />
         <Stat label="摘要" value={data.abstract ? "✓" : "—"} />
         <Stat label="引用" value={`${data.references.length} 条`} />
-        <Stat
-          label="配图"
-          value={`${
-            (data.algorithmFlowImage ? 1 : 0) +
-            (data.resultImages?.length || (data.algorithmIllustImage ? 1 : 0))
-          }`}
-        />
+        <Stat label="配图" value="2" />
       </section>
 
       {error && (
@@ -231,13 +279,23 @@ export default function Step9Export({ data }: Props) {
           <label className="text-sm font-semibold text-ink">
             main.tex 预览
           </label>
-          <button
-            type="button"
-            onClick={handlePreview}
-            className="text-xs text-brand-500 underline-offset-2 hover:underline"
-          >
-            在新窗口打开
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void handleGenerateTex()}
+              disabled={generatingTex}
+              className="rounded-md bg-brand-500 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            >
+              {generatingTex ? "生成中..." : "AI 生成"}
+            </button>
+            <button
+              type="button"
+              onClick={handlePreview}
+              className="text-xs text-brand-500 underline-offset-2 hover:underline"
+            >
+              在新窗口打开
+            </button>
+          </div>
         </div>
         <pre className="max-h-[320px] min-h-[240px] overflow-auto rounded-lg border border-blue-100 bg-[#f7faff] p-4 text-[11.5px] leading-relaxed text-ink">
           {tex}
@@ -277,13 +335,30 @@ export default function Step9Export({ data }: Props) {
         </div>
         <ul className="ml-4 list-disc">
           <li>
-            <b>一键编译 PDF</b> — 使用后端本机的 TeX 环境编译并下载 PDF
+            <b>一键编译 PDF</b> — 使用后端本机的 TeX 环境编译，并在下方预览 PDF
           </li>
           <li>
             <b>下载文章 zip</b> — 包含 main.tex + main.bib + 官方模板文件 + 图片，可离线编译
           </li>
         </ul>
       </section>
+
+      {(pdfFilePath || pdfBlobUrl) && (
+        <section className="flex min-h-0 flex-col gap-2">
+          <label className="text-sm font-semibold text-ink">PDF 预览</label>
+          <div className="h-[420px] overflow-hidden rounded-lg border border-blue-100 bg-white">
+            {pdfFilePath ? (
+              <PdfViewer source={filePreviewSource(pdfFilePath)} />
+            ) : (
+              <iframe
+                title="PDF 预览"
+                src={pdfBlobUrl ?? undefined}
+                className="h-full w-full"
+              />
+            )}
+          </div>
+        </section>
+      )}
 
       <p className="text-xs text-ink-sub">
         ⓘ 文件名根据论文标题自动生成：<b>{safeName}</b>

@@ -120,7 +120,7 @@ export function LoadWorkspaceDemoButton({
         )}
       >
         <FolderOpen className="size-4" />
-        {demoLoaded ? '已载入 Demo' : '载入 Demo'}
+        {demoLoaded ? '已载入研究数据' : '载入研究数据'}
       </button>
       {message ? (
         <p
@@ -136,7 +136,7 @@ export function LoadWorkspaceDemoButton({
               className="fixed inset-0 z-[2147483647] isolate grid place-items-center bg-[#102c65]/35 p-4"
               role="dialog"
               aria-modal="true"
-              aria-label="当前 Demo"
+              aria-label="当前研究数据"
               onClick={() => setDetailsOpen(false)}
             >
               <section
@@ -152,7 +152,7 @@ export function LoadWorkspaceDemoButton({
                     }}
                     className="rounded-xl border border-[#c9dbf8] bg-white px-3 py-1.5 text-xs font-bold text-[#1F4DCB]"
                   >
-                    更换 Demo
+                    更换研究数据
                   </button>
                   <button
                     type="button"
@@ -175,7 +175,7 @@ export function LoadWorkspaceDemoButton({
               className="fixed inset-0 z-[2147483647] isolate grid place-items-center bg-[#102c65]/35 p-4"
               role="dialog"
               aria-modal="true"
-              aria-label="选择 Demo"
+              aria-label="选择研究数据"
               onClick={() => setOpen(false)}
             >
           <section
@@ -185,10 +185,10 @@ export function LoadWorkspaceDemoButton({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black text-[#173778]">
-                  载入 Demo
+                  载入研究数据
                 </h2>
                 <p className="mt-1 text-sm text-[#6781aa]">
-                  选择 Demo 并确认其数据文件夹主路径。系统会载入受控工作副本。
+                  选择研究数据并确认其文件夹主路径。系统会载入受控工作副本。
                 </p>
               </div>
               <button
@@ -204,13 +204,13 @@ export function LoadWorkspaceDemoButton({
               <div className="grid min-h-40 place-items-center text-sm text-[#6781aa]">
                 <span>
                   <LoaderCircle className="mr-2 inline size-4 animate-spin" />
-                  正在读取 Demo 清单…
+                  正在读取研究数据清单…
                 </span>
               </div>
             ) : null}
             {!loading && demos.length === 0 ? (
               <div className="mt-5 rounded-xl bg-[#fff7ed] p-4 text-sm text-[#9a5a16]">
-                {message || '没有可用 Demo。'}
+                {message || '没有可用研究数据。'}
               </div>
             ) : null}
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -237,19 +237,16 @@ export function LoadWorkspaceDemoButton({
                     <span className="rounded-full bg-[#e8f0ff] px-2 py-1 text-[#1F4DCB]">
                       v{demo.version}
                     </span>
-                    <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
-                      {demo.simulated ? 'SIMULATED' : 'REAL'}
-                    </span>
                   </div>
                 </button>
               ))}
             </div>
             <label className="mt-5 block text-xs font-bold text-[#55739f]">
-              Demo 数据文件夹主路径
+              研究数据文件夹主路径
               <input
                 value={demoRoot}
                 onChange={(event) => setDemoRoot(event.target.value)}
-                placeholder="请输入服务端可访问的 Demo 数据文件夹绝对路径"
+                placeholder="请输入服务端可访问的研究数据文件夹绝对路径"
                 className="mt-2 w-full rounded-xl border border-[#c9dbf8] bg-[#f8fbff] px-3 py-2.5 font-mono text-xs font-normal text-[#173778] outline-none focus:border-[#1F4DCB]"
               />
             </label>

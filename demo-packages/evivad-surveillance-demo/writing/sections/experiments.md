@@ -1,0 +1,110 @@
+# experiments
+
+```tex
+\section{Experiments}
+\label{sec:exp}
+
+\subsection{Experimental Setup}
+
+\paragraph{Datasets.} The main dataset is UCF-Crime with its official split ($1610$ training videos / $290$ test videos with frame-level anomaly annotations). Cross-domain validation uses XD-Violence (multi-class anomalies), UBnormal (synthetic anomalies) and MSAD (multi-scene, multi-class), all under a \emph{zero fine-tuning external test} protocol. To probe degradation robustness we inject four degradation types (low light / low contrast, rain and fog / atmospheric scattering, video compression, and camera shake with occlusion) at three severity levels into the test sets, giving $12$ configurations generated offline with fixed random seeds.
+
+\paragraph{Metrics.} Detection accuracy is measured by frame-level AUC and AP and by temporal localisation mAP@0.5 (temporal IoU $\geq 0.5$ counts as a hit). Explanation verifiability uses four metrics: evidence-attribution recall $\mathrm{EAR} = |E_{pred} \cap E_{gt}| / |E_{gt}|$; counterfactual falsifiability $\mathrm{CFS} = 1 - \frac{1}{M}\sum_m \mathbb{1}[\hat{y}(x_m^{-}) = \text{abnormal}]$; hallucination rate $\mathrm{HR} = N_{unsupported}/N_{statements}$; and temporal consistency rate $\mathrm{TCR}$. Degradation robustness uses relative performance retention $\mathrm{RPR} = M_{deg}/M_{clean}$ and expected calibration error $\mathrm{ECE} = \sum_m \frac{|B_m|}{n}|acc(B_m) - conf(B_m)|$. Efficiency is reported as trainable parameters, end-to-end latency (ms per $32$-frame clip) and GPU memory.
+
+\paragraph{Implementation details and fairness protocol.} The vision backbone is CLIP ViT-B/16, frozen throughout; DAA is injected into the last four blocks with $r{=}4$, $\alpha{=}8$ and dropout $0.05$. We use AdamW with weight decay $1\times10^{-2}$, $20$ training epochs, batch size $2$ with $8$ gradient-accumulation steps, AMP FP16, and a warm-up of $2$ epochs followed by cosine decay to a minimum learning rate of $1\times10^{-6}$. All methods share the same input size ($224\times224$), the same $32$-frame / $8$~fps clip protocol, the same data split, the same number of epochs and the same evaluation script; thresholds (gating, abstention, evidence alignment) are fixed on the validation set and never tuned on the test set. Results are reported as mean and standard deviation over three seeds ($42$, $3407$, $2026$). Hardware: one RTX 4090 24\,GB, i9-13900K, 64\,GB RAM; software: Ubuntu 22.04 / Python 3.10 / PyTorch 2.2 / CUDA 12.1.
+
+\subsection{Main Results}
+
+Table~\ref{tab:main} reports the main comparison. \evivad{} leads the strongest competitor by a modest margin in detection accuracy (AUC $+3.2$, AP $+4.0$) but by an order of magnitude in \emph{explanation verifiability}: EAR rises from $40.2$ to $68.4$ and HR drops from $27.8$ to $9.8$. Note that reconstruction-based, weakly supervised and CLIP zero-shot methods do not produce natural-language explanations at all, so their EAR / HR are marked ``--'' rather than $0$. Fig.~\ref{fig:comparison} shows a qualitative comparison on the same test sample: the baseline score is suppressed inside the anomaly interval (a miss) while being spuriously high outside it (a false alarm), whereas the full method stays above threshold across the anomaly interval and returns an inspectable evidence citation.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Main comparison on UCF-Crime. ``--'' indicates that the method does not produce natural-language explanations, so EAR / HR are not applicable. $\uparrow$ means higher is better and $\downarrow$ lower is better.}
+\label{tab:main}
+\begin{tabular}{lccccccc}
+\toprule
+Method & AUC $\uparrow$ & AP $\uparrow$ & mAP@0.5 $\uparrow$ & EAR $\uparrow$ & HR $\downarrow$ & Latency $\downarrow$ & Memory $\downarrow$ \\
+\midrule
+Reconstruction-based (deep autoencoder family)~\cite{abdalla2025vad10years} & 74.6 & 65.1 & 18.7 & -- & -- & 46\,ms & 1.9\,GB \\
+Weakly supervised GNN~\cite{yun2025missiongnn} & 78.3 & 69.8 & 23.4 & -- & -- & 89\,ms & 3.1\,GB \\
+CLIP latent-space zero-shot~\cite{zanella2024clip} & 75.9 & 66.5 & 20.2 & -- & -- & 74\,ms & 2.8\,GB \\
+Training-free LLM pipeline~\cite{zanella2024trainingfree} & 78.9 & 70.3 & 24.6 & 40.2 & 27.8 & 131\,ms & 3.7\,GB \\
+\midrule
+Baseline B0 (frozen VLM + text scoring) & 76.8 & 68.2 & 24.1 & 41.5 & 26.4 & 118\,ms & 3.6\,GB \\
+\textbf{\evivad{} (full method)} & \textbf{82.1} & \textbf{74.3} & \textbf{31.6} & \textbf{68.4} & \textbf{9.8} & 147\,ms & 4.1\,GB \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\linewidth]{comparison.png}
+\caption{Qualitative comparison with the baseline on the same test sample (\textbf{illustrative only}). Top row, left to right: the input frame; Ground Truth (the red box marks ``person falling'', GT interval $5.4$--$9.1$\,s); the baseline prediction (it misses the falling person and raises a false alarm on an ordinary pedestrian); and the \evivad{} prediction (a hit, together with an evidence citation). Bottom row: the anomaly score curves for the same clip, with the GT interval shaded and the decision threshold $0.5$ drawn as a dashed line. All frames and curves are illustrative placeholders, not real footage or real inference outputs.}
+\label{fig:comparison}
+\end{figure*}
+
+\subsection{Ablation Study}
+
+Table~\ref{tab:ablation} reports single-module, two-module and full combinations. The three modules act on disjoint dimensions. DAA is the main contributor to accuracy (AUC $+2.6$, and it keeps adding on top of two-module combinations). EAD is the main contributor to verifiability (EAR $+22.3$, CFS $+18.5$, HR $-13.8$) while contributing little to accuracy ($+1.1$). DAG contributes least on the clean set ($+0.8$) but most on the degradation grid (next subsection). Combined, AUC reaches $82.1$, higher than the sum of the three individual gains ($76.8+2.6+1.1+0.8 = 81.3$), indicating a weak positive synergy.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Ablation study on UCF-Crime. $\checkmark$ marks an enabled module; lower HR is better.}
+\label{tab:ablation}
+\begin{tabular}{ccccccccccc}
+\toprule
+DAA & EAD & DAG & AUC $\uparrow$ & AP $\uparrow$ & mAP@0.5 $\uparrow$ & EAR $\uparrow$ & CFS $\uparrow$ & HR $\downarrow$ & TCR $\uparrow$ & Params (M) \\
+\midrule
+     &     &     & 76.8 & 68.2 & 24.1 & 41.5 & 38.7 & 26.4 & 38.1 & 0.0 \\
+$\checkmark$ &   &   & 79.4 & 71.1 & 26.0 & 43.2 & 40.5 & 25.1 & 39.4 & 4.7 \\
+   & $\checkmark$ &   & 77.9 & 69.4 & 25.3 & 63.8 & 57.2 & 12.6 & 52.7 & 0.6 \\
+   &   & $\checkmark$ & 77.6 & 69.0 & 24.9 & 43.0 & 40.2 & 24.0 & 38.9 & 0.2 \\
+$\checkmark$ & $\checkmark$ &   & 80.9 & 72.6 & 28.4 & 65.7 & 58.9 & 11.2 & 54.0 & 5.3 \\
+$\checkmark$ &   & $\checkmark$ & 80.3 & 72.0 & 27.5 & 44.6 & 42.1 & 22.7 & 40.2 & 4.9 \\
+   & $\checkmark$ & $\checkmark$ & 79.8 & 71.4 & 27.0 & 65.1 & 58.4 & 10.9 & 53.2 & 0.8 \\
+$\checkmark$ & $\checkmark$ & $\checkmark$ & \textbf{82.1} & \textbf{74.3} & \textbf{31.6} & \textbf{68.4} & \textbf{61.3} & \textbf{9.8} & \textbf{55.8} & 5.5 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Degradation Robustness and Generalisation}
+
+Table~\ref{tab:degradation} reports the $12$ degradation configurations. DAG yields only $+0.8$ AUC on the clean set but $+8.8$ on average over the degradation grid ($62.5 \rightarrow 71.3$); relative performance retention RPR rises from $0.81$ to $0.92$, meaning that nearly nine tenths of the clean performance survives under degradation. The hallucination rate under degradation contracts accordingly ($41.2 \rightarrow 31.5$), consistent with the earlier observation that training-free methods hallucinate under low light. Fig.~\ref{fig:curves}(a) plots the degradation-severity curves: the baseline collapses sharply as severity grows, whereas DAG decays more gently, so the gap widens with severity. Fig.~\ref{fig:curves}(b) and (c) show the per-module AUC and explanation metrics.
+
+It is worth stressing that DAG is a module whose value is invisible on clean data: reporting clean-set metrics alone would severely understate it. This is precisely why we argue for degradation robustness as a standalone evaluation dimension rather than an appendix to the main metric.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Degradation robustness. Light / medium / heavy are the three severity levels; each cell corresponds to that severity across the four degradation types.}
+\label{tab:degradation}
+\begin{tabular}{lcccc}
+\toprule
+Configuration & B0 AUC $\uparrow$ & +DAG AUC $\uparrow$ & B0 HR $\downarrow$ & +DAG HR $\downarrow$ \\
+\midrule
+Clean & 76.8 & 77.6 & 26.4 & 24.0 \\
+Low light (L/M/H) & 66.1 / 61.3 / 55.4 & 74.2 / 70.8 / 64.6 & 34.1 / 42.7 / 51.9 & 26.8 / 31.4 / 38.6 \\
+Rain/fog (L/M/H) & 67.4 / 62.6 / 56.8 & 75.0 / 71.5 / 66.4 & 33.5 / 41.9 / 50.4 & 26.2 / 30.8 / 37.5 \\
+Compression (L/M/H) & 68.9 / 64.2 / 58.7 & 76.4 / 73.0 / 68.8 & 32.2 / 40.3 / 48.8 & 25.4 / 29.6 / 36.1 \\
+Shake (L/M/H) & 67.8 / 62.9 / 57.6 & 75.4 / 72.1 / 67.4 & 32.9 / 41.1 / 49.6 & 25.9 / 30.2 / 36.8 \\
+\midrule
+\textbf{Degradation-grid average} & \textbf{62.5} & \textbf{71.3} & \textbf{41.2} & \textbf{31.5} \\
+RPR (vs.\ clean) & 0.81 & \textbf{0.92} & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\linewidth]{curves.png}
+\caption{Metric curves. (a) Degradation-severity curves: the horizontal axis shows clean, light, medium and heavy levels (each averaged over the four degradation types); the baseline collapses as severity grows while DAG decays more gently. (b) Frame-level AUC of the single-module ablations. (c) Explanation-verifiability metrics EAR (higher is better) and HR (lower is better) for the individual modules and the full method.}
+\label{fig:curves}
+\end{figure*}
+
+\subsection{Efficiency Analysis and Failure Cases}
+
+\evivad{} adds $5.5$\,M trainable parameters (DAA $4.7$ + evidence head $0.6$ + Q-Net $0.2$); end-to-end latency grows from $118$\,ms to $147$\,ms ($+24.6\%$) and GPU memory from $3.6$\,GB to $4.1$\,GB. Relative to the accuracy and robustness gained, this overhead is acceptable, and because the vision backbone is fully frozen, deployment can swap DAA per scene without redistributing the whole model.
+
+We performed a pre-registered boundary analysis of four failure modes. (i) \emph{Gating harms clean inputs}: if Q-Net underestimates the quality of a clean clip, $g$ shifts towards the retrieval path and clean-set AUC drops; the criterion is that clean-set AUC must not drop by more than $0.3$ points, and a drop beyond $1$ point fails the module. (ii) \emph{Evidence alignment fails on crowded clips}: overlapping targets prevent slots from matching the ground truth uniquely, showing up as a crowded-subset EAR well below the overall EAR; we require the gap between the two to be reported explicitly. (iii) \emph{Abstention threshold hurts recall}: an over-large $\delta$ also marks correct high-confidence decisions as abstentions, so an abstention-rate versus recall curve must be reported and abstained samples listed rather than hidden. (iv) \emph{Missing retrieval memory}: when the index is empty or every neighbour falls below the acceptance threshold, the fusion degenerates to the prior-dominated path and emits an explicit \texttt{retrieval-miss} flag instead of silently returning a constant score. The common principle behind all four is that any degradation path must be explicit, observable and countable.
+```

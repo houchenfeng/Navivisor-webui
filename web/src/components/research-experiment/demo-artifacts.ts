@@ -1,55 +1,60 @@
 /**
- * Shared CrackSAM demo artifacts used by experiment results + writing handoff.
+ * EviVAD demo artifacts used when workspace files are not yet hydrated.
  */
-import architectureDocument from '../../../../docs/demo/sam-algorithm-architecture.md?raw';
-import resultsDocument from '../../../../docs/demo/sam-experiment-results.md?raw';
+import architectureDocument from '../../../../demo-packages/evivad-surveillance-demo/experiment/algorithm-details.md?raw';
+import resultsDocument from '../../../../demo-packages/evivad-surveillance-demo/experiment/results.md?raw';
+import planDocument from '../../../../demo-packages/evivad-surveillance-demo/experiment/plan.md?raw';
 
 export const DEMO_ARCHITECTURE_MARKDOWN = architectureDocument;
 export const DEMO_RESULTS_MARKDOWN = resultsDocument;
+export const DEMO_PLAN_MARKDOWN = planDocument;
 
 export const DEMO_COMPARISON_HEADERS = [
-  'Method',
-  'mIoU',
-  'Dice',
-  'Boundary-F1',
-  'Recall',
-  'Latency',
+  'method',
+  'auc',
+  'ap',
+  'mAP@0.5',
+  'ΔAUC vs B0',
+  'ΔAP vs B0',
+  'EAR',
+  'HR',
+  'latency_ms',
 ] as const;
 
 export const DEMO_COMPARISON_ROWS: string[][] = [
-  ['U-Net', '65.8±0.5', '78.7±0.4', '62.4±0.7', '80.3±0.6', '18 ms'],
-  ['DeepLabV3+', '67.3±0.4', '79.9±0.3', '64.8±0.6', '81.2±0.5', '27 ms'],
-  ['SAM Baseline', '68.4±0.4', '80.9±0.3', '66.1±0.6', '81.8±0.5', '42 ms'],
-  ['CrackSAM-MVE', '72.1±0.3', '83.8±0.2', '71.4±0.4', '85.6±0.3', '53 ms'],
+  ['Reconstruction-2023', '74.6', '65.1', '18.7', '-2.2', '-3.1', '—', '—', '46'],
+  ['Weakly-supervised-CNN-ViT-2023', '78.3', '69.8', '23.4', '+1.5', '+1.6', '—', '—', '89'],
+  ['CLIP-zero-shot-2022', '75.9', '66.5', '20.2', '-0.9', '-1.7', '—', '—', '74'],
+  ['Training-free-LLM-2024', '78.9', '70.3', '24.6', '+2.1', '+2.1', '40.2', '27.8', '131'],
+  ['Baseline-B0', '76.8', '68.2', '24.1', '0.0', '0.0', '41.5', '26.4', '118'],
+  ['EviVAD', '82.1', '74.3', '31.6', '+5.3', '+6.1', '68.4', '9.8', '147'],
 ];
+
+export const DEMO_ABLATION_HEADERS = [
+  'DAA',
+  'EAD',
+  'DAG',
+  'AUC',
+  'AP',
+  'EAR',
+  'HR',
+  'ΔAUC vs B0',
+] as const;
 
 export const DEMO_ABLATION_ROWS: string[][] = [
-  ['—', '—', '—', '68.4', '80.9', '66.1', '42'],
-  ['✓', '—', '—', '70.2', '82.1', '67.5', '45'],
-  ['—', '✓', '—', '69.8', '81.8', '69.0', '43'],
-  ['—', '—', '✓', '70.0', '81.9', '68.2', '52'],
-  ['✓', '✓', '—', '71.2', '83.0', '70.2', '46'],
-  ['✓', '✓', '✓', '72.1', '83.8', '71.4', '53'],
+  ['—', '—', '—', '76.8', '68.2', '41.5', '26.4', '0.0'],
+  ['✓', '—', '—', '79.4', '71.1', '43.2', '25.1', '+2.6'],
+  ['—', '✓', '—', '77.9', '69.4', '63.8', '12.6', '+1.1'],
+  ['—', '—', '✓', '77.6', '69.0', '43.0', '24.0', '+0.8'],
+  ['✓', '✓', '—', '80.9', '72.6', '65.7', '11.2', '+4.1'],
+  ['✓', '—', '✓', '80.3', '72.0', '44.6', '22.7', '+3.5'],
+  ['—', '✓', '✓', '79.8', '71.4', '65.1', '10.9', '+3.0'],
+  ['✓', '✓', '✓', '82.1', '74.3', '68.4', '9.8', '+5.3'],
 ];
 
-export const DEMO_BIBTEX = `@article{kirillov2023sam,
-  title={Segment Anything},
-  author={Kirillov, Alexander and others},
-  journal={arXiv preprint arXiv:2304.02643},
-  year={2023}
-}
-
-@inproceedings{liu2019deepcrack,
-  title={DeepCrack: A Deep Hierarchical Feature Learning Architecture for Crack Segmentation},
-  author={Liu, Yahui and Yao, Jian and Lu, Xiaohu and Xie, Renping and Li, Li},
-  booktitle={Neurocomputing},
-  year={2019}
-}
-
-@article{zou2018deepcrack,
-  title={DeepCrack: Learning Hierarchical Convolutional Features for Crack Detection},
-  author={Zou, Qin and Cao, Yu and Li, Qingquan and Mao, Qingzhou and Wang, Song},
-  journal={IEEE TIP},
-  year={2018}
+export const DEMO_BIBTEX = `@article{evivad2026demo,
+  title={EviVAD: Evidence-verifiable Degradation-aware Video Anomaly Detection},
+  year={2026},
+  note={Teaching demo package}
 }
 `;

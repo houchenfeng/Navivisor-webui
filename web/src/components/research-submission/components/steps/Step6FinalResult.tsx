@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { ArrowLeft, Trophy, RotateCcw, TrendingUp, FileText, FileUp, CheckCircle, Loader2, Sparkles, XCircle, Lightbulb } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
 import { useSimulation } from '../../context/SimulationContext';
@@ -8,7 +8,7 @@ type DecisionType = 'oral' | 'poster' | 'rejected';
 
 export default function Step6FinalResult() {
   const { t } = useI18n();
-  const { form, goToStep, resetSimulation, round2Reviewers, round2Decision, round2AvgScore, round1AvgScore, submissionNumber } = useSimulation();
+  const { form, goToStep, resetSimulation, round2Reviewers, round2Decision, round2AvgScore, round1AvgScore, submissionNumber, isDemoLoaded, pickDemoPdf } = useSimulation();
   const displayTitle = form.title || 'Untitled Submission';
   const [cameraReadyFile, setCameraReadyFile] = useState<File | null>(null);
   const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
@@ -31,7 +31,29 @@ export default function Step6FinalResult() {
   const colors = decisionColors[decision];
 
   const handleSubmitFinal = async () => { if (!cameraReadyFile || isSubmittingFinal || finalSubmitted) return; setIsSubmittingFinal(true); await new Promise((r) => setTimeout(r, 1800)); setIsSubmittingFinal(false); setFinalSubmitted(true); };
-  const handleGenerateAck = async () => { if (isGeneratingAck) return; setIsGeneratingAck(true); try { const ackText = `We sincerely thank all ${reviewers.length} reviewers and the area chair for their time, effort, and constructive feedback throughout the review process.`; setAcknowledgments(ackText); } finally { setIsGeneratingAck(false); } };
+  const handleGenerateAck = async () => {
+    if (isGeneratingAck) return;
+    setIsGeneratingAck(true);
+    try {
+      await new Promise((r) => setTimeout(r, 400));
+      const ackText = isDemoLoaded
+        ? `We thank the reviewers and the area chair for their careful reading of EviVAD. Their comments on rank/α sensitivity, real-surveillance calibration, annotator agreement for EAR/CFS, and cross-camera consistency will be addressed in the camera-ready version.`
+        : `We sincerely thank all ${reviewers.length} reviewers and the area chair for their time, effort, and constructive feedback throughout the review process.`;
+      setAcknowledgments(ackText);
+    } finally {
+      setIsGeneratingAck(false);
+    }
+  };
+  const handleChooseCameraReady = async () => {
+    if (isDemoLoaded) {
+      const file = await pickDemoPdf();
+      if (file) {
+        setCameraReadyFile(file);
+        return;
+      }
+    }
+    fileInputRef.current?.click();
+  };
   const decisionLabel = () => { if (decision === 'oral') return t.acceptedOral.toUpperCase(); if (decision === 'poster') return t.acceptedPoster.toUpperCase(); return t.rejected.toUpperCase(); };
   const avgChange = useMemo(() => { if (reviewers.length === 0) return 0; const r1 = round1AvgScore > 0 ? round1AvgScore : reviewers.reduce((s, r) => s + r.round1Score, 0) / reviewers.length; const r2 = round2AvgScore > 0 ? round2AvgScore : reviewers.reduce((s, r) => s + r.round2Score, 0) / reviewers.length; return r2 - r1; }, [reviewers, round1AvgScore, round2AvgScore]);
 
@@ -65,7 +87,7 @@ export default function Step6FinalResult() {
       {isAccepted && (
         <div className={`mb-6 border ${colors.border} bg-white`}>
           <div className={`flex items-center gap-2 border-b ${colors.border} ${colors.bg} px-3 py-2`}><FileText className={`size-4 ${colors.text}`} /><span className={`text-sm font-bold ${colors.text}`}>{t.cameraReady}</span></div>
-          <div className="p-4"><p className="mb-1 text-sm text-[#666]">{t.cameraReadyHint}</p><p className="mb-4 text-xs text-[#666]"><strong>{t.cameraReadyDeadline}:</strong> Dec 15, 2026</p>{finalSubmitted ? <div className={`flex items-center gap-2 rounded border ${colors.border} ${colors.bg} px-4 py-3 text-sm font-semibold ${colors.text}`}><CheckCircle className="size-5" />{t.finalSubmitted}</div> : <><button type="button" onClick={() => fileInputRef.current?.click()} className="mb-2 flex items-center gap-2 rounded-sm bg-[#2c5f7a] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#1a4055]"><FileUp className="size-4" />{t.choosePdf}</button><input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setCameraReadyFile(file); }} />{cameraReadyFile && <p className="mb-3 text-xs text-[#555]">已选择: {cameraReadyFile.name} ({(cameraReadyFile.size / 1024 / 1024).toFixed(2)} MB)</p>}<button type="button" onClick={handleSubmitFinal} disabled={!cameraReadyFile || isSubmittingFinal} className="flex items-center gap-2 rounded-md bg-[#2e7d32] px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#1b5e20] disabled:cursor-not-allowed disabled:opacity-50">{isSubmittingFinal ? <><Loader2 className="size-4 animate-spin" />{t.submitting}</> : <>{t.submitFinal}</>}</button></>}</div>
+          <div className="p-4"><p className="mb-1 text-sm text-[#666]">{t.cameraReadyHint}</p><p className="mb-4 text-xs text-[#666]"><strong>{t.cameraReadyDeadline}:</strong> Dec 15, 2026</p>{finalSubmitted ? <div className={`flex items-center gap-2 rounded border ${colors.border} ${colors.bg} px-4 py-3 text-sm font-semibold ${colors.text}`}><CheckCircle className="size-5" />{t.finalSubmitted}</div> : <><button type="button" onClick={handleChooseCameraReady} className="mb-2 flex items-center gap-2 rounded-sm bg-[#2c5f7a] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#1a4055]"><FileUp className="size-4" />{t.choosePdf}</button><input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setCameraReadyFile(file); }} />{cameraReadyFile && <p className="mb-3 text-xs text-[#555]">已选择: {cameraReadyFile.name} ({(cameraReadyFile.size / 1024 / 1024).toFixed(2)} MB)</p>}<button type="button" onClick={handleSubmitFinal} disabled={!cameraReadyFile || isSubmittingFinal} className="flex items-center gap-2 rounded-md bg-[#2e7d32] px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#1b5e20] disabled:cursor-not-allowed disabled:opacity-50">{isSubmittingFinal ? <><Loader2 className="size-4 animate-spin" />{t.submitting}</> : <>{t.submitFinal}</>}</button></>}</div>
         </div>
       )}
       {!isAccepted && (

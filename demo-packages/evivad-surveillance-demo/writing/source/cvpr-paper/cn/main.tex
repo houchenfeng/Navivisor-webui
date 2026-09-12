@@ -1,0 +1,55 @@
+% !TEX program = xelatex
+% CVPR 2026 Paper Template; see https://github.com/cvpr-org/author-kit
+% 中文版 —— 必须使用 XeLaTeX 编译：  latexmk -xelatex main.tex
+
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+%%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
+% \usepackage{cvpr}              % To produce the CAMERA-READY version
+\usepackage[review]{cvpr}      % To produce the REVIEW version
+% \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+
+% Import additional packages in the preamble file, before hyperref
+\input{preamble}
+
+% It is strongly recommended to use hyperref, especially for the review version.
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\paperID{*****} % *** Enter the Paper ID here
+\def\confName{CVPR}
+\def\confYear{2026}
+
+%%%%%%%%% TITLE - PLEASE UPDATE
+\title{EviVAD：面向摄像头监控的大模型视频异常检测\\——证据可验证、退化可降级的统一框架}
+
+%%%%%%%%% AUTHORS - PLEASE UPDATE
+\author{作者姓名\\
+机构名称\\
+{\tt\small anonymous@example.edu}
+\and
+第二作者\\
+机构名称\\
+{\tt\small anonymous@example.edu}
+}
+
+\begin{document}
+\maketitle
+\input{fig/teaser}
+\input{sec/0_abstract}
+\input{sec/1_intro}
+\input{sec/2_related}
+\input{sec/3_method}
+\input{sec/4_experiments}
+\input{sec/5_conclusion}
+{
+    \small
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{../main}
+}
+
+% WARNING: do not forget to delete the supplementary pages from your submission
+% \input{sec/X_suppl}
+
+\end{document}

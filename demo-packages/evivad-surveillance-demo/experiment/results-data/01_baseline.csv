@@ -1,0 +1,2 @@
+experiment_id,method,dataset,auc_percent,ap_percent,map_at_0_5_percent,latency_ms,memory_gb,aggregation,simulated
+EXP-01,Baseline-B0,UCF-Crime,76.8,68.2,24.1,118,3.6,aggregate-summary,true

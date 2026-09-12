@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "researchDirection": "视频异常检测 × 大模型 / 多智能体",
+  "researchGoal": "构建 EviVAD：面向摄像头监控的证据可验证、退化感知的视频异常检测框架。",
+  "scenarios": [
+    "摄像头监控",
+    "低光",
+    "雨雾",
+    "压缩",
+    "抖动"
+  ],
+  "expectedOutputs": [
+    "帧级异常分数",
+    "异常时间区间",
+    "带证据引用的解释",
+    "置信度与弃权标志"
+  ],
+  "source": "provided_material",
+  "simulated": true
+}

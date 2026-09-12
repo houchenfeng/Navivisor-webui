@@ -8,16 +8,22 @@ import { router } from './routes/router';
 import { useThemeStore } from './stores/theme-store';
 import './i18n';
 import './index.css';
+import { ResearchProjectRestorer } from './components/research-workflow/research-project-restorer';
 
 configureApiClient();
 
 // Apply persisted theme before first render to avoid flash
-document.documentElement.classList.toggle('dark', useThemeStore.getState().dark);
+document.documentElement.classList.toggle(
+  'dark',
+  useThemeStore.getState().dark,
+);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ResearchProjectRestorer>
+        <RouterProvider router={router} />
+      </ResearchProjectRestorer>
     </QueryClientProvider>
   </StrictMode>,
 );

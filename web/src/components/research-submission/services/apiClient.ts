@@ -79,7 +79,54 @@ function confidenceToLabel(confidence: number): string {
   return `${confidence}: ${labels[idx]}`;
 }
 
-function mapBackendReviewer(br: any, index: number): IReviewer {
+interface BackendReviewer {
+  id?: string | number;
+  rating: number;
+  updatedRating?: number;
+  focus?: string;
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  questions: string[];
+  limitations: string;
+  confidence: number;
+  ethicalConcerns: string;
+  finalJustification: string;
+  comment?: string;
+}
+
+interface BackendRebuttalResponse {
+  reviewers: BackendReviewer[];
+  averageScore: number;
+  firstRoundAverage: number;
+  decision: string;
+  decisionType: string | null;
+  enhancedRebuttal: string;
+}
+
+interface BackendPaperInfo {
+  title?: string;
+  authors?: string;
+  keywords?: string;
+  abstract?: string;
+  tldr?: string;
+}
+
+interface RebuttalReviewInput {
+  id: string | number;
+  rating: number;
+  confidence: number;
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  questions: string[];
+  limitations: string;
+  ethicalConcerns: string;
+  finalJustification: string;
+  focus?: string;
+}
+
+function mapBackendReviewer(br: BackendReviewer, index: number): IReviewer {
   const idStr = String(br.id ?? index + 1);
   return {
     id: idStr,
@@ -99,16 +146,16 @@ function mapBackendReviewer(br: any, index: number): IReviewer {
   };
 }
 
-function mapBackendRound2Reviewer(br: any, index: number): IRound2Reviewer {
+function mapBackendRound2Reviewer(br: BackendReviewer, index: number): IRound2Reviewer {
   const idStr = String(br.id ?? index + 1);
   return {
     id: idStr,
     name: `Reviewer ${idStr}`,
     round1Score: br.rating,
-    round2Score: br.updatedRating,
+    round2Score: br.updatedRating ?? br.rating,
     round1Comment: '',
     rebuttalResponse: '',
-    round2Comment: br.comment,
+    round2Comment: br.comment ?? '',
   };
 }
 
@@ -147,9 +194,9 @@ export async function submitPaper(payload: SubmitPaperPayload): Promise<ISubmitP
     const errText = await response.text().catch(() => response.statusText);
     throw new Error(`HTTP ${response.status}: ${errText || response.statusText}`);
   }
-  const data = await response.json();
+  const data = (await response.json()) as { reviewers: BackendReviewer[]; paper_title?: string; averageScore?: number; decision?: string };
   return {
-    reviewers: data.reviewers.map((br: any, i: number) => mapBackendReviewer(br, i)),
+    reviewers: data.reviewers.map((br, i) => mapBackendReviewer(br, i)),
     paperTitle: data.paper_title || payload.title,
     averageScore: data.averageScore ?? 0,
     decision: data.decision || '',
@@ -181,7 +228,7 @@ export async function submitRebuttal(payload: SubmitRebuttalPayload): Promise<IS
     };
   }
 
-  const data = await fetchJson<any>('/api/submit-rebuttal', {
+  const data = await fetchJson<BackendRebuttalResponse>('/api/submit-rebuttal', {
     method: 'POST',
     body: JSON.stringify({
       rebuttalText: payload.rebuttal,
@@ -202,7 +249,7 @@ export async function submitRebuttal(payload: SubmitRebuttalPayload): Promise<IS
     }),
   });
   return {
-    reviewers: data.reviewers.map((br: any, i: number) => mapBackendRound2Reviewer(br, i)),
+    reviewers: data.reviewers.map((br, i) => mapBackendRound2Reviewer(br, i)),
     averageScore: data.averageScore,
     firstRoundAverage: data.firstRoundAverage,
     decision: data.decision,
@@ -235,7 +282,7 @@ export async function extractPaperInfo(pdfFile: File): Promise<{
     const errText = await response.text().catch(() => response.statusText);
     throw new Error(`HTTP ${response.status}: ${errText || response.statusText}`);
   }
-  const data = await response.json();
+  const data = (await response.json()) as BackendPaperInfo;
   return {
     title: data.title ?? '',
     authors: data.authors ?? '',
@@ -246,7 +293,7 @@ export async function extractPaperInfo(pdfFile: File): Promise<{
 }
 
 export interface IGenerateRebuttalRequest {
-  reviews: any[];
+  reviews: RebuttalReviewInput[];
   currentText: string;
 }
 

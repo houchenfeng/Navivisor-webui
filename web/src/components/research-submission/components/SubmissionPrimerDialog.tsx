@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BookOpenText } from 'lucide-react';
 import {
   Dialog,
@@ -34,15 +34,13 @@ const steps = [
 ] as const;
 
 export function SubmissionPrimerDialog() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
+  const [open, setOpen] = useState(() => {
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
+      return !localStorage.getItem(STORAGE_KEY);
     } catch {
-      setOpen(true);
+      return true;
     }
-  }, []);
+  });
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -71,12 +69,12 @@ export function SubmissionPrimerDialog() {
           <DialogHeader>
             <DialogTitle className="text-[#9a2c22]">会议投稿大致怎么走</DialogTitle>
             <DialogDescription className="text-base font-medium leading-7 text-[#5c4033]">
-              我们会模拟 CVPR 顶会的投稿全流程，请和 AI 一起体验一下会议投稿吧~！
+              我们会按 CVPR 顶会结构呈现完整投稿流程，请和 AI 一起完成会议投稿练习。
             </DialogDescription>
           </DialogHeader>
 
           <p className="text-sm leading-6 text-[#6781aa]">
-            内容整理自评分说明与流程引导。本页为教学模拟，和真实 OpenReview / CVPR 无关。
+            内容整理自评分说明与流程引导。本页用于投稿流程练习，与 OpenReview 或 CVPR 无关。
           </p>
 
           <ol className="mt-1 flex flex-col gap-3">

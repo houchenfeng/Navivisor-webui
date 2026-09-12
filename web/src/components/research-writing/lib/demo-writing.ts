@@ -261,3 +261,77 @@ export async function tryLoadDemoResultFigures(): Promise<string[]> {
   }
   return images;
 }
+
+const DEMO_MAIN_TEX = [
+  'writing/source/cvpr-paper/en/main.tex',
+  'writing/source/cvpr-paper/zh/main.tex',
+];
+
+const DEMO_PAPER_PDF = ['writing/paper.pdf'];
+
+/** Load packaged Demo `main.tex` for the CVPR export preview. */
+export async function tryLoadDemoMainTex(): Promise<string | null> {
+  const rootPath = useResearchProjectStore.getState().project?.rootPath?.trim();
+  if (!rootPath) return null;
+  return readFirst(rootPath, DEMO_MAIN_TEX);
+}
+
+/** Absolute path of Demo compiled PDF, if present. */
+export async function tryResolveDemoPaperPdf(): Promise<string | null> {
+  const rootPath = useResearchProjectStore.getState().project?.rootPath?.trim();
+  if (!rootPath) return null;
+  for (const relative of DEMO_PAPER_PDF) {
+    const absolute = joinWorkspacePath(rootPath, relative);
+    if (await workspaceFileExists(absolute)) return absolute;
+  }
+  return null;
+}
+
+/** English submission form fields from Demo `submission/paper-info.json`. */
+export async function tryLoadDemoPaperInfo(): Promise<{
+  title?: string;
+  authors?: string;
+  keywords?: string;
+  abstract?: string;
+  tldr?: string;
+} | null> {
+  const rootPath = useResearchProjectStore.getState().project?.rootPath?.trim();
+  if (!rootPath) return null;
+  const raw = await readFirst(rootPath, [
+    'submission/paper-info.json',
+    'writing/paper-metadata.json',
+  ]);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as {
+      title?: string;
+      authors?: string;
+      keywords?: string;
+      abstract?: string;
+      tldr?: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** English rebuttal markdown from Demo. */
+export async function tryLoadDemoRebuttalEn(): Promise<string | null> {
+  const rootPath = useResearchProjectStore.getState().project?.rootPath?.trim();
+  if (!rootPath) return null;
+  return readFirst(rootPath, ['submission/rebuttal.md']);
+}
+
+/** Demo `writing/paper.pdf` as a File, for the submission upload field. */
+export async function tryLoadDemoPaperPdfAsFile(): Promise<File | null> {
+  const absolute = await tryResolveDemoPaperPdf();
+  if (!absolute) return null;
+  try {
+    const response = await fetch(buildFileServeUrl(absolute));
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return new File([blob], 'paper.pdf', { type: blob.type || 'application/pdf' });
+  } catch {
+    return null;
+  }
+}

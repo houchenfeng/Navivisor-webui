@@ -23,7 +23,7 @@ export default function Step6Experiment({ data, onChange }: Props) {
     data.experimentTables?.length > 0
       ? data.experimentTables
       : data.experimentTable.headers.length > 0
-        ? [{ title: data.experimentTable.title || "结果表格", ...data.experimentTable }]
+        ? [{ ...data.experimentTable, title: data.experimentTable.title || "结果表格" }]
         : [];
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +45,7 @@ export default function Step6Experiment({ data, onChange }: Props) {
           const nextTables = Array.isArray(parsed.tables)
             ? parsed.tables.filter((table) => table.headers?.length)
             : parsed.table?.headers?.length
-              ? [{ title: parsed.table.title || "结果表格", ...parsed.table }]
+              ? [{ ...parsed.table, title: parsed.table.title || "结果表格" }]
               : tables;
 
           onChange({

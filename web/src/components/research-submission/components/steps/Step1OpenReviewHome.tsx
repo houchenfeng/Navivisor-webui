@@ -13,7 +13,7 @@ export default function Step1OpenReviewHome() {
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded border border-[#e0d6c8] bg-[#fff8ef] px-3 py-2.5">
         <p className="text-sm font-medium leading-6 text-[#5c4033]">
-          我们会模拟 CVPR 顶会的投稿全流程，请和 AI 一起体验一下会议投稿吧~！
+          我们会按 CVPR 顶会结构呈现完整投稿流程，请和 AI 一起完成会议投稿练习。
         </p>
         <SubmissionPrimerDialog />
       </div>

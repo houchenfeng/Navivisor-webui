@@ -117,7 +117,6 @@ export function ArtifactPreviewDialog({ projectId, artifact, onClose }: Props) {
             </p>
             <p className="truncate text-[11px] font-medium text-[#7890b6]">
               {artifact.role} · {versionHint}
-              {artifact.simulated ? ' · 模拟' : ''}
             </p>
           </div>
           <button

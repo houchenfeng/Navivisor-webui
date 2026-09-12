@@ -4,10 +4,12 @@
  */
 import { useEffect, useState } from 'react';
 import {
+  DEMO_ABLATION_HEADERS,
   DEMO_ABLATION_ROWS,
   DEMO_ARCHITECTURE_MARKDOWN,
   DEMO_COMPARISON_HEADERS,
   DEMO_COMPARISON_ROWS,
+  DEMO_PLAN_MARKDOWN,
   DEMO_RESULTS_MARKDOWN,
 } from '@/components/research-experiment/demo-artifacts';
 import {
@@ -18,12 +20,18 @@ import {
   parseCsvRows,
   useWorkspaceArtifacts,
 } from '@/components/research-workflow/use-research-project';
-import { useExperimentStore } from '@/stores/experiment-store';
+import {
+  useExperimentStore,
+  type ExperimentIdea,
+} from '@/stores/experiment-store';
 
 export type ExperimentHydration = {
   source: 'workspace' | 'offline-fallback';
   loading: boolean;
   planMarkdown: string;
+  planHeadline: string;
+  shortestPath: string;
+  protocolNote: string;
   resultsMarkdown: string;
   architectureMarkdown: string;
   configJson: string | null;
@@ -33,23 +41,19 @@ export type ExperimentHydration = {
   ablationRows: string[][];
   comparisonFigureUrl: string | null;
   architectureFigureUrl: string | null;
+  ideas: ExperimentIdea[];
   error: string | null;
 };
 
-const DEFAULT_ABLATION_HEADERS = [
-  'DLA',
-  'BED',
-  'CMP',
-  'mIoU ↑',
-  'Dice ↑',
-  'Boundary-F1 ↑',
-  '延迟 ms',
-];
+const DEFAULT_ABLATION_HEADERS = [...DEMO_ABLATION_HEADERS];
 
 const emptyHydration = (): ExperimentHydration => ({
   source: 'offline-fallback',
   loading: false,
-  planMarkdown: '',
+  planMarkdown: DEMO_PLAN_MARKDOWN,
+  planHeadline: 'EviVAD = B0 + DAA + EAD + DAG · Baseline B0：冻结 VLM + 文本侧打分',
+  shortestPath: '先复现冻结 VLM Baseline B0，再按 DAA → EAD → DAG 单变量接入。',
+  protocolNote: 'UCF-Crime 主评测；XD-Violence / UBnormal / MSAD 跨域；指标 AUC / AP / EAR / HR。',
   resultsMarkdown: DEMO_RESULTS_MARKDOWN,
   architectureMarkdown: DEMO_ARCHITECTURE_MARKDOWN,
   configJson: null,
@@ -59,13 +63,24 @@ const emptyHydration = (): ExperimentHydration => ({
   ablationRows: DEMO_ABLATION_ROWS.map((row) => [...row]),
   comparisonFigureUrl: null,
   architectureFigureUrl: null,
+  ideas: [],
   error: null,
 });
 
 function splitCsv(text: string): { headers: string[]; rows: string[][] } {
   const all = parseCsvRows(text);
   if (all.length === 0) return { headers: [], rows: [] };
-  return { headers: all[0], rows: all.slice(1) };
+  const headers = all[0];
+  const drop = new Set(
+    headers
+      .map((header, index) => (/^simulated$/i.test(header.trim()) ? index : -1))
+      .filter((index) => index >= 0),
+  );
+  if (drop.size === 0) return { headers, rows: all.slice(1) };
+  return {
+    headers: headers.filter((_, index) => !drop.has(index)),
+    rows: all.slice(1).map((row) => row.filter((_, index) => !drop.has(index))),
+  };
 }
 
 function countLiteraturePdfs(
@@ -81,6 +96,77 @@ function countLiteraturePdfs(
     seen.add(artifact.path.replace(/\\/g, '/').toLowerCase());
   }
   return seen.size;
+}
+
+function asStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function mapWorkspaceIdeas(raw: string): {
+  ideas: ExperimentIdea[];
+  planHeadline: string;
+  shortestPath: string;
+  protocolNote: string;
+} | null {
+  try {
+    const parsed = JSON.parse(raw) as {
+      baseline?: string;
+      method?: string;
+      protocol?: string;
+      shortestPath?: string;
+      items?: Array<Record<string, unknown>>;
+    };
+    const items = parsed.items;
+    if (!Array.isArray(items) || items.length === 0) return null;
+    const ideas: ExperimentIdea[] = items.map((item, index) => {
+      const statusRaw = String(item.status ?? '');
+      const status =
+        statusRaw === '成功' || statusRaw === '失败' || statusRaw === '淘汰'
+          ? statusRaw
+          : item.selected === false
+            ? '淘汰'
+            : undefined;
+      const alternatives = Array.isArray(item.alternatives)
+        ? item.alternatives.map((alternative) => {
+            const row = (alternative ?? {}) as Record<string, unknown>;
+            return {
+              name: String(row.name ?? '备选'),
+              approach: String(row.approach ?? ''),
+              pros: String(row.pros ?? ''),
+              cons: String(row.cons ?? ''),
+            };
+          })
+        : [];
+      return {
+        id: String(item.id ?? `I${index + 1}`),
+        name: String(item.name ?? item.title ?? `创新点 ${index + 1}`),
+        layer: String(item.layer ?? '方法'),
+        hypothesis: String(item.hypothesis ?? ''),
+        gain: String(item.gain ?? '—'),
+        status,
+        score: typeof item.score === 'number' ? item.score : undefined,
+        summary: String(item.summary ?? ''),
+        modification: String(item.modification ?? item.implementation ?? ''),
+        stepLocation: String(item.stepLocation ?? ''),
+        optimizationGoal: String(item.optimizationGoal ?? ''),
+        mainPlan: asStringList(item.mainPlan),
+        alternatives,
+        recommendation: String(item.recommendation ?? ''),
+        resources: asStringList(item.resources),
+        goNoGo: asStringList(item.goNoGo),
+        references: asStringList(item.references),
+      };
+    });
+    return {
+      ideas,
+      planHeadline: [parsed.method, parsed.baseline].filter(Boolean).join(' · '),
+      shortestPath: parsed.shortestPath ?? '',
+      protocolNote: parsed.protocol ?? '',
+    };
+  } catch {
+    return null;
+  }
 }
 
 function countCsvPdfHints(rows: string[][]): number {
@@ -115,7 +201,17 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         return;
       }
 
-      const plan = findLatestByRole(artifacts, 'experiment-plan');
+      const plan =
+        findLatestByPathHint(artifacts, 'experiment/plan.md') ??
+        artifacts
+          .filter(
+            (artifact) =>
+              artifact.role === 'experiment-plan' && /\.md$/i.test(artifact.path),
+          )
+          .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))[0];
+      const innovations =
+        findLatestByPathHint(artifacts, 'experiment/innovations.json') ??
+        findLatestByPathHint(artifacts, 'innovations.json');
       const results = findLatestByRole(artifacts, 'experiment-results');
       const architecture = findLatestByRole(artifacts, 'method-architecture');
       const config = findLatestByRole(artifacts, 'experiment-config');
@@ -139,7 +235,7 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         figureArtifacts.find((artifact) => /architecture/i.test(artifact.name + artifact.path)) ??
         null;
 
-      if (!plan && !results && !config && !confirmed) {
+      if (!plan && !innovations && !results && !config && !confirmed) {
         if (!cancelled) {
           setHydration({
             ...emptyHydration(),
@@ -160,6 +256,7 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           coreReferencesText,
           mainText,
           ablationText,
+          innovationsText,
         ] = await Promise.all([
           plan ? fetchArtifactText(projectId, plan.artifactId) : Promise.resolve(''),
           results ? fetchArtifactText(projectId, results.artifactId) : Promise.resolve(''),
@@ -176,6 +273,9 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           mainCsv ? fetchArtifactText(projectId, mainCsv.artifactId) : Promise.resolve(''),
           ablationCsv
             ? fetchArtifactText(projectId, ablationCsv.artifactId)
+            : Promise.resolve(''),
+          innovations
+            ? fetchArtifactText(projectId, innovations.artifactId)
             : Promise.resolve(''),
         ]);
 
@@ -223,6 +323,10 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           const csvPdfs = countCsvPdfHints(referenceRows);
           patch.pdfAvailableCount = workspacePdfs || csvPdfs;
         }
+        const mappedIdeas = innovationsText ? mapWorkspaceIdeas(innovationsText) : null;
+        if (mappedIdeas?.ideas.length) {
+          patch.ideas = mappedIdeas.ideas;
+        }
         if (Object.keys(patch).length > 0) setFields(patch);
 
         const mainCsvParsed = mainText ? splitCsv(mainText) : { headers: [], rows: [] };
@@ -233,7 +337,10 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         setHydration({
           source: 'workspace',
           loading: false,
-          planMarkdown: planText,
+          planMarkdown: planText || DEMO_PLAN_MARKDOWN,
+          planHeadline: mappedIdeas?.planHeadline ?? '',
+          shortestPath: mappedIdeas?.shortestPath ?? '',
+          protocolNote: mappedIdeas?.protocolNote ?? '',
           resultsMarkdown: resultsText || DEMO_RESULTS_MARKDOWN,
           architectureMarkdown: architectureText || DEMO_ARCHITECTURE_MARKDOWN,
           configJson: configText || null,
@@ -259,6 +366,7 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           architectureFigureUrl: architectureFigure
             ? artifactContentUrl(projectId, architectureFigure.artifactId)
             : null,
+          ideas: mappedIdeas?.ideas ?? [],
           error: null,
         });
       } catch (err) {

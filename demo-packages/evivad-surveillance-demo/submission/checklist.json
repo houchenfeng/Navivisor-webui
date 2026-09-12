@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "items": [
+    {
+      "id": "paper-pdf",
+      "required": true,
+      "status": "passed",
+      "reason": "valid_pdf_signature",
+      "evidenceRefs": [
+        "writing/paper.pdf"
+      ]
+    },
+    {
+      "id": "data-source-declaration",
+      "required": true,
+      "status": "passed",
+      "reason": "research_data_metadata_recorded",
+      "evidenceRefs": [
+        "writing/paper-metadata.json"
+      ]
+    },
+    {
+      "id": "third-party-fulltexts",
+      "required": false,
+      "status": "missing",
+      "reason": "copyright_redistribution_permission_not_documented",
+      "evidenceRefs": [
+        "topic/paper-manifest.json"
+      ]
+    }
+  ]
+}

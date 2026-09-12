@@ -1,0 +1,37 @@
+%% =====================================================================
+%%  preamble.tex  --  English version
+%%  Compile with standard pdfLaTeX:  latexmk -pdf main.tex
+%% =====================================================================
+
+%% ---- math ----
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+%% ---- figures / tables ----
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{subcaption}
+
+%% ---- algorithms ----
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+%% ---- official support for the 2-column teaser figure ----
+\usepackage{cuted}
+\usepackage{currfile}
+\usepackage{caption}
+
+%% ---- image search path: images are shared by both versions, kept in ../fig ----
+\graphicspath{{../fig/}{./fig/}}
+
+%% ---- inline annotations ----
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\todo}[1]{{\color{red}#1}}
+\newcommand{\TODO}[1]{\textbf{\color{red}[TODO: #1]}}
+
+%% ---- math operators ----
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\evivad}{\textsc{EviVAD}}

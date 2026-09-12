@@ -18,6 +18,12 @@ export default function Step5Rebuttal() {
     submissionNumber,
     apiError,
     setApiError,
+    isDemoLoaded,
+    fillDemoRebuttal,
+    round2Reviewers,
+    round2Decision,
+    round2AvgScore,
+    round1AvgScore,
   } = useSimulation();
   const [isAIGenerating, setIsAIGenerating] = useState(false);
   const [isSubmittingRebuttal, setIsSubmittingRebuttal] = useState(false);
@@ -30,6 +36,9 @@ export default function Step5Rebuttal() {
     setIsAIGenerating(true);
     setApiError(null);
     try {
+      if (isDemoLoaded && (await fillDemoRebuttal())) {
+        return;
+      }
       const rebuttalText = await generateRebuttal({
         reviews: reviewers.map((r) => ({
           id: r.id,
@@ -60,6 +69,17 @@ export default function Step5Rebuttal() {
     setIsSubmittingRebuttal(true);
     setApiError(null);
     try {
+      if (isDemoLoaded && round2Reviewers.length > 0) {
+        setRound2Reviewers(round2Reviewers);
+        setRound2Decision(
+          round2Decision || 'Poster Accept',
+          round2AvgScore || round1AvgScore,
+          round1AvgScore,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1800));
+        goToStep(6);
+        return;
+      }
       const result = await submitRebuttal({
         rebuttal: form.rebuttal,
         paperTitle: displayTitle,

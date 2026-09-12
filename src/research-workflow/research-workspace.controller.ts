@@ -48,6 +48,11 @@ class RebuildWorkspaceDto {
   absolutePath!: string;
 }
 
+class ActivateDemoDto {
+  @ApiProperty({ description: 'Absolute path of the registered Demo package' })
+  absolutePath!: string;
+}
+
 class SaveVersionDto {
   @ApiProperty() relativePath!: string;
   @ApiProperty() role!: string;
@@ -61,6 +66,18 @@ class SaveVersionDto {
 @Controller('research')
 export class ResearchWorkspaceController {
   constructor(private readonly workspaces: ResearchWorkspaceService) {}
+
+  @Get('demos')
+  listDemos() {
+    return this.workspaces.listDemoDefinitions();
+  }
+
+  @Post('demos/:demoId/activate')
+  activateDemo(@Param('demoId') demoId: string, @Body() body: ActivateDemoDto) {
+    const absolutePath = body?.absolutePath?.trim();
+    if (!absolutePath) throw new BadRequestException('absolutePath is required');
+    return this.workspaces.activateDemo(demoId, absolutePath);
+  }
 
   @Post('workspaces/register')
   register(@Body() body: RegisterWorkspaceDto) {
@@ -120,10 +137,7 @@ export class ResearchWorkspaceController {
   }
 
   @Post('projects/:projectId/workspace/move')
-  move(
-    @Param('projectId') projectId: string,
-    @Body() body: WorkspacePathDto,
-  ) {
+  move(@Param('projectId') projectId: string, @Body() body: WorkspacePathDto) {
     const absolutePath = body?.absolutePath?.trim();
     if (!absolutePath) {
       throw new BadRequestException('absolutePath is required');
@@ -132,10 +146,7 @@ export class ResearchWorkspaceController {
   }
 
   @Post('projects/:projectId/workspace/copy')
-  copy(
-    @Param('projectId') projectId: string,
-    @Body() body: WorkspacePathDto,
-  ) {
+  copy(@Param('projectId') projectId: string, @Body() body: WorkspacePathDto) {
     const absolutePath = body?.absolutePath?.trim();
     if (!absolutePath) {
       throw new BadRequestException('absolutePath is required');

@@ -44,7 +44,7 @@ export interface ResearchWorkspace {
       manifestSha256: string;
       loadedAt: string;
       complete: boolean;
-      missing: string[];
+      missing: Array<string | DemoMissingItem>;
     };
     modules: Record<
       ResearchModule,
@@ -83,6 +83,31 @@ export interface LoadDemoResult {
   missing: string[];
   runIds: string[];
   warnings: string[];
+}
+
+export interface DemoMissingItem {
+  path: string;
+  reason: string;
+  requiredBy: string[];
+  optional: boolean;
+  detail?: string;
+  sourceUrl?: string | null;
+}
+
+export interface DemoDefinition {
+  id: string;
+  rootPath: string;
+  title: string;
+  description: string;
+  version: string;
+  simulated: boolean;
+  complete: boolean;
+  missing: DemoMissingItem[];
+}
+
+export interface ActivateDemoResult {
+  workspace: ResearchWorkspace;
+  load: LoadDemoResult;
 }
 
 /** UI summary cards from `.navivisor/conversations/ui-events.jsonl` (not Codex turns). */

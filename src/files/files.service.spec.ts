@@ -16,6 +16,7 @@ import { FilesService, type FileUploadInput } from './files.service';
 describe('FilesService', () => {
   let service: FilesService;
   let tmpDir: string;
+  const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
     const rawTmp = await fs.mkdtemp(path.join(os.tmpdir(), 'files-test-'));
@@ -35,6 +36,10 @@ describe('FilesService', () => {
   });
 
   beforeEach(async () => {
+    // Keep the service's implicit home root inside this test fixture. On
+    // Windows, os.tmpdir() normally lives under the real home directory,
+    // which otherwise makes sibling "outside" fixtures incorrectly allowed.
+    if (process.platform === 'win32') process.env.USERPROFILE = tmpDir;
     const module = await Test.createTestingModule({
       providers: [
         FilesService,
@@ -66,6 +71,12 @@ describe('FilesService', () => {
     }).compile();
 
     service = module.get(FilesService);
+  });
+
+  afterEach(() => {
+    if (process.platform !== 'win32') return;
+    if (originalUserProfile === undefined) delete process.env.USERPROFILE;
+    else process.env.USERPROFILE = originalUserProfile;
   });
 
   describe('resolveSafePath', () => {
@@ -326,7 +337,12 @@ describe('FilesService', () => {
       const realFile = path.join(tmpDir, 'symlink-target.txt');
       const linkFile = path.join(tmpDir, 'symlink-link.txt');
       await fs.writeFile(realFile, 'target data');
-      await fs.symlink(realFile, linkFile);
+      try {
+        await fs.symlink(realFile, linkFile);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'EPERM') return;
+        throw error;
+      }
 
       await service.deletePath(linkFile);
 

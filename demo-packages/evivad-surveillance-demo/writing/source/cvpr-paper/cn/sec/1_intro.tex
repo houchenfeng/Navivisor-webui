@@ -1,0 +1,30 @@
+\section{引言}
+\label{sec:intro}
+
+\subsection{研究背景与动机}
+
+监控摄像头已大规模覆盖城市公共空间、交通枢纽、校园与养老机构，由此产生的长时段视频流远超人工监看能力。视频异常检测（Video Anomaly Detection, VAD）旨在自动定位其中的异常事件，是智能安防的核心技术，近十年间形成了以重建、未来帧预测与弱监督多示例学习为主体的方法体系\cite{abdalla2025vad10years,pravalika2026surveillance,houssein2026violence}。这类方法的共同特征是：只在\emph{数值层面}给出异常分数，既不解释「为什么异常」，也无法表达「我有多确信」。在实际部署中，一个无法被核验的高分告警与一次漏检同样昂贵。
+
+大模型（LLM / VLM / 多模态大模型）的兴起改变了这一格局。语言与视觉-语言模型具备开放词汇识别与常识推理能力，使 VAD 从「异常打分」走向「异常理解」：\citeauthor{zanella2024clip}~等人把 CLIP 潜在空间用于异常识别\cite{zanella2024clip}，\citeauthor{wu2024openvocab}~等人把该任务扩展到开放词汇设定\cite{wu2024openvocab}，而免训练（training-free）范式更进一步——\citeauthor{zanella2024trainingfree}~等人直接借助大语言模型完成异常定位，无需任何域内重训\cite{zanella2024trainingfree}。近期工作沿着两条主线继续推进：一是把解释做得更结构化、更可信，例如基于规则约束的 VLM-LLM 解释\cite{khedher2025trustworthy}、分层视觉-语言描述\cite{alradi2026hierarchical}与语义-光流边界感知检测\cite{sun2026sorbdnet}；二是把外部知识引入推理环路，例如检索增强生成\cite{sun2026rag4vad}与定义引导推理\cite{pei2026drvad}。与此同时，语言驱动的 VAD 综述已开始从分类学、数据集与未来方向三个维度梳理这一新兴分支\cite{saket2026languagedriven}。
+
+\subsection{问题定义与三重挑战}
+
+给定一段摄像头视频流，模型需在长度为 $T$ 帧、$8$~fps 采样的片段 $X \in \mathbb{R}^{T \times 3 \times H \times W}$ 上输出四元组 $\hat{y} = (S, I, E, (c, a))$：帧级异常分数曲线 $S$、异常时间区间集合 $I$、带证据引用的解释 $E$，以及置信度 $c$ 与弃权标志 $a$。与传统的「输出一个分数」相比，这一形式化引入了三个必须回答的问题，也正是当前方法尚未解决的三重挑战：
+
+\paragraph{挑战一：域偏移。} 通用视觉-语言模型在自然图像上预训练，而监控画面具有俯视角、低照度、低分辨率、小目标与人群密集等显著不同分布，导致视觉-文本对齐分数系统性偏低、阈值难以跨场景迁移。全量微调虽可缓解，却带来高昂成本并破坏零样本能力。
+
+\paragraph{挑战二：解释不可验证。} 现有流程的解释由大模型自由生成，语言流畅但无从判断其中哪些论断真正由视频证据支撑。解释生成端已快速拥挤，而对其质量的评测研究数量较少：我们检索到的核心文献中，仅有\citeauthor{khedher2025trustworthy}~等人从可信度角度讨论了解释的规则化约束\cite{khedher2025trustworthy}，尚无工作给出可计算、可复现的「解释是否忠实」判据。
+
+\paragraph{挑战三：退化下不可降级。} 免训练范式隐含假设输入足够干净。\citeauthor{mo2026lowlight}~等人明确指出，低光环境下被退化的视觉证据会让免训练推理产生幻觉语义与不稳定分数\cite{mo2026lowlight}。而真实摄像头视频普遍存在低光、雨雾、压缩与抖动，且系统的误报会直接导致告警疲劳与弃用。与此相关的是部署约束：边缘与联邦场景要求低延迟与隐私保护\cite{yun2025edgegnn,li2026federated,wang2025holotrace}，跨摄像头场景要求跨视角一致性\cite{mishra2026dementia}，这些约束进一步放大了上述困难。
+
+\subsection{本文贡献}
+
+针对上述挑战，本文提出 \evivad{}——一个在\emph{完全冻结}的视觉-语言大模型之上构建的统一框架，其贡献如下：
+
+\begin{itemize}
+  \item \textbf{DAA（Domain Low-rank Adapter，低秩领域适配）}：在视觉编码器末端四个 Transformer 块的 Q/V 投影中注入秩为 $r{=}4$、缩放为 $\alpha{=}8$ 的低秩增量，并将上投影矩阵零初始化，使训练起点与基线逐比特一致。该设计以 $4.7$\,M 可训练参数（约为主干的 $0.9\%$）缓解域偏移，并支持「一个场景一个适配器」的热插拔部署。
+  \item \textbf{EAD（Evidence-Anchored Decoding，证据锚定解码）}：把解释从自由文本改造为带证据引用的结构化输出，强制模型为每个论断绑定可被独立检查的时间区间与视觉线索，并以 InfoNCE 形式的证据对齐损失训练。由此解释从「不可证伪的叙述」变为「可证伪的断言」，并支持证据不足时拒绝作答。
+  \item \textbf{DAG（Degradation-Aware Gating，退化感知门控）}：引入轻量质量评估探针，按输入质量在「视觉-文本对齐」与「检索/先验主导」两条打分路径之间连续调制权重，并在低置信时显式弃权。该模块在干净输入上几乎不改变性能，却在退化条件下显著维持可用性，使系统「知道自己什么时候不可信」。
+\end{itemize}
+
+我们在 UCF-Crime 主数据集与 XD-Violence、UBnormal、MSAD 跨域集上，以及在 $4$ 类退化 $\times$ $3$ 个强度共 $12$ 种配置的退化网格上建立统一评测协议，并同时报告检测精度（AUC / AP / mAP@0.5）、解释可验证性（EAR / CFS / HR / TCR）、退化鲁棒性（RPR / ECE）与效率指标。结果显示三个模块在互不重叠的维度上互补，且组合后存在弱的正向协同。

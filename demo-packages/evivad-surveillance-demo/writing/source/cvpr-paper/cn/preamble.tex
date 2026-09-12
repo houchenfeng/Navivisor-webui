@@ -1,0 +1,44 @@
+%% =====================================================================
+%%  preamble.tex  --  中文版（Chinese version）
+%%  编译方式：XeLaTeX（latexmk -xelatex main.tex）
+%% =====================================================================
+
+%% ---- 中文支持（XeLaTeX 编译） ----
+\usepackage[UTF8]{ctex}
+
+%% 若默认字体在你的系统上缺失，可改为显式指定字体集，例如：
+%% \usepackage[UTF8, fontset=fandol]{ctex}      % TeX Live 自带的 Fandol 字体
+%% \usepackage[UTF8, fontset=windows]{ctex}     % Windows 本机字体（宋体/黑体）
+
+%% ---- 数学 ----
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+%% ---- 图与表 ----
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{subcaption}
+
+%% ---- 算法 ----
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+%% ---- teaser 图所需（CVPR 模板官方支持） ----
+\usepackage{cuted}
+\usepackage{currfile}
+\usepackage{caption}
+
+%% ---- 图片搜索路径：图片为两个版本共用，放在上一级 fig/ ----
+\graphicspath{{../fig/}{./fig/}}
+
+%% ---- 行内标注 ----
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\todo}[1]{{\color{red}#1}}
+\newcommand{\TODO}[1]{\textbf{\color{red}[TODO: #1]}}
+
+%% ---- 常用算子 ----
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\evivad}{\textsc{EviVAD}}

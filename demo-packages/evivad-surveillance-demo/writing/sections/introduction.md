@@ -1,0 +1,34 @@
+# introduction
+
+```tex
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Background and Motivation}
+
+Surveillance cameras now cover urban public spaces, transport hubs, campuses and care facilities at a scale whose video streams far exceed human monitoring capacity. Video anomaly detection (VAD) aims to localise abnormal events in such streams automatically and has become a core technology of intelligent security. Over the past decade it has developed a family of methods centred on reconstruction, future-frame prediction and weakly supervised multiple-instance learning~\cite{abdalla2025vad10years,pravalika2026surveillance,houssein2026violence}. A common property of these methods is that they report only a \emph{numeric} anomaly score: they neither explain \emph{why} an event is abnormal nor express \emph{how confident} they are. In real deployments, an unverifiable high-score alarm is as expensive as a miss.
+
+Large models (LLMs, VLMs and multimodal large models) have changed this picture. Language and vision-language models bring open-vocabulary recognition and commonsense reasoning, moving VAD from \emph{anomaly scoring} towards \emph{anomaly understanding}. \citeauthor{zanella2024clip}~et al. exploited the CLIP latent space for anomaly recognition~\cite{zanella2024clip}, and \citeauthor{wu2024openvocab}~et al. extended the task to the open-vocabulary setting~\cite{wu2024openvocab}. The training-free paradigm went further: \citeauthor{zanella2024trainingfree}~et al. localise anomalies directly with a large language model, without any in-domain retraining~\cite{zanella2024trainingfree}. Recent work advances along two lines. The first makes explanations more structured and more trustworthy, e.g.\ rule-constrained VLM--LLM explanations~\cite{khedher2025trustworthy}, hierarchical vision-language descriptions~\cite{alradi2026hierarchical} and semantic-optical boundary-aware detection~\cite{sun2026sorbdnet}. The second brings external knowledge into the reasoning loop, e.g.\ retrieval-augmented generation~\cite{sun2026rag4vad} and definition-guided reasoning~\cite{pei2026drvad}. Surveys of language-driven VAD have begun to organise this emerging branch along taxonomy, datasets and open problems~\cite{saket2026languagedriven}.
+
+\subsection{Problem Definition and Three Challenges}
+
+Given a surveillance video stream, a model must map a clip $X \in \mathbb{R}^{T \times 3 \times H \times W}$ of $T$ frames sampled at $8$~fps to a tuple $\hat{y} = (S, I, E, (c, a))$, where $S$ is a frame-level anomaly score curve, $I$ a set of temporal anomaly intervals, $E$ an explanation with evidence citations, and $c, a$ the confidence and abstention flag. Compared with ``emitting a single score'', this formulation raises three questions that current methods do not answer.
+
+\paragraph{Challenge 1: domain shift.} General vision-language models are pre-trained on natural images, whereas surveillance footage has a markedly different distribution: top-down viewpoints, low illumination, low resolution, small objects and crowded scenes. As a result vision-text alignment scores are systematically depressed and thresholds do not transfer across scenes. Full fine-tuning alleviates this but is expensive and destroys zero-shot ability.
+
+\paragraph{Challenge 2: unverifiable explanations.} Explanations in current pipelines are free-form text: fluent, but impossible to check against the video. The generation side is already crowded, while the evaluation of explanation quality is almost empty. Among the core references we retrieved, only \citeauthor{khedher2025trustworthy}~et al.\ discuss rule-based constraints on explanations from a trustworthiness angle~\cite{khedher2025trustworthy}; no work provides a computable, reproducible criterion for whether an explanation is faithful.
+
+\paragraph{Challenge 3: no graceful degradation.} Training-free pipelines implicitly assume sufficiently clean inputs. \citeauthor{mo2026lowlight}~et al.\ show explicitly that degraded visual evidence in low light makes training-free reasoning produce hallucinated semantics and unstable scores~\cite{mo2026lowlight}. Real footage routinely contains low light, rain and fog, compression and shake, and false alarms directly cause alert fatigue and abandonment. Deployment constraints compound the difficulty: edge and federated settings demand low latency and privacy~\cite{yun2025edgegnn,li2026federated,wang2025holotrace}, while multi-camera scenarios demand cross-view consistency~\cite{mishra2026dementia}.
+
+\subsection{Contributions}
+
+We propose \evivad{}, a unified framework built on a \emph{fully frozen} vision-language backbone. Our contributions are:
+
+\begin{itemize}
+  \item \textbf{DAA (Domain Low-rank Adapter).} We inject low-rank increments with rank $r{=}4$ and scaling $\alpha{=}8$ into the Q/V projections of the last four Transformer blocks of the vision encoder, with a zero-initialised up-projection so that the training start point is bit-wise identical to the baseline. This mitigates domain shift with $4.7$\,M trainable parameters (about $0.9\%$ of the backbone) and supports ``one adapter per scene'' hot-swappable deployment.
+  \item \textbf{EAD (Evidence-Anchored Decoding).} We turn explanations from free text into a structured output that must cite inspectable temporal intervals and visual cues, trained with an InfoNCE evidence-alignment loss. An explanation thus becomes a falsifiable assertion rather than an unfalsifiable narrative, and the model can refuse to answer when evidence is insufficient.
+  \item \textbf{DAG (Degradation-Aware Gating).} We introduce a lightweight quality probe that continuously re-weights a vision-text alignment path against a retrieval/prior-driven path according to input quality, and abstains when confidence is low. The module leaves clean inputs almost unchanged yet preserves usability under degradation: the system \emph{knows when it cannot be trusted}.
+\end{itemize}
+
+We establish a unified protocol on UCF-Crime, cross-domain sets (XD-Violence, UBnormal, MSAD) and a $12$-configuration degradation grid ($4$ degradation types $\times$ $3$ severity levels), and report detection accuracy (AUC / AP / mAP@0.5), explanation verifiability (EAR / CFS / HR / TCR), degradation robustness (RPR / ECE) and efficiency together. The aggregate results indicate that the three modules act on disjoint dimensions and exhibit a weak positive synergy when combined.
+```

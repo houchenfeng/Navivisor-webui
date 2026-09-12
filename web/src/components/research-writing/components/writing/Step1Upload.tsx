@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
 import { fillWritingFromExperiment } from "@/components/research-writing/lib/fillFromExperiment";
+import { formatMaterialPreview } from "@/components/research-writing/lib/format-material";
 
 interface Props {
   data: WritingData;
@@ -93,7 +94,7 @@ export default function Step1Upload({ data, onChange }: Props) {
           label="实验完整细节"
           description="记录实验设计、数据集、模型结构、训练参数等（.md 或 .txt）"
           fileName={data.experimentDetail ? "已读取" : ""}
-          preview={data.experimentDetail}
+          preview={formatMaterialPreview(data.experimentDetail)}
           onPick={() => detailRef.current?.click()}
           onClear={() => {
             onChange({ experimentDetail: "" });
@@ -112,7 +113,7 @@ export default function Step1Upload({ data, onChange }: Props) {
           label="实验结果描述"
           description="包含指标数值、对比方法、消融分析等（.md 或 .txt）"
           fileName={data.experimentResult ? "已读取" : ""}
-          preview={data.experimentResult}
+          preview={formatMaterialPreview(data.experimentResult)}
           onPick={() => resultRef.current?.click()}
           onClear={() => {
             onChange({ experimentResult: "" });
@@ -204,8 +205,8 @@ function FileUploadCard({
       </div>
 
       {hasContent && (
-        <pre className="mt-3 max-h-[120px] overflow-auto rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-ink-sub">
-          {preview.length > 500 ? preview.slice(0, 500) + "\n...(已省略)" : preview}
+        <pre className="mt-3 max-h-[220px] overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-ink-sub">
+          {preview}
         </pre>
       )}
     </div>

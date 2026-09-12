@@ -1,0 +1,104 @@
+{
+  "paper_title": "EviVAD: Verifiable Explanation and Degradation-Aware Gating for Large-Model Video Anomaly Detection in Surveillance Cameras",
+  "language": "en-US",
+  "reviewers": [
+    {
+      "id": 1,
+      "name": "Reviewer 1",
+      "focus": "Method Novelty and Positioning vs Prior Art",
+      "rating": 5,
+      "score": 5,
+      "confidence": 4,
+      "summary": "This paper argues that once VLMs enter surveillance VAD, three failure modes dominate: (i) domain shift from natural-image pretraining to top-down, low-light, small-object CCTV; (ii) free-form explanations that cannot be checked against the video; (iii) training-free pipelines that collapse under low light, rain/fog, compression and camera shake. EviVAD freezes a CLIP ViT-B/16 backbone and stacks three modules—DAA (rank-4 LoRA on the last four Q/V projections, zero-init B, 4.7M params), EAD (evidence slots + InfoNCE alignment + refusal), and DAG (quality probe blending vision–text vs retrieval/prior, with abstention). The output is the 4-tuple (score curve, intervals, evidence-cited explanation, confidence/abstain). The positioning is timely. The technical contribution is a carefully engineered composition, not a new backbone. The paper must make that composition non-trivial by (a) isolating what cannot be obtained by naively stacking LoRA + RAG + a confidence head, and (b) citing and beating the closest published systems rather than only an internal baseline B0.",
+      "strengths": [
+        "Problem statement is the strongest part of the paper. Treating explanation verifiability (EAR/CFS/HR/TCR) and graceful degradation (RPR/ECE, explicit abstention) as first-class metrics, on par with AUC, is a genuine evaluation gap in VAD. Most CLIP/LLM-VAD papers still report only detection scores under clean inputs.",
+        "DAA is well motivated as a deployment constraint: freeze the backbone, keep the start point bit-wise identical to B0 via zero-init up-projection, and support one-adapter-per-scene swap. This is more honest than claiming a new architecture.",
+        "EAD is the most original module. Forcing (t_s, t_e, cue) slots, training with a contrastive evidence loss, and allowing evidence-insufficient refusal turns explanations into falsifiable assertions. Rule-constrained VLM–LLM text (Khedher et al.) and RAG-for-VAD (Sun et al., RAG4VAD) do not give a computable ‘remove-the-evidence and the claim should fail’ protocol.",
+        "DAG takes the low-light hallucination result of Mo et al. seriously and answers ‘when can we not trust the VLM’ with a probe + retrieval/prior fallback + abstain, instead of silently emitting a high score."
+      ],
+      "weaknesses": [
+        "(Major — novelty vs composition.) DAA is LoRA on CLIP (Hu et al., ICLR 2022; CLIP-Adapter / Tip-Adapter line). EAD is structured decoding + InfoNCE (Oord et al.; CLIP contrastive). DAG is a two-path gate with a quality probe, close in spirit to mixture-of-experts routing and selective prediction / reject option (Geifman & El-Yaniv). The paper must state, in one paragraph, the non-composable claim: what fails if one simply attaches LoRA to Zanella’s training-free LLM localiser, or adds RAG4VAD on top of open-vocabulary VAD (Wu et al. 2024), without evidence slots and without an abstain path. Right now Table 1’s ‘weak positive synergy’ is asserted, not explained mechanistically (gradient isolation? conflicting losses? routing hysteresis?).",
+        "(Major — missing closest algorithms.) The main table compares Reconstruction-2023, Weakly-supervised-CNN-ViT-2023, CLIP-zero-shot-2022, Training-free-LLM-2024 and B0. That is too coarse for CVPR. You must add (or re-run under your protocol) at least: RTFM / S3R / MGFN / UR-DMU for weakly supervised VAD; VadCLIP, CLIP-TSA, STPrompt / PEL4VAD for CLIP-based VAD; Zanella et al. training-free LLM localisation as a named baseline rather than a generic ‘Training-free-LLM-2024’ row; Khedher et al. rule-constrained explanations and Hashimoto et al. captioning as explanation baselines for EAR/HR, not only B0. Without these, +5.3 AUC and +26.9 EAR cannot be attributed to DAA/EAD/DAG rather than to a weak B0.",
+        "(Major — citations that belong in Related Work and Intro.) Please cite and contrast: Hu et al. LoRA; Gao et al. CLIP-Adapter; Zhou et al. CoOp / CoCoOp (prompt vs weight adaptation—why LoRA not prompts?); Zanella CLIP-VAD and training-free LLM-VAD; Wu open-vocabulary VAD; Kim DT-VAD; Sun RAG4VAD; Pei DRVAD definition-guided reasoning; Khedher trustworthy VLM–LLM; Du causation-understanding benchmark; Mo low-light training-free failure; Geifman selective prediction; ImageNet-C / Hendrycks for corruption protocols. The current related-work section is survey-heavy (2025–2026) and light on the PEFT / abstention / CLIP-VAD papers a specialist will expect.",
+        "(Minor — writing/format.) Notation for the 4-tuple ŷ=(S,I,E,(c,a)) is introduced once and then mixed with ‘score / interval / explanation / flag’ in figures. Equations for L_EA should specify batch construction (how many hard negative evidence slots per clip?). CVPR review layout: keep two-column, 8-page content; several tables look like they will overflow. Unify DAA/EAD/DAG labels between Fig. 1, Fig. 2 and §3."
+      ],
+      "questions": [
+        "What is the single sentence of novelty that would be false if EviVAD were ‘B0 + LoRA + RAG + a confidence threshold’? Please point to the ablation cell that proves it.",
+        "Why LoRA on Q/V of blocks 9–12 rather than CLIP-Adapter (feature-space residual), visual prompt tuning, or last-layer only? A 4-way PEFT comparison (same budget ≤5.5M) is the experiment that would make DAA a contribution rather than a default.",
+        "For EAD: is the InfoNCE evidence loss computed against human-annotated minimal sufficient evidence, automatically mined snippets, or LLM-proposed slots? If the latter, how do you avoid self-justifying circularity when you later measure EAR on similar slots?",
+        "Please list the papers you will add to Table 1 / Table 2 (SOTA) in the camera-ready, with one line each on protocol mismatch (clip length, labels, features)."
+      ],
+      "limitations": [
+        "Without named SOTA re-runs and a PEFT alternative table, the innovation claim remains a systems composition. Gradient isolation is stated but not shown (no ‘with vs without L_EA into the tower’ curve). All module hyperparameters (r=4, α=8, L_EA weight 0.3, abstain threshold) look selected after seeing test trends; a frozen validation protocol should be explicit."
+      ],
+      "ethical_concerns": "No. Surveillance ethics are mentioned only in passing; a short paragraph on dual-use, retention of retrieval memories, and abstention as a safety valve would be appropriate but is not a blocker.",
+      "final_justification": "I recommend Weak Accept (5). The problem cut (verifiable explanations + graceful degradation) is the right one for large-model VAD, and EAD+DAG are more than slogans. I cannot go to Accept until the paper (1) names and beats the actual CLIP/WS-VAD/explanation baselines, (2) isolates DAA against other PEFT, and (3) writes a related-work paragraph that a CLIP-VAD reviewer would recognise. Those are camera-ready-feasible experiments, not a rewrite of the method."
+    },
+    {
+      "id": 2,
+      "name": "Reviewer 2",
+      "focus": "Experimental Design, Comparisons, and What Must Be Added",
+      "rating": 4,
+      "score": 4,
+      "confidence": 5,
+      "summary": "Experiments use UCF-Crime as the main set, XD-Violence / UBnormal / MSAD for cross-domain, and a 4×3 synthetic degradation grid (low light, rain/fog, compression, shake × 3 severities). Metrics: AUC/AP/mAP@0.5, EAR/CFS/HR/TCR, RPR/ECE, latency and memory. Headline numbers vs B0: AUC 76.8→82.1, EAR 41.5→68.4, HR 26.4→9.8, degradation-grid AUC 62.5→71.3, +5.5M params, +29 ms. Ablations cover 8 DAA/EAD/DAG combinations. The protocol sketch (shared clip size, three seeds 42/3407/2026, thresholds frozen on val) is more careful than many VAD papers. The empirical story is still not convincing for a CVPR main-conference bar: B0 is an internal freeze-VLM baseline, not the literature; SOTA weakly-supervised and CLIP-VAD numbers on UCF-Crime are typically in the mid-80s AUC depending on protocol, so 82.1 cannot be interpreted without a matched table; the synthetic degradation grid has not been calibrated against naturally degraded video; EAR/CFS depend on unreleased annotation guidelines; no significance tests; ShanghaiTech / CUHK Avenue / NWPU Campus are absent; multi-camera (the actual deployment unit) is absent.",
+      "strengths": [
+        "Evaluating detection, explanation faithfulness, corruption robustness and efficiency in one protocol is the right experimental thesis. Few VAD papers report hallucination rate and abstention together with AUC.",
+        "The 8-cell ablation plus the claim of weak positive synergy is the correct structure; if the numbers are real, they support complementary modules rather than one mega-module.",
+        "Pre-registering four failure modes (gating hurts clean inputs; dense-crowd evidence collapse; abstain vs recall; empty retrieval memory) is unusually honest and should stay in the paper.",
+        "Three-seed mean/std and ‘thresholds only on val’ are the minimum bar; you already state them—now apply them to every new baseline you add."
+      ],
+      "weaknesses": [
+        "(Major — comparison to existing algorithms.) Table 1’s generic rows cannot substitute for named methods. Under a frozen protocol (same 32-frame / 8 fps clips, same split, same evaluation script), report: RTFM, S3R, MGFN, UR-DMU (weakly supervised); CLIP-TSA, VadCLIP, PEL4VAD / STPrompt (CLIP); Zanella training-free LLM localiser; a fully fine-tuned CLIP last-block upper bound; and an explanation-only baseline (Khedher-style rules or RAG4VAD without DAA/DAG). For each, state feature backbone and whether you used official weights or a reimplementation. Otherwise the +5.3 AUC vs B0 may simply mean B0 is under-tuned relative to 2023–2025 CLIP-VAD.",
+        "(Major — extra experiments required to support the claims.) (1) DAA sensitivity: r∈{1,2,4,8,16}, α∈{4,8,16}, inject last {2,4,8} blocks; plot AUC vs #params. (2) PEFT alternatives at ≤5.5M: LoRA vs CLIP-Adapter vs BitFit vs visual prompts. (3) EAD: IAA (Cohen’s κ / Krippendorff’s α) on EAR labels; release the annotation codebook (minimal sufficient evidence, distractors, counterfactual removal). (4) DAG: memory size N∈{64,256,1024,4096}; retrieval-miss rate vs domain gap (UCF→XD). (5) Statistics: paired bootstrap or Wilcoxon over videos for AUC/EAR deltas; mark p<0.05. (6) Real degradation: at least one naturally degraded subset (night UCF-Crime, or a small in-house rainy/low-light set) vs ImageNet-C-style synthesis; report the sim-to-real gap. (7) Transfer: ShanghaiTech and/or CUHK Avenue under the same clip protocol, even if only as a sanity check. (8) Efficiency: FPS vs batch 1 on one named GPU, not only latency_ms in a table.",
+        "(Major — B0 and published UCF-Crime numbers.) Training-free CLIP/LLM papers and weakly supervised SOTA sit on different protocols (10-crop, I3D vs CLIP, video-level vs frame-level). You must include a ‘protocol card’: crop, backbone, feature fps, whether AUC is frame-level. If your B0 at 76.8 is far below a reproduced VadCLIP under the same card, the EviVAD 82.1 is not a SOTA result and the abstract must not imply it is.",
+        "(Minor — writing of results.) Dense tables without in-text ‘take-home’ sentences. Caption every figure with the claim it supports (e.g. ‘DAA accounts for +2.6 AUC; EAD accounts for +22 EAR and does not explain the AUC gain’). Error bars on bar charts. Do not expose internal provenance columns in camera-ready tables."
+      ],
+      "questions": [
+        "What is frame-level AUC of a reproduced VadCLIP / CLIP-TSA / RTFM under your exact protocol card? If you cannot retrain, say so and move those rows to a ‘reported, incomparable’ block—do not mix them with B0.",
+        "How were rain/fog β, H.264 bitrate, shake amplitude, and gamma chosen? Show a histogram overlay vs a small set of real night/rain frames (brightness, SNR, QP). If you cannot, call the grid a stress test, not a ‘surveillance degradation distribution’.",
+        "EAR/CFS: how many annotators, hours, and κ? What happens to EAR if the model cites a correct interval but a wrong cue word?",
+        "DAG retrieval: what is in the memory bank (normal clips only? which dataset)? How do you prevent leakage from UCF-Crime test videos into the index?",
+        "Please add a compute appendix: GPU, hours to train DAA, frozen vs unfrozen memory GB, and whether EAD decoding is the 29 ms bottleneck."
+      ],
+      "limitations": [
+        "Single-view only; no camera-network consistency (Mishra et al. multi-view dementia care is cited but not tested). No per-seed raw scores. Degradation types omit snow, glare, IR, and PTZ zoom—the grid is not exhaustive. Explanation metrics do not scale without the codebook you have not released."
+      ],
+      "ethical_concerns": "No experimental ethics issues. Storing a retrieval memory of surveillance clips has privacy implications (cf. federated VAD, Li et al.); one sentence on on-prem index and retention would help.",
+      "final_justification": "Borderline Accept (4). The experimental skeleton is the right shape (ablation + corruption + explanation metrics + failure modes). It is not yet a CVPR-complete empirical paper because the literature baselines are placeholders, the degradations are uncalibrated, and the explanation scores lack IAA. I will raise my score if the camera-ready (or a supplementary) contains a matched SOTA table, PEFT/r–α sweeps, κ on EAR, and at least one real night/rain check. Without those, the numbers should not be used as ‘proof’ of the three modules."
+    },
+    {
+      "id": 3,
+      "name": "Reviewer 3",
+      "focus": "Writing, CVPR Format, Clarity of Claims, and Literature Framing",
+      "rating": 5,
+      "score": 5,
+      "confidence": 4,
+      "summary": "The paper is organised as three challenges → three modules → protocol → main table → ablation → degradation → efficiency → limitations. That is a clean CVPR story. English is readable; the bilingual TeX is a plus for teaching reproducibility. The writing problems are not grammar—they are claim calibration, missing specialist citations, figure/text identity, and two-column formatting. Several sentences in the abstract and introduction read as if EviVAD were a new VLM; it is a frozen CLIP plus three small modules. Related work lists many 2025–2026 surveys and systems but does not do the job of a related-work section: position EviVAD against 3–4 nearest neighbours in a table or a ‘differences’ paragraph. Tables are information-dense and under-interpreted. Notation and module names drift between teaser, framework figure, and §3.",
+      "strengths": [
+        "Narrative discipline: each module is tied to one challenge (DAA↔domain shift, EAD↔unverifiable text, DAG↔no graceful degradation). Readers can grade the paper by whether the experiments test those three arrows.",
+        "Limitations are unusually candid (annotation cost, single-view, degradation shift). Keep them; do not soften in the camera-ready.",
+        "Bilingual compilable TeX and an explicit 4-tuple output make the method easier to re-implement than typical LLM-VAD papers that hide prompts in the appendix.",
+        "The teaser figure (if labels match the text) is the right ‘one picture’ for a systems paper: clean vs degraded vs abstain vs evidence slots."
+      ],
+      "weaknesses": [
+        "(Major — writing of the contribution.) Abstract and Intro over-claim ‘a unified framework for large-model VAD’. Rewrite to: frozen CLIP ViT-B/16; 5.5M trainable; three modules with disjoint intended effects. Put the 76.8→82.1 numbers after the protocol card, not as if they were protocol-agnostic SOTA. Never say ‘large model’ when the trainable part is LoRA on four blocks.",
+        "(Major — related work as writing, not a dump.) Add a comparison paragraph/table with columns Method | Backbone | Trainable | Explanation | Handles degradation | Abstain. Rows: Zanella training-free, Wu open-vocab, VadCLIP, RAG4VAD, Khedher, Mo low-light, EviVAD. That table is more important than extra survey citations. Still add LoRA, CLIP-Adapter, CoOp, InfoNCE, selective prediction, ImageNet-C, RTFM/MGFN in the bibliography so reviewers can see you know the lineage.",
+        "(Major — format.) CVPR 2026 review version: \\usepackage[review]{cvpr}, paper ID, 8-page content + references. Check: (1) figure captions under figures, not inside; (2) no margin overflow on wide tables—split or use tiny font consistently; (3) vector line plots not stretched bitmaps; (4) consistent DAA/EAD/DAG / ‘Domain Adapter’ aliases in Fig.1–2 vs §3.2–3.4; (5) equation numbers referenced in text; (6) citations as \\citeauthor{}~\\cite{} already used—good—but do not cite 20 surveys in lieu of the 8 actual baselines.",
+        "(Minor — results writing.) After each main table, add two sentences: who wins which axis (DAA→AUC, EAD→EAR/HR, DAG→RPR); whether synergy is super-additive and by how many points. Move failure-mode criteria from a wall of text into a 4-row table. Number every claim in the intro (‘C1–C3’) and repeat those IDs in the experiment headers."
+      ],
+      "questions": [
+        "Will the camera-ready include a one-page ‘differences from Zanella / Wu / Khedher / RAG4VAD / Mo’ table? If not, the related-work section remains a reading list.",
+        "Fig. 1 vs Fig. 2: please list every module acronym as it appears in both figures and in §3; I spotted possible Domain-Adapter vs DAA and ‘quality gate’ vs DAG mismatches.",
+        "Cross-modal evidence slots in future work: one paragraph is enough (modality ∈ {RGB, audio}, independent encoders, shared evidence space). Do not promise thermal/depth without a dataset. Campus RGB+audio is a credible first step—cite a dataset if you have one in mind.",
+        "Page budget: which table moves to supplementary (full 8-cell ablation? per-corruption 12-config matrix? PEFT sweep) so the main paper stays within 8 pages after you add the SOTA table Reviewer 2 asked for?"
+      ],
+      "limitations": [
+        "Some tables are denser than the prose that should interpret them. Future-work on edge/federated/multi-camera is listed without a feasibility sentence (latency target, which GPU, which camera graph). That reads as boilerplate unless you add numbers from your efficiency table."
+      ],
+      "ethical_concerns": "No. A short dual-use / privacy sentence (retrieval index of public-space video) would match CVPR’s broader impact optional paragraph.",
+      "final_justification": "Weak Accept (5) on writing and framing. The paper is already a coherent systems narrative; it is not yet a carefully positioned CVPR paper. Tighten claims, add a nearest-neighbour comparison table, fix figure/term identity, and interpret tables in text. I am not asking for a rewrite of the method—only for the writing to match the actual (still valuable) contribution: frozen CLIP + LoRA domain adapter + falsifiable evidence decoding + degradation-aware abstention."
+    }
+  ],
+  "generated_at": "2026-09-12T09:00:00Z"
+}

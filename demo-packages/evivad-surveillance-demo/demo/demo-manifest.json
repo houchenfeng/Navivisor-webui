@@ -1,0 +1,1028 @@
+{
+  "schemaVersion": 3,
+  "demoId": "evivad-surveillance-demo",
+  "version": "1.0.0",
+  "simulated": true,
+  "nodes": [
+    {
+      "key": "intake",
+      "stage": "topic.intake",
+      "inputs": [],
+      "files": [
+        {
+          "key": "intake",
+          "path": "topic/intake.json",
+          "role": "project-intake",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "718bbe23e3042ad23547438eddeff95891d9fd9272aab35b7944e54c922311ed"
+        }
+      ]
+    },
+    {
+      "key": "first-search",
+      "stage": "topic.first-search",
+      "inputs": [
+        "intake"
+      ],
+      "files": [
+        {
+          "key": "search-strategy",
+          "path": "topic/search-strategy.json",
+          "role": "search-strategy",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "085c4e0c0471569b9a356cd38a95fee8d14f6989b7aaeb951807a87a794a0e3f"
+        },
+        {
+          "key": "search-iterations",
+          "path": "topic/search-iterations.jsonl",
+          "role": "search-iterations",
+          "mediaType": "application/x-ndjson",
+          "required": true,
+          "sha256": "0351a3750fbc38b8ba807c02cda73dd9aeedf294e7f101642ed2c008d6d5a2e8"
+        },
+        {
+          "key": "candidate-papers",
+          "path": "topic/candidate-papers.csv",
+          "role": "candidate-papers",
+          "mediaType": "text/csv",
+          "required": true,
+          "sha256": "ee5ca4decf90291e3d4440ffef0d5417de4a8d3721e1ab8b8268efc82121b059"
+        }
+      ]
+    },
+    {
+      "key": "candidates",
+      "stage": "topic.candidates",
+      "inputs": [
+        "candidate-papers"
+      ],
+      "files": [
+        {
+          "key": "landscape",
+          "path": "topic/landscape.md",
+          "role": "topic-landscape",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "eae1a0629928d6bba605ef01b4fd53011e0d6e30027f728e396c77799741a3f3"
+        },
+        {
+          "key": "candidate-topics",
+          "path": "topic/candidate-topics.json",
+          "role": "candidate-topics",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "386c45fd092b11417f84e100f95f0cd6edd7e9baa0effab8067687ea2abd8949"
+        },
+        {
+          "key": "candidate-topics-md",
+          "path": "topic/candidate-topics.md",
+          "role": "candidate-topics",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "2e0e6e5b6514c815edf803ad0ed5ca61a382be0cb303aff89c5abb7f0c89bc41"
+        }
+      ]
+    },
+    {
+      "key": "confirmation",
+      "stage": "topic.confirmation",
+      "inputs": [
+        "candidate-topics"
+      ],
+      "files": [
+        {
+          "key": "confirmed-topic",
+          "path": "topic/confirmed-topic.json",
+          "role": "confirmed-topic",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "2a95089c12ac9217284700b9816f7689d7b4bc6913d7e79768e973fc7615ebaf"
+        }
+      ]
+    },
+    {
+      "key": "core-literature",
+      "stage": "topic.core-literature",
+      "inputs": [
+        "confirmed-topic"
+      ],
+      "files": [
+        {
+          "key": "core-references",
+          "path": "topic/core-references.csv",
+          "role": "core-references",
+          "mediaType": "text/csv",
+          "required": true,
+          "sha256": "7ed9b53a61ac702dd5246abe6589dd6a7d01b054914ef40c60127226ed6efe46"
+        },
+        {
+          "key": "literature-bib",
+          "path": "topic/references.bib",
+          "role": "literature-bib",
+          "mediaType": "application/x-bibtex",
+          "required": true,
+          "sha256": "b6b4b22b710e623f40d129f6b157762bde008da1770fcf3c1546f5ce942b4231"
+        },
+        {
+          "key": "paper-manifest",
+          "path": "topic/paper-manifest.json",
+          "role": "paper-manifest",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "421a4683d4e38f5be5c56f64f5d355ad1aec2a32f96bbbfb17c8891ea6a8e114"
+        },
+        {
+          "key": "paper-audit",
+          "path": "topic/paper-mapping-audit.json",
+          "role": "paper-manifest",
+          "mediaType": "application/json",
+          "required": false,
+          "sha256": "31139563cff5bc4d4fac64e3add298c44c9dc39ef729dc9b81cda8941cf5d9bc"
+        },
+        {
+          "key": "literature-handoff",
+          "path": "topic/literature-handoff.md",
+          "role": "literature-handoff",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "1f4aed3698edbfdacb63147b16dd2574b1e212b4e7181ea4aa1084d7fbb88551"
+        },
+        {
+          "key": "pdf-core-001",
+          "path": "topic/papers/CORE-001.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "512e423f98c9f06913bcc8247743631d5ed9069761c05c9c1e0c22a8028977d4"
+        },
+        {
+          "key": "pdf-core-002",
+          "path": "topic/papers/CORE-002.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "bc1ec661d8302f30864b8476c5575d7c54623d51b64261a0e0dcac449f096f94"
+        },
+        {
+          "key": "pdf-core-003",
+          "path": "topic/papers/CORE-003.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "dac0ba17227167fe292b09e7307cbf84769a0d19e88e86569443c48fb3acb46d"
+        },
+        {
+          "key": "pdf-core-004",
+          "path": "topic/papers/CORE-004.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "a343f7e5e9e17a2b41543d21b31dc73165a85cc453d91b6939d28b857b6e7f7b"
+        },
+        {
+          "key": "pdf-core-005",
+          "path": "topic/papers/CORE-005.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "03fb72006fc6cd1df10a53f6b1d6abaf5f6da1faecfcecba5d7d7b435874892e"
+        },
+        {
+          "key": "pdf-core-006",
+          "path": "topic/papers/CORE-006.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "63d243385769dc8bbacabdb0e1834b1b0645fb9124a050637ca1715c2050456f"
+        },
+        {
+          "key": "pdf-core-007",
+          "path": "topic/papers/CORE-007.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "db59972957f7b892309f00cdff6d95a6c500576aae97cbff86b2af6d2c117042"
+        },
+        {
+          "key": "pdf-core-008",
+          "path": "topic/papers/CORE-008.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "d525d285370ab56fa15eeeccc4fc73cab1ef67a19af5e78b695f17a003924538"
+        },
+        {
+          "key": "pdf-core-009",
+          "path": "topic/papers/CORE-009.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "871cd4b55471902ba78b35319ba2fd7c8820ed3dddd484fd050d674a7f62f05b"
+        },
+        {
+          "key": "pdf-core-010",
+          "path": "topic/papers/CORE-010.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "02bd5da5e5ccfe135193a9dee0e8d82437fa4ec1f0b558e671dac4e7550de725"
+        },
+        {
+          "key": "pdf-core-011",
+          "path": "topic/papers/CORE-011.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "ea31242a1d3bac3be7887d955b505d41708ac8de2aeb61b09067d7f47a655e94"
+        },
+        {
+          "key": "pdf-core-012",
+          "path": "topic/papers/CORE-012.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "c1d38d3006b34ac2a99d3ff51419690b8a502e654a4e706e9e6dab1543d9363d"
+        },
+        {
+          "key": "pdf-core-013",
+          "path": "topic/papers/CORE-013.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "d1b2cf3129c6f5d0a68d3ace88154aad571cd9b4099213f17e96102896cdb33f"
+        },
+        {
+          "key": "pdf-core-014",
+          "path": "topic/papers/CORE-014.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "2668dacf54002f60ed89f3515af7a2c8f7fea9aea2acd83058d3a5c08625d577"
+        },
+        {
+          "key": "pdf-core-015",
+          "path": "topic/papers/CORE-015.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "4c88882a57be6d7a070801b519d71aba420954a6ee2f79c8c70fb61c9b0c6ea8"
+        },
+        {
+          "key": "pdf-core-016",
+          "path": "topic/papers/CORE-016.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "76c369d3107b79579d88a0ce796532a926fb2a5430d8032f3042f69d145d70b5"
+        },
+        {
+          "key": "pdf-core-017",
+          "path": "topic/papers/CORE-017.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "f8b4e2448f91dcf5990f0c90248896a3d09426c943013f8f67f0efabee74269b"
+        },
+        {
+          "key": "pdf-core-018",
+          "path": "topic/papers/CORE-018.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "32f92f6fa56140bd3e7649cb5ec0cb99d06c0750de24b69884ca2171dc2c01ca"
+        },
+        {
+          "key": "pdf-core-019",
+          "path": "topic/papers/CORE-019.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "294d0bfafdafd560040088493d730e939436f16b79d559a69c624e6a53766c45"
+        },
+        {
+          "key": "pdf-core-020",
+          "path": "topic/papers/CORE-020.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "b82626f16cf143ff66d1ba4f79f84eda6beac0a5119cc29da413d9b9e7187529"
+        },
+        {
+          "key": "pdf-core-021",
+          "path": "topic/papers/CORE-021.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "f73524423dfa10b81c425e7d54ef311b467bbdb00ca7ee1ec7a4b6e2dde6aae6"
+        },
+        {
+          "key": "pdf-core-022",
+          "path": "topic/papers/CORE-022.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "3db4ff484245aa934e887f075b517789cc9b09c430eac1ba6856add588a8c334"
+        },
+        {
+          "key": "pdf-core-024",
+          "path": "topic/papers/CORE-024.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "d386ff3803eef5cc95886e489522211b39d7218cb9dd3963b7879159602bb2fa"
+        },
+        {
+          "key": "pdf-core-025",
+          "path": "topic/papers/CORE-025.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "c74f814e82201cfe25eb5aff4cfad89193c56ffdab458bcf0e9cafa769a9e58d"
+        },
+        {
+          "key": "pdf-core-026",
+          "path": "topic/papers/CORE-026.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "071b05b6856d22180a7f32dfcb44eb698f91564ad39271079d0f5e0c0cc7003e"
+        },
+        {
+          "key": "pdf-core-027",
+          "path": "topic/papers/CORE-027.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "56456cd8b39a6f3624e4701771096ffa489b0c28b3ab3c205ef7528ccdc6431d"
+        },
+        {
+          "key": "pdf-core-028",
+          "path": "topic/papers/CORE-028.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "f0f1250be966cb7e29cedfe377fbc7413d78b6093badf91eda210a30b33dd483"
+        },
+        {
+          "key": "pdf-core-029",
+          "path": "topic/papers/CORE-029.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "3fb7e3b378532bd6751a6bb8187a37af910ef5d155b651ea37662f3c40150db1"
+        },
+        {
+          "key": "pdf-core-030",
+          "path": "topic/papers/CORE-030.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "b79366a7ec322d2c5e433adbcf0562a3f5cb04be4ed1cb5e4c719fc37b50e8a8"
+        },
+        {
+          "key": "pdf-core-031",
+          "path": "topic/papers/CORE-031.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "5e029681a7c2ab397ef551d73f6ff77c2895da14f8ecb695aceb5e103889caa7"
+        },
+        {
+          "key": "pdf-core-032",
+          "path": "topic/papers/CORE-032.pdf",
+          "role": "literature-pdf",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "1c6a3b5105c86b607aa2a51e5cc5abb893539269678dca5616c1e4f629799775"
+        }
+      ]
+    },
+    {
+      "key": "experiment-plan",
+      "stage": "experiment.plan",
+      "inputs": [
+        "confirmed-topic",
+        "literature-handoff"
+      ],
+      "files": [
+        {
+          "key": "experiment-plan",
+          "path": "experiment/plan.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "8d6f6117def0c05a9938274518e7cd9b357f05489f8435558688d6bb4305f022"
+        },
+        {
+          "key": "experiment-config",
+          "path": "experiment/config.json",
+          "role": "experiment-config",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "05abd0e7ccd3be77f7a3844e2f2ba3395dc6cd2d10103d31f272b051583ec463"
+        },
+        {
+          "key": "dataset-manifest",
+          "path": "experiment/dataset-manifest.json",
+          "role": "dataset-manifest",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "68b2bb7b4ac8f971fb7ebcaba2b836ee559764d0e119f84148f924ad02cedd77"
+        },
+        {
+          "key": "innovations",
+          "path": "experiment/innovations.json",
+          "role": "experiment-plan",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "83c549cad13094d848fe9bfd581861cdd020f2b188726854e4b029cc05fdebaf"
+        },
+        {
+          "key": "experiment-suite-plan-00",
+          "path": "experiment/plans/README.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "1435fdc9f932c00a2226c4ba613d58545435041ae30cf85a1fa2b8c331b27536"
+        },
+        {
+          "key": "experiment-suite-plan-01",
+          "path": "experiment/plans/01_baseline-reproduction.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "1b5ed8f7f686c2e8a91d682f11e71a29e96721eb60c271b3bb1ca2c6c8601239"
+        },
+        {
+          "key": "experiment-suite-plan-02",
+          "path": "experiment/plans/02_daa-domain-adaptation.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "d6152ea097ba37d3f9b1d9dec9a6af94507c1c36dde7577efe781a5e24cd2d88"
+        },
+        {
+          "key": "experiment-suite-plan-03",
+          "path": "experiment/plans/03_ead-evidence-grounding.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "758dd48ae20799b944aac25ea3d947b2e05c7bdc4279578f585c7272062034f1"
+        },
+        {
+          "key": "experiment-suite-plan-04",
+          "path": "experiment/plans/04_dag-degradation-gating.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "e88e330be26f85a4eab8d26f37f76a2a0cde3222e43e86753742ef3dd2d7125c"
+        },
+        {
+          "key": "experiment-suite-plan-05",
+          "path": "experiment/plans/05_full-factorial-ablation.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "b85dd48393d09dc4ab8dadd13fdd94c08731aef624c3f748caa97f57bbd95199"
+        },
+        {
+          "key": "experiment-suite-plan-06",
+          "path": "experiment/plans/06_cross-domain-generalization.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "278edff17d6b7a109290420e025dd3c1ec870320c6fb9cee7ab9dc6952377a3a"
+        },
+        {
+          "key": "experiment-suite-plan-07",
+          "path": "experiment/plans/07_efficiency-deployment.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "f2009e70239c2c727854b02bc9b88d63de4241b54903b34636ee97cabf315fe1"
+        },
+        {
+          "key": "experiment-suite-plan-08",
+          "path": "experiment/plans/08_failure-cases-and-safety.md",
+          "role": "experiment-plan",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "57c14a8f84a8871cda9df0e0b12961510b141867eb5ad3b40e9d79277250019e"
+        },
+        {
+          "key": "experiment-suite-plan-09",
+          "path": "experiment/experiment-suite.json",
+          "role": "experiment-plan",
+          "mediaType": "application/json",
+          "required": false,
+          "sha256": "e49a613899b13102ac506bf452db39bc7ae793e1e40f42819c85445dbcc853ae"
+        },
+        {
+          "key": "experiment-suite-plan-10",
+          "path": "experiment/figures/generated-assets-v2.json",
+          "role": "experiment-plan",
+          "mediaType": "application/json",
+          "required": false,
+          "sha256": "ea6730dfcc94b5a057eab4e081a8f722c0eed98348e234283c15cee5acbbe844"
+        }
+      ]
+    },
+    {
+      "key": "experiment-run",
+      "stage": "experiment.run",
+      "inputs": [
+        "experiment-plan",
+        "experiment-config",
+        "dataset-manifest"
+      ],
+      "files": [
+        {
+          "key": "results",
+          "path": "experiment/results.md",
+          "role": "experiment-results",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "c3a27734f5ad259217b18fe9eb730428009f73b5e2d0a5c7a84cb5e7f50d5fa4"
+        },
+        {
+          "key": "algorithm",
+          "path": "experiment/algorithm-details.md",
+          "role": "method-architecture",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "869704a045e3ee6949dd29aafb72a8ac42febb1a5aebbd2ac5bf29570e4f0356"
+        },
+        {
+          "key": "metrics-main",
+          "path": "experiment/metrics/main.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": true,
+          "sha256": "e4aae53d6ca32b081793144b2d9e94c54a044703a55ce0b2ea53bda919f00b43"
+        },
+        {
+          "key": "metrics-ablation",
+          "path": "experiment/metrics/ablation.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": true,
+          "sha256": "90ba37759b340fae1f24acb68f0cd49beeeb0277fa29cbdee506fcaa875e47e7"
+        },
+        {
+          "key": "metrics-robustness",
+          "path": "experiment/metrics/robustness.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": true,
+          "sha256": "99000605665cb5a2eaeb1fd88ab6d6d703db0f86235189cae2bfb8b41d0c5f66"
+        },
+        {
+          "key": "architecture",
+          "path": "experiment/figures/architecture.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": true,
+          "sha256": "f456792a023b98e32c50f8102e36f4e1f05c4d6a11e2113174d73fc8d01e0df8"
+        },
+        {
+          "key": "comparison",
+          "path": "experiment/figures/comparison.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": true,
+          "sha256": "59212347977ddbc1fb76818abe2414b5b8c85cfe393de8b22c6c30631f12730c"
+        },
+        {
+          "key": "curves",
+          "path": "experiment/figures/curves.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": false,
+          "sha256": "4eb09cae4f0cb584fe048c10228f5002da5316ee53fedacea2ee278218f00ff2"
+        },
+        {
+          "key": "teaser",
+          "path": "experiment/figures/teaser.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": false,
+          "sha256": "108fdc3670d140e4df86cf530a23957e37babf947b6a4ef740dd5d132a4b7199"
+        },
+        {
+          "key": "figure-generation",
+          "path": "experiment/figures/generation.json",
+          "role": "diagnostics",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "032f252f261afbe4bda2e1b992e830821b6fa6c79bb710056ecb1df41f6d617e"
+        },
+        {
+          "key": "experiment-suite-result-01",
+          "path": "experiment/results-data/01_baseline.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "eea692a493f824497a2816bce730d53115bff6d2e72f6b5bb7242c010f410388"
+        },
+        {
+          "key": "experiment-suite-result-02",
+          "path": "experiment/results-data/02_daa.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "64803bd8d7b25119a31b7942d7ef1403fdaa77b9a66dc88415618e70bc82d1b7"
+        },
+        {
+          "key": "experiment-suite-result-03",
+          "path": "experiment/results-data/03_ead.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "71374e6a9b64bc8a588d789348177cfb76b69d1d363110b3b8f77e473e8aa62c"
+        },
+        {
+          "key": "experiment-suite-result-04",
+          "path": "experiment/results-data/04_dag.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "424e863e5dcddb6b559e1b12a3d857a9707ea279e555377c69fab43ea348da57"
+        },
+        {
+          "key": "experiment-suite-result-05",
+          "path": "experiment/results-data/05_ablation.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "503d000e0a11b1d0dcc435cd6c4db0181d8a75da5000df3c53d206d5583a62ac"
+        },
+        {
+          "key": "experiment-suite-result-06",
+          "path": "experiment/results-data/06_cross-domain.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "4eefa500c08532ee3d21734d97d2afd396b685489e4d256371ecbb6836c1274b"
+        },
+        {
+          "key": "experiment-suite-result-07",
+          "path": "experiment/results-data/07_efficiency.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "467eb73deb0b179f5e9a96a68dbf10d3c61bec3d3f2320fa1803a0db10dbb0ba"
+        },
+        {
+          "key": "experiment-suite-result-08",
+          "path": "experiment/results-data/08_failure-cases.csv",
+          "role": "experiment-results",
+          "mediaType": "text/csv",
+          "required": false,
+          "sha256": "195c1c30f2ac3e50be2b0ad3409d85f1cb56e2b9492dfc4a294f57d64e6bc94b"
+        },
+        {
+          "key": "experiment-suite-figure-01",
+          "path": "experiment/figures/framework-generated-v2.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": false,
+          "sha256": "f456792a023b98e32c50f8102e36f4e1f05c4d6a11e2113174d73fc8d01e0df8"
+        },
+        {
+          "key": "experiment-suite-figure-02",
+          "path": "experiment/figures/qualitative-generated-v2.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": false,
+          "sha256": "59212347977ddbc1fb76818abe2414b5b8c85cfe393de8b22c6c30631f12730c"
+        }
+      ]
+    },
+    {
+      "key": "writing-outline",
+      "stage": "writing.outline",
+      "inputs": [
+        "confirmed-topic",
+        "results"
+      ],
+      "files": [
+        {
+          "key": "outline",
+          "path": "writing/outline.md",
+          "role": "paper-outline",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "4f014418de4ded21afeecfa5a321cee417ded8e29246fe1d206e079241dc7c64"
+        }
+      ]
+    },
+    {
+      "key": "writing-draft",
+      "stage": "writing.draft",
+      "inputs": [
+        "outline",
+        "core-references",
+        "algorithm",
+        "metrics-main"
+      ],
+      "files": [
+        {
+          "key": "paper-source-en",
+          "path": "writing/source/cvpr-paper/en/main.tex",
+          "role": "paper-source",
+          "mediaType": "application/x-tex",
+          "required": true,
+          "sha256": "5faa7294a5da598aa50d604ac4aa2fe0e21839227d2de9102ae2ed00be3bc5a2"
+        },
+        {
+          "key": "paper-source-zh",
+          "path": "writing/source/cvpr-paper/cn/main.tex",
+          "role": "paper-translation",
+          "mediaType": "application/x-tex",
+          "required": true,
+          "sha256": "0031fabe5b5cb0c86c7d9a77c2297fb57d9da9be5b36e9fd9820a7fab0b32dd9"
+        },
+        {
+          "key": "paper-metadata",
+          "path": "writing/paper-metadata.json",
+          "role": "paper-metadata",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "6bb894cb52ae113bd637be7639f5191b40c96ce9fe6f042ad6fbf896764e8ab7"
+        },
+        {
+          "key": "writing-bib",
+          "path": "writing/references.bib",
+          "role": "paper-source",
+          "mediaType": "application/x-bibtex",
+          "required": true,
+          "sha256": "03a54d73e41af65d8f997ebfcc2cb30763c8d28f08f32404bde5052f0bf6854d"
+        },
+        {
+          "key": "cvpr-style",
+          "path": "writing/source/cvpr-paper/cvpr.sty",
+          "role": "paper-source",
+          "mediaType": "text/x-tex",
+          "required": true,
+          "sha256": "2602473285d1a7df2a445ac89b76e1afa0acab78e056f0369d19770245190153"
+        },
+        {
+          "key": "ieee-bst",
+          "path": "writing/source/cvpr-paper/ieeenat_fullname.bst",
+          "role": "paper-source",
+          "mediaType": "text/plain",
+          "required": true,
+          "sha256": "31962ddbd68b47a4d03010afcadf62e65aa9fb2f77f15bc7428504be36254ed0"
+        },
+        {
+          "key": "source-manifest",
+          "path": "writing/source-manifest.json",
+          "role": "paper-source",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "9b75a393d9c327e29f7a1a947642bd12751a97717df1be4bc3ea6c8aa14dfb4f"
+        }
+      ]
+    },
+    {
+      "key": "writing-final",
+      "stage": "writing.final",
+      "inputs": [
+        "paper-source-en",
+        "paper-metadata"
+      ],
+      "files": [
+        {
+          "key": "paper-pdf",
+          "path": "writing/paper.pdf",
+          "role": "paper-pdf",
+          "mediaType": "application/pdf",
+          "required": true,
+          "sha256": "c27168b1bb0329a997404a638ff0e58f96a45e16ee85b1bc24933a226362f6ec"
+        },
+        {
+          "key": "paper-pdf-zh",
+          "path": "writing/paper-zh.pdf",
+          "role": "paper-translation",
+          "mediaType": "application/pdf",
+          "required": false,
+          "sha256": "b340c5484f745e010748840278c60a3053a2a548f69c47a997582838e688b643"
+        },
+        {
+          "key": "latex-source",
+          "path": "writing/latex-source.zip",
+          "role": "paper-source",
+          "mediaType": "application/zip",
+          "required": true,
+          "sha256": "d236b8ff5a691ebedaee494b85d43c355a630b70bde0d37688910c276bdbbdb7"
+        },
+        {
+          "key": "writing-architecture",
+          "path": "writing/figures/architecture.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": true,
+          "sha256": "f456792a023b98e32c50f8102e36f4e1f05c4d6a11e2113174d73fc8d01e0df8"
+        },
+        {
+          "key": "writing-comparison",
+          "path": "writing/figures/comparison.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": true,
+          "sha256": "59212347977ddbc1fb76818abe2414b5b8c85cfe393de8b22c6c30631f12730c"
+        },
+        {
+          "key": "writing-curves",
+          "path": "writing/figures/curves.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": false,
+          "sha256": "4eb09cae4f0cb584fe048c10228f5002da5316ee53fedacea2ee278218f00ff2"
+        },
+        {
+          "key": "writing-teaser",
+          "path": "writing/figures/teaser.png",
+          "role": "paper-figure",
+          "mediaType": "image/png",
+          "required": false,
+          "sha256": "108fdc3670d140e4df86cf530a23957e37babf947b6a4ef740dd5d132a4b7199"
+        }
+      ]
+    },
+    {
+      "key": "submission-prepare",
+      "stage": "submission.prepare",
+      "inputs": [
+        "paper-pdf",
+        "paper-source-en"
+      ],
+      "files": [
+        {
+          "key": "venue",
+          "path": "submission/venue.json",
+          "role": "venue-requirements",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "ad2fa17d6528c83dd48210f9e8756f88163b4fbb467587cb8f7fbf5b992b4c74"
+        },
+        {
+          "key": "checklist",
+          "path": "submission/checklist.json",
+          "role": "diagnostics",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "f00fb7d21bba3b288c885f13018f90c6c9e7baf3ff291af765df47bfe1ec3a5c"
+        },
+        {
+          "key": "paper-info",
+          "path": "submission/paper-info.json",
+          "role": "paper-metadata",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "2c3f52d2f4ee3fad3be7dbaf5e0b9cf2ae7613148f46eb9794f51ed532659a2d"
+        },
+        {
+          "key": "submission-package",
+          "path": "submission/submission-package.zip",
+          "role": "submission-package",
+          "mediaType": "application/zip",
+          "required": true,
+          "sha256": "4471e58f6e8e6bc77982212abf85f53ebdd50460afac87019a61ab28e39b309d"
+        }
+      ]
+    },
+    {
+      "key": "review-round1",
+      "stage": "submission.review.round1",
+      "inputs": [
+        "paper-pdf"
+      ],
+      "files": [
+        {
+          "key": "reviews-json",
+          "path": "submission/reviews.json",
+          "role": "review-round1",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "febbb07a329a421aa5de3e193cf076310dd5b368ea870e08f8f674d0569fa17d"
+        },
+        {
+          "key": "reviews-md",
+          "path": "submission/reviews.md",
+          "role": "review-round1",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "56671c84f1e25649d5cb5fdce895210b11e167bc14025c1050508dff9b5b29fb"
+        },
+        {
+          "key": "reviews-zh-json",
+          "path": "submission/reviews-zh.json",
+          "role": "review-round1",
+          "mediaType": "application/json",
+          "required": false,
+          "sha256": "9b279aeba967edccacaa82182ca2e242640e8544c6345a9b5ad1afbbd6e271e7"
+        },
+        {
+          "key": "reviews-zh-md",
+          "path": "submission/reviews-zh.md",
+          "role": "review-round1",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "bc8675b0582e7acce298235a96548b0fc14e472d3fe5f6c0af0d15241cab69b6"
+        }
+      ]
+    },
+    {
+      "key": "rebuttal",
+      "stage": "submission.rebuttal",
+      "inputs": [
+        "reviews-json"
+      ],
+      "files": [
+        {
+          "key": "rebuttal-md",
+          "path": "submission/rebuttal.md",
+          "role": "rebuttal",
+          "mediaType": "text/markdown",
+          "required": true,
+          "sha256": "88cf1b197b6b51de8e7fbe51cd57d5c324265540cf4c12890b716caf7951ee7e"
+        },
+        {
+          "key": "rebuttal-zh-md",
+          "path": "submission/rebuttal-zh.md",
+          "role": "rebuttal",
+          "mediaType": "text/markdown",
+          "required": false,
+          "sha256": "d4ab5f9873d0f1b7a91730e5a026f36f523d88a06f9e6c1950f50f7a62098200"
+        },
+        {
+          "key": "response-map",
+          "path": "submission/response-map.json",
+          "role": "rebuttal",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "50e0b52e50121eb226231dec0822fa6cf3e1a3f4c2ed0f65cca2e07704316860"
+        }
+      ]
+    },
+    {
+      "key": "decision",
+      "stage": "submission.decision",
+      "inputs": [
+        "rebuttal-md"
+      ],
+      "files": [
+        {
+          "key": "decision-json",
+          "path": "submission/decision.json",
+          "role": "submission-decision",
+          "mediaType": "application/json",
+          "required": true,
+          "sha256": "9a605e744d4b7d4afbc5a961a3b3b4901f1318263a0b154eee8a925b585dc087"
+        }
+      ]
+    }
+  ],
+  "missing": [
+    {
+      "path": "topic/papers/CORE-023.pdf",
+      "reason": "invalid_content",
+      "requiredBy": [
+        "core-literature"
+      ],
+      "optional": true,
+      "detail": "bundled_but_not_imported_over_50_mib_workspace_limit",
+      "sourceUrl": "https://doi.org/10.1145/3801156"
+    },
+    {
+      "path": "topic/screening.csv",
+      "reason": "file_missing",
+      "requiredBy": [
+        "first-search"
+      ],
+      "optional": true,
+      "detail": "No per-paper screening evidence was supplied; scores were not fabricated."
+    },
+    {
+      "path": "experiment/metrics/seeds.csv",
+      "reason": "file_missing",
+      "requiredBy": [
+        "experiment-run"
+      ],
+      "optional": true,
+      "detail": "Only aggregate mean/variance values were supplied; per-seed values were not inferred."
+    },
+    {
+      "path": "experiment/code/pipeline.py",
+      "reason": "file_missing",
+      "requiredBy": [
+        "experiment-run"
+      ],
+      "optional": true,
+      "detail": "No runnable code or real training run was supplied."
+    }
+  ]
+}

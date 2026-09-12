@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "title": "EviVAD eight-experiment suite",
+  "simulated": true,
+  "realTrainingPerformed": false,
+  "experiments": [
+    {
+      "id": "EXP-01",
+      "plan": "plans/01_baseline-reproduction.md",
+      "results": "results-data/01_baseline.csv",
+      "purpose": "baseline"
+    },
+    {
+      "id": "EXP-02",
+      "plan": "plans/02_daa-domain-adaptation.md",
+      "results": "results-data/02_daa.csv",
+      "purpose": "domain-adaptation"
+    },
+    {
+      "id": "EXP-03",
+      "plan": "plans/03_ead-evidence-grounding.md",
+      "results": "results-data/03_ead.csv",
+      "purpose": "evidence-grounding"
+    },
+    {
+      "id": "EXP-04",
+      "plan": "plans/04_dag-degradation-gating.md",
+      "results": "results-data/04_dag.csv",
+      "purpose": "robustness"
+    },
+    {
+      "id": "EXP-05",
+      "plan": "plans/05_full-factorial-ablation.md",
+      "results": "results-data/05_ablation.csv",
+      "purpose": "ablation"
+    },
+    {
+      "id": "EXP-06",
+      "plan": "plans/06_cross-domain-generalization.md",
+      "results": "results-data/06_cross-domain.csv",
+      "purpose": "generalization"
+    },
+    {
+      "id": "EXP-07",
+      "plan": "plans/07_efficiency-deployment.md",
+      "results": "results-data/07_efficiency.csv",
+      "purpose": "efficiency"
+    },
+    {
+      "id": "EXP-08",
+      "plan": "plans/08_failure-cases-and-safety.md",
+      "results": "results-data/08_failure-cases.csv",
+      "purpose": "failure-analysis"
+    }
+  ],
+  "figures": [
+    {
+      "path": "figures/framework-generated-v2.png",
+      "kind": "algorithm-framework",
+      "simulated": true
+    },
+    {
+      "path": "figures/qualitative-generated-v2.png",
+      "kind": "qualitative-effect",
+      "simulated": true
+    }
+  ]
+}

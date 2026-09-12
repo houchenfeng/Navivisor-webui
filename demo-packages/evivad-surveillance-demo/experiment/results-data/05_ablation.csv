@@ -1,0 +1,9 @@
+experiment_id,daa,ead,dag,auc_percent,ap_percent,map_at_0_5_percent,ear_percent,cfs_percent,hr_percent,tcr_percent,trainable_params_m,latency_ms,aggregation,simulated
+EXP-05,false,false,false,76.8,68.2,24.1,41.5,38.7,26.4,38.1,0.0,118,aggregate-summary,true
+EXP-05,true,false,false,79.4,71.1,26.0,43.2,40.5,25.1,39.4,4.7,121,aggregate-summary,true
+EXP-05,false,true,false,77.9,69.4,25.3,63.8,57.2,12.6,52.7,0.6,133,aggregate-summary,true
+EXP-05,false,false,true,77.6,69.0,24.9,43.0,40.2,24.0,38.9,0.2,126,aggregate-summary,true
+EXP-05,true,true,false,80.9,72.6,28.4,65.7,58.9,11.2,54.0,5.3,142,aggregate-summary,true
+EXP-05,true,false,true,80.3,72.0,27.5,44.6,42.1,22.7,40.2,4.9,130,aggregate-summary,true
+EXP-05,false,true,true,79.8,71.4,27.0,65.1,58.4,10.9,53.2,0.8,141,aggregate-summary,true
+EXP-05,true,true,true,82.1,74.3,31.6,68.4,61.3,9.8,55.8,5.5,147,aggregate-summary,true

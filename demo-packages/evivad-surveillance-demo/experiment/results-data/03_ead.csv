@@ -1,0 +1,3 @@
+experiment_id,variant,auc_percent,ear_percent,cfs_percent,hr_percent,tcr_percent,latency_ms,aggregation,simulated
+EXP-03,Baseline-B0,76.8,41.5,38.7,26.4,38.1,118,aggregate-summary,true
+EXP-03,EAD-selected,77.9,63.8,57.2,12.6,52.7,133,aggregate-summary,true

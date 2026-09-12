@@ -102,7 +102,7 @@ export async function translateText(
     const turnText = await waitForTurnText(started.threadId, started.turnId);
     if (turnText) return stripTranslationNoise(turnText);
   } catch (error) {
-    throw new Error(`翻译失败：${errorMessage(error)}`);
+    throw new Error(`翻译失败：${errorMessage(error)}`, { cause: error });
   }
 
   throw new Error('翻译失败：Codex 未返回译文');

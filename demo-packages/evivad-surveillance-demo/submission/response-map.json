@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "responses": [
+    {
+      "id": "R1-W1",
+      "reviewer": 1,
+      "issue": "Composition vs LoRA+RAG+confidence; need non-composable claim and strawman ablation",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/metrics/ablation.csv", "experiment/results.md"]
+    },
+    {
+      "id": "R1-W2",
+      "reviewer": 1,
+      "issue": "Named nearest-neighbour algorithms missing from Table 1 (VadCLIP, Zanella, RTFM, Khedher, RAG4VAD)",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/metrics/main.csv", "writing/source/cvpr-paper/en/sec/2_related.tex"]
+    },
+    {
+      "id": "R1-W3",
+      "reviewer": 1,
+      "issue": "Citations: LoRA, CLIP-Adapter, CoOp, InfoNCE, selective prediction, ImageNet-C, CLIP-VAD lineage",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["writing/source/cvpr-paper/en/sec/2_related.tex"]
+    },
+    {
+      "id": "R1-W4",
+      "reviewer": 1,
+      "issue": "Notation, L_EA negatives, two-column overflow, figure/text acronyms",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["writing/paper.pdf"]
+    },
+    {
+      "id": "R1-Q2",
+      "reviewer": 1,
+      "issue": "PEFT bake-off: LoRA vs CLIP-Adapter vs BitFit vs visual prompts vs last-block FT",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/innovations.json"]
+    },
+    {
+      "id": "R1-Q3",
+      "reviewer": 1,
+      "issue": "EAD InfoNCE circularity vs human EAR labels",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/results.md"]
+    },
+    {
+      "id": "R2-W1",
+      "reviewer": 2,
+      "issue": "Matched SOTA table under a frozen protocol card; do not mix literature AUC with B0",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/metrics/main.csv"]
+    },
+    {
+      "id": "R2-W2",
+      "reviewer": 2,
+      "issue": "Required extra experiments E1–E8: r/α sweep, PEFT, IAA, memory size, significance, real night/rain, Avenue/ShanghaiTech, FPS",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/metrics/ablation.csv", "experiment/metrics/robustness.csv"]
+    },
+    {
+      "id": "R2-Q2",
+      "reviewer": 2,
+      "issue": "Calibrate degradation parameters or relabel grid as ImageNet-C-style stress test",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/metrics/robustness.csv"]
+    },
+    {
+      "id": "R2-Q4",
+      "reviewer": 2,
+      "issue": "Retrieval memory leakage: train-split normals only",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["experiment/plan.md"]
+    },
+    {
+      "id": "R3-W1",
+      "reviewer": 3,
+      "issue": "Abstract/intro over-claim a new large model; calibrate to frozen CLIP + 5.5M",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["writing/paper-metadata.json"]
+    },
+    {
+      "id": "R3-W2",
+      "reviewer": 3,
+      "issue": "Nearest-neighbour comparison table as writing, not a survey dump",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["writing/source/cvpr-paper/en/sec/2_related.tex"]
+    },
+    {
+      "id": "R3-W3",
+      "reviewer": 3,
+      "issue": "CVPR two-column 8-page format, captions, acronym identity",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["writing/source/cvpr-paper/en/main.tex"]
+    },
+    {
+      "id": "R3-Q4",
+      "reviewer": 3,
+      "issue": "Page budget: what stays in main vs supplementary after adding SOTA table",
+      "responseArtifact": "submission/rebuttal.md",
+      "status": "planned",
+      "evidenceRefs": ["writing/outline.md"]
+    }
+  ]
+}

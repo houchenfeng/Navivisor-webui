@@ -101,6 +101,11 @@ export interface LoadDemoResult {
   warnings: string[];
 }
 
+const DEMO_DEFINITIONS = [
+  { id: 'camera-vad-scene-memory', packageDir: 'camera-vad-scene-memory' },
+  { id: 'evivad-surveillance-demo', packageDir: 'evivad-surveillance-demo' },
+] as const;
+
 @Injectable()
 export class ResearchWorkspaceService {
   private readonly demoLoads = new Map<string, Promise<LoadDemoResult>>();
@@ -110,6 +115,94 @@ export class ResearchWorkspaceService {
     private readonly files: FilesService,
     private readonly workflow: ResearchWorkflowService,
   ) {}
+
+  async listDemoDefinitions() {
+    return Promise.all(
+      DEMO_DEFINITIONS.map(async (definition) => {
+        const packageRoot = this.demoPackageRoot(definition.packageDir);
+        const project = JSON.parse(
+          await readFile(join(packageRoot, 'project.json'), 'utf8'),
+        ) as WorkspaceProjectJson;
+        const manifest = this.parseDemoManifest(
+          JSON.parse(
+            await readFile(
+              join(packageRoot, 'demo', 'demo-manifest.json'),
+              'utf8',
+            ),
+          ) as unknown,
+        );
+        const missing = this.normalizeManifestMissing(manifest);
+          return {
+            id: definition.id,
+            rootPath: packageRoot,
+          title: project.title,
+          description: project.description ?? '',
+          version: manifest.version,
+          simulated: manifest.simulated,
+          complete: missing.length === 0,
+          missing,
+        };
+      }),
+    );
+  }
+
+  async activateDemo(demoId: string, absolutePath?: string) {
+    const definition = DEMO_DEFINITIONS.find((item) => item.id === demoId);
+    if (!definition) throw new NotFoundException('Unknown Demo package');
+    const sourceRoot = this.demoPackageRoot(definition.packageDir);
+    if (absolutePath && resolve(absolutePath) !== resolve(sourceRoot)) {
+      throw new BadRequestException(
+        'Demo path does not match the selected registered package',
+      );
+    }
+    const sourceManifest = await readFile(
+      join(sourceRoot, 'demo', 'demo-manifest.json'),
+    );
+    const packageRevision = sha256Buffer(sourceManifest).slice(0, 12);
+    const destination = join(
+      this.paths.managedRoot,
+      'demo-workspaces',
+      `${definition.id}-${packageRevision}`,
+    );
+    try {
+      const info = await stat(destination);
+      if (!info.isDirectory()) {
+        throw new ConflictException(
+          'Managed Demo destination is not a directory',
+        );
+      }
+    } catch (error) {
+      if (error instanceof ConflictException) throw error;
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      const staging = `${destination}.staging-${randomUUID()}`;
+      await mkdir(dirname(destination), { recursive: true });
+      try {
+        await cp(sourceRoot, staging, { recursive: true, errorOnExist: true });
+        const projectPath = join(staging, 'project.json');
+        const project = JSON.parse(
+          await readFile(projectPath, 'utf8'),
+        ) as WorkspaceProjectJson;
+        project.projectId = randomUUID();
+        project.createdAt = new Date().toISOString();
+        await this.atomicJson(projectPath, project);
+        await rename(staging, destination);
+      } catch (error) {
+        await rm(staging, { recursive: true, force: true });
+        try {
+          const concurrent = await stat(destination);
+          if (!concurrent.isDirectory()) throw error;
+        } catch {
+          throw error;
+        }
+      }
+    }
+    const workspace = await this.registerWorkspace({
+      absolutePath: destination,
+      createIfMissing: false,
+    });
+    const load = await this.loadDemoFromWorkspace(workspace.projectId);
+    return { workspace: await this.getWorkspace(workspace.projectId), load };
+  }
 
   async registerWorkspace(input: RegisterWorkspaceInput) {
     const absolutePath = await this.assertAllowedDirectory(
@@ -700,7 +793,7 @@ export class ResearchWorkspaceService {
         module: 'topic',
         summary: complete
           ? `已载入完整 Demo「${projectJson.title}」（${manifest.demoId}@${manifest.version}）。`
-          : `已部分载入 Demo「${projectJson.title}」：已有 ${loadedFiles} 项，待补 ${missing.length} 项。以上为模拟教学数据。`,
+          : `已部分载入 Demo「${projectJson.title}」：已有 ${loadedFiles} 项，待补 ${missing.length} 项。`,
         artifactIds: rebuilt.artifacts.map((a) => a.artifactId),
         createdAt: new Date().toISOString(),
         kind: 'ui.demo-loaded',
@@ -808,8 +901,7 @@ export class ResearchWorkspaceService {
     const newProjectId = randomUUID();
     const now = Date.now();
     const sourceJson = await this.readProjectJson(projectId);
-    const nextTitle =
-      title?.trim() || `${sourceJson.title || row.name} (copy)`;
+    const nextTitle = title?.trim() || `${sourceJson.title || row.name} (copy)`;
     const written: WorkspaceProjectJson = {
       ...sourceJson,
       projectId: newProjectId,
@@ -1465,7 +1557,8 @@ export class ResearchWorkspaceService {
       } catch {
         continue;
       }
-      if (journal.type !== 'demo-load' || journal.status !== 'running') continue;
+      if (journal.type !== 'demo-load' || journal.status !== 'running')
+        continue;
       await this.atomicJson(path, {
         ...journal,
         status: 'failed',
@@ -1482,11 +1575,9 @@ export class ResearchWorkspaceService {
     projectId: string,
     card: Record<string, unknown>,
   ) {
-    const eventId =
-      typeof card.eventId === 'string' ? card.eventId.trim() : '';
+    const eventId = typeof card.eventId === 'string' ? card.eventId.trim() : '';
     const kind = typeof card.kind === 'string' ? card.kind.trim() : '';
-    const summary =
-      typeof card.summary === 'string' ? card.summary.trim() : '';
+    const summary = typeof card.summary === 'string' ? card.summary.trim() : '';
     if (!eventId || !kind || !summary) {
       throw new BadRequestException(
         'Conversation card requires eventId, kind, and summary',
@@ -1576,6 +1667,19 @@ export class ResearchWorkspaceService {
     inputPath: string,
     createIfMissing: boolean,
   ): Promise<string> {
+    const normalizedInput = this.paths.normalizeRoot(inputPath);
+    const managedRelative = relative(this.paths.managedRoot, normalizedInput);
+    const isManaged =
+      managedRelative !== '..' &&
+      !managedRelative.startsWith('../') &&
+      !managedRelative.startsWith('..\\');
+    if (isManaged) {
+      if (createIfMissing) await mkdir(normalizedInput, { recursive: true });
+      const info = await stat(normalizedInput);
+      if (!info.isDirectory())
+        throw new BadRequestException('Workspace path must be a directory');
+      return this.paths.normalizeRoot(normalizedInput);
+    }
     let resolved: string;
     try {
       resolved = this.paths.normalizeRoot(
@@ -1603,6 +1707,25 @@ export class ResearchWorkspaceService {
       // Parent workspace root already covers this path.
     }
     return resolved;
+  }
+
+  private demoPackageRoot(packageDir: string): string {
+    return resolve(process.cwd(), 'demo-packages', packageDir);
+  }
+
+  private normalizeManifestMissing(
+    manifest: DemoManifest,
+  ): DemoManifestMissing[] {
+    return manifest.missing.map((item) =>
+      typeof item === 'string'
+        ? {
+            path: item,
+            reason: 'file_missing',
+            requiredBy: [],
+            optional: false,
+          }
+        : item,
+    );
   }
 
   private assertRelativeDirs(directories: Record<string, string>) {

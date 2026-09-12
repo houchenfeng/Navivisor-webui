@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 2,
+  "simulated": true,
+  "files": [
+    {
+      "path": "topic/confirmed-topic.json",
+      "sha256": "cf793d30b4d22928bd1cb0c451c8991e64d1abfee80e38536ed8a5e14f691dba"
+    },
+    {
+      "path": "topic/core-references.csv",
+      "sha256": "7ed9b53a61ac702dd5246abe6589dd6a7d01b054914ef40c60127226ed6efe46"
+    },
+    {
+      "path": "topic/references.bib",
+      "sha256": "b6b4b22b710e623f40d129f6b157762bde008da1770fcf3c1546f5ce942b4231"
+    },
+    {
+      "path": "experiment/algorithm-details.md",
+      "sha256": "b24d54d30f311d7b8d0be4e752ca588950b274747549d34d3d8a4ee5511c46c5"
+    },
+    {
+      "path": "experiment/metrics/main.csv",
+      "sha256": "15f66bb935335dc00793d40e7769d46c2b5c07e75a0a4cf4bd088f5525b7598c"
+    },
+    {
+      "path": "experiment/metrics/ablation.csv",
+      "sha256": "6eecadd0a2f7348f4fccac966faafefd10efc1dad81fb48d327b9bae5b555cc7"
+    },
+    {
+      "path": "experiment/metrics/robustness.csv",
+      "sha256": "99000605665cb5a2eaeb1fd88ab6d6d703db0f86235189cae2bfb8b41d0c5f66"
+    },
+    {
+      "path": "experiment/figures/architecture.png",
+      "sha256": "f456792a023b98e32c50f8102e36f4e1f05c4d6a11e2113174d73fc8d01e0df8"
+    },
+    {
+      "path": "experiment/figures/comparison.png",
+      "sha256": "59212347977ddbc1fb76818abe2414b5b8c85cfe393de8b22c6c30631f12730c"
+    },
+    {
+      "path": "writing/references.bib",
+      "sha256": "03a54d73e41af65d8f997ebfcc2cb30763c8d28f08f32404bde5052f0bf6854d"
+    }
+  ],
+  "sections": {
+    "abstract": [
+      "topic/confirmed-topic.json"
+    ],
+    "introduction": [
+      "topic/confirmed-topic.json",
+      "topic/core-references.csv"
+    ],
+    "related": [
+      "topic/core-references.csv",
+      "topic/references.bib"
+    ],
+    "method": [
+      "experiment/algorithm-details.md"
+    ],
+    "experiments": [
+      "experiment/metrics/main.csv",
+      "experiment/metrics/ablation.csv",
+      "experiment/metrics/robustness.csv"
+    ],
+    "conclusion": [
+      "experiment/results.md"
+    ]
+  }
+}

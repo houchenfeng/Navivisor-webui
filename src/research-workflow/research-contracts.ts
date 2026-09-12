@@ -52,6 +52,7 @@ export const RESEARCH_ARTIFACT_ROLES = [
   'literature-bib',
   'paper-manifest',
   'literature-handoff',
+  'literature-pdf',
   'experiment-plan',
   'experiment-results',
   'method-architecture',
@@ -108,6 +109,7 @@ export const RESEARCH_STAGE_OUTPUT_ROLES: Record<
     'literature-bib',
     'paper-manifest',
     'literature-handoff',
+    'literature-pdf',
     'diagnostics',
   ],
   'experiment.plan': [

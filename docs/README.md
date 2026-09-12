@@ -7,6 +7,7 @@
 | 文档 | 用途 |
 |---|---|
 | [demo-data-format.md](./demo-data-format.md) | CameraVAD Demo 逐文件字段、实际示例、导入关系和缺失状态 |
+| [evivad-demo-data-preparation-guide.md](./evivad-demo-data-preparation-guide.md) | 将现有“视频异常检测 × 大模型/多智能体”四模块素材整理为 EviVAD 可导入 Demo 的逐文件指南 |
 | [project-bug-test-report.md](./project-bug-test-report.md) | 全项目测试与 Bug 记录（含复现与简要改法） |
 | [research-modules-gap-report.md](./research-modules-gap-report.md) | 四模块已修问题与未实装缺口清单 |
 | [sam-experiment-demo-guide.md](./sam-experiment-demo-guide.md) | 实验模块 SAM Demo 演示步骤 |
@@ -31,6 +32,9 @@
 | [upstream/README.md](./upstream/README.md) | 上游 Codex app-server 文档副本说明 |
 
 ## Demo 素材
+
+- [`demo-packages/evivad-surveillance-demo/`](../demo-packages/evivad-surveillance-demo/)：EviVAD 四模块完整演示包；实验、审稿、回复和决定均为模拟数据，包含 32 篇经 DOI/题名/BibTeX 一对一核对的文献 PDF。
+- `node scripts/verify-evivad-demo.mjs`：校验 schema v3、依赖、role/stage、哈希、CSV、媒体签名、ZIP 成员与引用映射。
 
 | 文档 | 用途 |
 |---|---|

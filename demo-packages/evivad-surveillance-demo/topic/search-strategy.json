@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "source": "provided_scopus_exports",
+  "rounds": [
+    {
+      "id": "round-1",
+      "returned": 308,
+      "file": "topic/candidate-papers.csv"
+    },
+    {
+      "id": "round-2",
+      "returned": 32,
+      "file": "topic/core-references.csv"
+    }
+  ],
+  "note": "The supplied exports are not represented as live OpenAlex retrievals."
+}

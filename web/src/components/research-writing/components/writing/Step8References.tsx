@@ -48,7 +48,6 @@ export default function Step8References({ data, onChange }: Props) {
       onChange({ references: parsed });
     }
     lastSyncedBib.current = data.bibContent;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parsed, data.bibContent, onChange]);
 
   const removeRef = (idx: number) => {

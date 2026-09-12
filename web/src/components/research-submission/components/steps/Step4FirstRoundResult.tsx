@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, FileText, User, Star, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
 import { useSimulation } from '../../context/SimulationContext';
@@ -8,7 +8,7 @@ import GuideBubble from '../../components/GuideBubble';
 export default function Step4FirstRoundResult() {
   const { t } = useI18n();
   const { form, goToStep, round1Reviewers, submissionNumber, apiError } = useSimulation();
-  const [scorePopupOpen, setScorePopupOpen] = useState(true);
+  const [scorePopupOpen, setScorePopupOpen] = useState(false);
   const reviewers = round1Reviewers.length > 0 ? round1Reviewers : [];
   const displayTitle = form.title || 'Untitled Submission';
 

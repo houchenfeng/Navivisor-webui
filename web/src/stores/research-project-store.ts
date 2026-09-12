@@ -17,6 +17,7 @@ export type ResearchProjectSummary = {
 };
 
 type ResearchProjectState = {
+  activeProjectId: string | null;
   project: ResearchProjectSummary | null;
   /** Bumped after workspace demo load so modules remount/hydrate. */
   demoEpoch: number;
@@ -28,15 +29,18 @@ type ResearchProjectState = {
 export const useResearchProjectStore = create<ResearchProjectState>()(
   persist(
     (set) => ({
+      activeProjectId: null,
       project: null,
       demoEpoch: 0,
-      setProject: (project) => set({ project }),
-      clearProject: () => set({ project: null, demoEpoch: 0 }),
+      setProject: (project) =>
+        set({ project, activeProjectId: project?.projectId ?? null }),
+      clearProject: () =>
+        set({ project: null, activeProjectId: null, demoEpoch: 0 }),
       bumpDemoEpoch: () => set((state) => ({ demoEpoch: state.demoEpoch + 1 })),
     }),
     {
       name: 'navivisor-research-project',
-      partialize: (state) => ({ project: state.project }),
+      partialize: (state) => ({ activeProjectId: state.activeProjectId }),
     },
   ),
 );

@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "baseline": "B0：冻结 VLM 视觉/文本塔 + 文本侧异常打分 + 时间平滑（免训练）",
+  "method": "EviVAD = B0 + DAA + EAD + DAG",
+  "protocol": "UCF-Crime 主评测；XD-Violence / UBnormal / MSAD 作跨域；32 帧 / 8 fps；种子 42、3407、2026；指标 AUC / AP / mAP@0.5 / EAR / HR / TCR。",
+  "shortestPath": "先复现冻结 VLM Baseline B0，再按 DAA → EAD → DAG 单变量接入；单项通过 Go 标准后才做组合实验。",
+  "items": [
+    {
+      "id": "I1",
+      "title": "DAA 低秩领域适配器",
+      "name": "DAA 低秩领域适配器",
+      "layer": "结构",
+      "gain": "AUC +2.6",
+      "status": "成功",
+      "score": 93,
+      "selected": true,
+      "hypothesis": "在冻结 VLM 视觉塔末端注入低秩适配，即可把通用视觉—语言表征迁移到监控域，而不必全量微调。",
+      "summary": "用极少可训练参数适配低光照、俯视角、小目标的监控场景，提高帧级检测精度。",
+      "modification": "将第 9–12 层 Transformer 的 q_proj / v_proj 替换为 LoRALinear(rank=4, alpha=8, dropout=0.05)；B 矩阵零初始化；只训练 LoRA 与打分层，其余冻结。",
+      "stepLocation": "步骤 1：复现 Baseline B0 之后的首个单变量结构改造。",
+      "optimizationGoal": "不更换骨干、不引入解释或门控，只验证低秩适配能否稳定提升 AUC / AP。",
+      "mainPlan": [
+        "固定 CLIP ViT-B/16、输入 224×224、32 帧 / 8 fps 与 B0 完全一致。",
+        "仅在最后 4 个 Block 的 Q/V 投影注入 rank=4 LoRA，B=0 保证初始前向等价于 Baseline。",
+        "三随机种子（42 / 3407 / 2026）报告 AUC、AP 与新增参数量。",
+        "Go：AUC 相对 B0 提升 ≥ 1.5 个百分点且新增参数 ≤ 5 M。"
+      ],
+      "alternatives": [
+        {
+          "name": "扩大注入范围",
+          "approach": "将 LoRA 扩展到最后 8 个 Block。",
+          "pros": "领域适配容量更高。",
+          "cons": "参数与过拟合风险增加。"
+        },
+        {
+          "name": "只训打分层",
+          "approach": "不插入 LoRA，仅训练文本侧打分头。",
+          "pros": "最快建立下界。",
+          "cons": "可能无法适配监控域偏移。"
+        }
+      ],
+      "recommendation": "先执行 rank=4、最后 4 层的主方案；增益不足且未过拟合时再扩大注入范围。",
+      "resources": [
+        "冻结 VLM 视觉/文本塔",
+        "单卡消费级 GPU",
+        "LoRA 线性层实现"
+      ],
+      "goNoGo": [
+        "Go：帧级 AUC 相对 Baseline 提升 ≥ 1.5 个百分点，新增可训练参数 ≤ 5 M。",
+        "No-Go：AUC 提升 < 0.5 个百分点，或三种子标准差大于平均增益。"
+      ],
+      "references": [
+        "experiment/plan.md §3 DAA",
+        "experiment/algorithm-details.md"
+      ]
+    },
+    {
+      "id": "I2",
+      "title": "EAD 证据锚定解码",
+      "name": "EAD 证据锚定解码",
+      "layer": "解码",
+      "gain": "EAR +22.3",
+      "status": "成功",
+      "score": 91,
+      "selected": true,
+      "hypothesis": "强制解释引用时间区间与视觉线索，并允许证据不足时弃权，可使解释可核验、可被反例推翻。",
+      "summary": "把异常解释从“表面合理”推进为带证据槽位的可验证输出，同时压低幻觉率。",
+      "modification": "解码前构造 (时间区间, 线索词) 槽位；输出 {score, evidence, explanation}；加入对比式证据对齐损失 L_EA（权重 0.3）；槽位最大对齐分低于阈值则弃权。",
+      "stepLocation": "步骤 2：在固定 DAA 主干上做单变量解释约束。",
+      "optimizationGoal": "提升 EAR、降低 HR，且帧级 AUC 下降不超过 1 个百分点。",
+      "mainPlan": [
+        "固定证据输出 schema，禁止自由发挥的无引用句子。",
+        "L_EA 梯度不流入视觉塔，避免解释约束伤害检测主干。",
+        "在验证集确定弃权阈值，测试集冻结。",
+        "报告 EAR、CFS、HR、TCR 与 AUC。"
+      ],
+      "alternatives": [
+        {
+          "name": "检索增强证据",
+          "approach": "把 RAM 正常性记忆作为 EAD 的备选证据源。",
+          "pros": "证据不足时可回退。",
+          "cons": "跨域子集可能负增益。"
+        },
+        {
+          "name": "纯模板解释",
+          "approach": "只用固定句式填充类别名。",
+          "pros": "实现最快。",
+          "cons": "几乎没有可验证性。"
+        }
+      ],
+      "recommendation": "主路径使用槽位对齐 + 弃权；RAM 仅作证据不足时的备选，不与主消融同时打开。",
+      "resources": [
+        "证据标注协议",
+        "反事实消融评测脚本"
+      ],
+      "goNoGo": [
+        "Go：EAR 提升 ≥ 15 个百分点，且 HR 下降 ≥ 8 个百分点。",
+        "No-Go：EAR 提升 < 5 个百分点，或帧级 AUC 下降 > 1 个百分点。"
+      ],
+      "references": [
+        "experiment/plan.md §4 EAD"
+      ]
+    },
+    {
+      "id": "I3",
+      "title": "DAG 退化感知门控与弃权",
+      "name": "DAG 退化感知门控与弃权",
+      "layer": "门控",
+      "gain": "退化 AUC +8.8",
+      "status": "成功",
+      "score": 90,
+      "selected": true,
+      "hypothesis": "用轻量质量探针在低光/雨雾/压缩/抖动下把打分切到检索与先验路径，并以弃权实现优雅降级。",
+      "summary": "保证干净输入几乎不受损的前提下，提升退化网格上的可用性。",
+      "modification": "Q-Net（3 层卷积 + GAP，约 0.2 M）预测 q∈[0,1]；门控 g(q)=σ((τ−q)/T) 混合两条打分路径；融合分数低于 s_abs 则置弃权位。",
+      "stepLocation": "步骤 3：DAA 与 EAD 稳定后接入退化门控。",
+      "optimizationGoal": "退化网格平均 AUC 明显提升，干净集 AUC 下降 ≤ 0.3 个百分点。",
+      "mainPlan": [
+        "在验证集标定门控中心 τ=0.5、温度 T=0.15，测试集冻结。",
+        "4 类 × 3 级退化网格共 12 配置评测。",
+        "限制门控上限，避免干净输入被切到先验路径。",
+        "报告干净 AUC、退化网格 AUC、弃权率与 ECE。"
+      ],
+      "alternatives": [
+        {
+          "name": "硬切换",
+          "approach": "q 低于阈值时完全丢弃视觉打分。",
+          "pros": "实现简单。",
+          "cons": "容易误伤干净输入。"
+        },
+        {
+          "name": "只做弃权不做门控",
+          "approach": "质量差时直接弃权。",
+          "pros": "不会改打分路径。",
+          "cons": "召回下降更明显。"
+        }
+      ],
+      "recommendation": "使用软门控 + 弃权两级降级；干净集一旦下降超过 1 个百分点即 No-Go。",
+      "resources": [
+        "退化增强管线",
+        "Q-Net 轻量探针"
+      ],
+      "goNoGo": [
+        "Go：退化网格平均 AUC 提升 ≥ 5 个百分点，干净集 AUC 下降 ≤ 0.3 个百分点。",
+        "No-Go：干净集 AUC 下降 > 1 个百分点。"
+      ],
+      "references": [
+        "experiment/plan.md §5 DAG"
+      ]
+    },
+    {
+      "id": "I4",
+      "title": "RAM 检索增强正常性记忆",
+      "name": "RAM 检索增强正常性记忆",
+      "layer": "检索",
+      "gain": "AUC +1.4 ± 0.9",
+      "status": "淘汰",
+      "score": 70,
+      "selected": false,
+      "hypothesis": "用冻结特征建正常性记忆库，推理时把与最近正常样本的相似度作为打分先验。",
+      "summary": "作为 EAD 的备选证据源评估，不进入主组合实验。",
+      "modification": "FAISS 索引 + 打分融合 s = α·s_vl + β·max_k cos(f, m_k)；索引随训练集构建，不参与梯度。",
+      "stepLocation": "筛选阶段：与 DAA 对照的检索先验。",
+      "optimizationGoal": "验证记忆先验是否稳定，且跨域不出现负增益。",
+      "mainPlan": [
+        "用训练集正常片段构建记忆库。",
+        "Top-K 检索并与视觉-文本分数线性融合。",
+        "检查跨域子集符号是否翻转。"
+      ],
+      "alternatives": [
+        {
+          "name": "并入 EAD 槽位",
+          "approach": "把检索邻居当作证据候选而非直接改分数。",
+          "pros": "与解释模块对齐。",
+          "cons": "实现更复杂。"
+        }
+      ],
+      "recommendation": "因跨域负增益不进入主方案，仅作 EAD 证据不足时的备选。",
+      "resources": [
+        "FAISS",
+        "正常性记忆库"
+      ],
+      "goNoGo": [
+        "Go：AUC 提升 ≥ 1.0 个百分点且三种子标准差 ≤ 0.3。",
+        "No-Go：跨域子集出现负增益。"
+      ],
+      "references": [
+        "experiment/plan.md §1 Idea 4"
+      ]
+    },
+    {
+      "id": "I5",
+      "title": "TBR 时序边界细化",
+      "name": "TBR 时序边界细化",
+      "layer": "时序",
+      "gain": "mAP@0.5 +2.7",
+      "status": "淘汰",
+      "score": 66,
+      "selected": false,
+      "hypothesis": "多尺度时间窗口二次打分加一维边界回归，可改善异常区间起止定位。",
+      "summary": "定位指标有提升，但延迟开销较大，主流程不依赖该项。",
+      "modification": "8/16/32 帧滑窗重打分 + 约 0.4 M 的 1D 边界回归头，只回归边界不改变整体排序。",
+      "stepLocation": "筛选阶段：定位细化，独立于 DAA/EAD/DAG。",
+      "optimizationGoal": "mAP@0.5 提升且端到端延迟增加 ≤ 30%。",
+      "mainPlan": [
+        "在粗打分后再做多尺度滑窗。",
+        "回归区间边界并计算 mAP@0.5。",
+        "记录额外延迟。"
+      ],
+      "alternatives": [
+        {
+          "name": "只做滑窗不加回归头",
+          "approach": "多尺度分数取 max。",
+          "pros": "参数更少。",
+          "cons": "边界更粗。"
+        }
+      ],
+      "recommendation": "延迟 +35% 且检测 AUC 几乎不变，不纳入后续评估。",
+      "resources": [
+        "1D 边界回归头"
+      ],
+      "goNoGo": [
+        "Go：mAP@0.5 提升 ≥ 1.5 个百分点且延迟增加 ≤ 30%。",
+        "No-Go：延迟增加 > 50%。"
+      ],
+      "references": [
+        "experiment/plan.md §1 Idea 5"
+      ]
+    },
+    {
+      "id": "I6",
+      "title": "TTA 测试时增强",
+      "name": "TTA 测试时增强",
+      "layer": "推理",
+      "gain": "AUC +0.3",
+      "status": "失败",
+      "score": 55,
+      "selected": false,
+      "hypothesis": "翻转与多尺度裁剪融合可能带来无需训练的稳定增益。",
+      "summary": "精度收益很小，延迟超过 2 倍，未通过筛选。",
+      "modification": "5 组几何变换 × 3 个尺度共 15 次前向，按置信度加权平均分数。",
+      "stepLocation": "筛选阶段：推理期增强，不改训练。",
+      "optimizationGoal": "AUC 提升 ≥ 0.5 个百分点且延迟 ≤ 1.5×。",
+      "mainPlan": [
+        "固定变换集合并逆变换对齐。",
+        "按置信度融合帧级分数。",
+        "同时记录 AUC 与端到端延迟。"
+      ],
+      "alternatives": [
+        {
+          "name": "仅水平翻转",
+          "approach": "双路融合。",
+          "pros": "开销较低。",
+          "cons": "收益可能更小。"
+        }
+      ],
+      "recommendation": "延迟 2.15×，直接淘汰。",
+      "resources": [
+        "无需新增训练资源"
+      ],
+      "goNoGo": [
+        "Go：AUC 提升 ≥ 0.5 个百分点且延迟 ≤ 1.5×。",
+        "No-Go：延迟 > 2×。"
+      ],
+      "references": [
+        "experiment/plan.md §1 Idea 6"
+      ]
+    },
+    {
+      "id": "I7",
+      "title": "MCV 多摄像头跨视角一致性",
+      "name": "MCV 多摄像头跨视角一致性",
+      "layer": "多视角",
+      "gain": "无法评测",
+      "status": "失败",
+      "score": 40,
+      "selected": false,
+      "hypothesis": "跨视角一致性约束可用其它摄像头的证据抑制单视角误报。",
+      "summary": "统一评测协议缺少同步多视角数据，无法复现，未纳入后续评估。",
+      "modification": "跨视角对比损失 + 视角间证据聚合；需要同一场景多视角同步数据。",
+      "stepLocation": "筛选阶段：数据条件不满足则直接淘汰。",
+      "optimizationGoal": "跨视角子集误报率下降 ≥ 3 个百分点。",
+      "mainPlan": [
+        "检查是否存在同步多视角评测集。",
+        "若无，标记无法评测并退出。"
+      ],
+      "alternatives": [
+        {
+          "name": "单视角时序一致性",
+          "approach": "用 TCR 代替跨摄像头约束。",
+          "pros": "不依赖多视角数据。",
+          "cons": "与原假设不一致。"
+        }
+      ],
+      "recommendation": "当前数据条件不足，不进入完整实验方案。",
+      "resources": [
+        "同步多视角数据集（当前不可用）"
+      ],
+      "goNoGo": [
+        "Go：跨视角子集误报率下降 ≥ 3 个百分点。",
+        "No-Go：无法在统一评测协议下复现。"
+      ],
+      "references": [
+        "experiment/plan.md §1 Idea 7"
+      ]
+    }
+  ]
+}

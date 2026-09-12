@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "assets": [
+    {
+      "path": "experiment/figures/framework-generated-v2.png",
+      "kind": "algorithm-framework",
+      "promptSummary": "EviVAD left-to-right pipeline with video sampling, frozen VLM, DAA, EAD, DAG, normality memory and explicit outputs",
+      "claimBoundary": "Conceptual architecture diagram; not evidence of implementation or measured performance"
+    },
+    {
+      "path": "experiment/figures/qualitative-generated-v2.png",
+      "kind": "qualitative-effect",
+      "promptSummary": "Fictional Input/Ground Truth/Baseline/EviVAD comparison with an illustrative anomaly-score curve",
+      "claimBoundary": "Synthetic scene and illustrative curves; not real footage or inference output"
+    }
+  ]
+}

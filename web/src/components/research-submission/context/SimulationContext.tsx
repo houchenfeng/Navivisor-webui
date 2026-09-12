@@ -1,8 +1,14 @@
-﻿import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { IReviewer } from '../data/reviewersRound1';
 import type { IRound2Reviewer } from '../data/mockData';
 import { loadSubmissionWorkspaceSeed } from '../lib/workspace-submission-seed';
 import { useWorkspaceArtifacts } from '@/components/research-workflow/use-research-project';
+import { useResearchProjectStore } from '@/stores/research-project-store';
+import {
+  tryLoadDemoPaperInfo,
+  tryLoadDemoPaperPdfAsFile,
+  tryLoadDemoRebuttalEn,
+} from '@/components/research-writing/lib/demo-writing';
 
 export type StepId = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -34,6 +40,13 @@ interface ISimulationContext {
   apiError: string | null;
   setApiError: (error: string | null) => void;
   workspaceSeedSource: 'workspace' | 'local-mock' | 'loading';
+  isDemoLoaded: boolean;
+  paperPdfFile: File | null;
+  applyDemoPaperFields: (field?: 'title' | 'authors' | 'keywords' | 'abstract' | 'tldr') => void;
+  applyDemoRebuttal: () => boolean;
+  pickDemoPdf: () => Promise<File | null>;
+  fillDemoPaperField: (field: 'title' | 'authors' | 'keywords' | 'abstract' | 'tldr') => Promise<boolean>;
+  fillDemoRebuttal: () => Promise<boolean>;
 }
 
 const SimulationContext = createContext<ISimulationContext | null>(null);
@@ -49,6 +62,10 @@ const INITIAL_FORM: ISubmissionForm = {
 
 export function SimulationProvider({ children }: { children: ReactNode }) {
   const { projectId, artifacts, loading: artifactsLoading } = useWorkspaceArtifacts();
+  const demoLoaded = useResearchProjectStore(
+    (state) => state.project != null && state.project.demoComplete != null,
+  );
+  const demoEpoch = useResearchProjectStore((state) => state.demoEpoch);
   const [step, setStep] = useState<StepId>(1);
   const [form, setForm] = useState<ISubmissionForm>(INITIAL_FORM);
   const [round1Reviewers, setRound1Reviewers] = useState<IReviewer[]>([]);
@@ -58,10 +75,13 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [round2AvgScore, setRound2AvgScore] = useState(0);
   const [round1AvgScore, setRound1AvgScore] = useState(0);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [paperPdfFile, setPaperPdfFile] = useState<File | null>(null);
+  const [demoForm, setDemoForm] = useState<ISubmissionForm>(INITIAL_FORM);
   const [workspaceSeedSource, setWorkspaceSeedSource] = useState<
     'workspace' | 'local-mock' | 'loading'
   >('local-mock');
   const seededKeyRef = useRef<string | null>(null);
+  const seededProjectRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,21 +91,34 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         setWorkspaceSeedSource('loading');
         return;
       }
-      const seedKey = `${projectId ?? 'none'}:${artifacts.map((a) => a.artifactId).join(',')}`;
+      const seedKey = `${projectId ?? 'none'}:${demoEpoch}:${demoLoaded}:${artifacts.map((a) => a.artifactId).join(',')}`;
       if (seededKeyRef.current === seedKey) return;
 
       try {
-        const seed = await loadSubmissionWorkspaceSeed(projectId, artifacts);
+        const seed = await loadSubmissionWorkspaceSeed(projectId, artifacts, demoLoaded);
         if (cancelled) return;
         seededKeyRef.current = seedKey;
         setWorkspaceSeedSource(seed.source);
-        if (seed.source !== 'workspace') return;
+        if (seed.source !== 'workspace') {
+          setPaperPdfFile(null);
+          setDemoForm(INITIAL_FORM);
+          return;
+        }
 
-        setForm((prev) => ({
-          ...prev,
-          title: seed.title || prev.title,
-          rebuttal: seed.rebuttal || prev.rebuttal,
-        }));
+        const workspaceForm = {
+          title: seed.title,
+          authors: seed.authors,
+          keywords: seed.keywords,
+          abstract: seed.abstract,
+          tldr: seed.tldr,
+          rebuttal: seed.rebuttal,
+        };
+        setDemoForm(workspaceForm);
+        if (demoLoaded && seededProjectRef.current !== projectId) {
+          setForm(workspaceForm);
+        }
+        seededProjectRef.current = projectId;
+        setPaperPdfFile(seed.paperPdfFile);
         if (seed.round1Reviewers.length > 0) {
           setRound1Reviewers(seed.round1Reviewers);
           setRound1AvgScore(seed.round1AvgScore);
@@ -110,7 +143,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [projectId, artifacts, artifactsLoading]);
+  }, [projectId, artifacts, artifactsLoading, demoLoaded, demoEpoch]);
 
   const goToStep = (nextStep: StepId) => {
     setStep(nextStep);
@@ -122,6 +155,79 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
 
   const setFormField = (field: keyof ISubmissionForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const paperPdfRef = useRef<File | null>(null);
+  const demoFormRef = useRef<ISubmissionForm>(INITIAL_FORM);
+  paperPdfRef.current = paperPdfFile;
+  demoFormRef.current = demoForm;
+
+  const pickDemoPdf = async () => {
+    if (!demoLoaded) return null;
+    if (paperPdfRef.current) return paperPdfRef.current;
+    const file = await tryLoadDemoPaperPdfAsFile();
+    if (file) {
+      paperPdfRef.current = file;
+      setPaperPdfFile(file);
+    }
+    return file;
+  };
+
+  const fillDemoPaperField = async (
+    field: 'title' | 'authors' | 'keywords' | 'abstract' | 'tldr',
+  ) => {
+    if (!demoLoaded) return false;
+    let data = demoFormRef.current;
+    if (!data[field]) {
+      const info = await tryLoadDemoPaperInfo();
+      if (info) {
+        data = {
+          ...data,
+          title: info.title || data.title,
+          authors: info.authors || data.authors,
+          keywords: info.keywords || data.keywords,
+          abstract: info.abstract || data.abstract,
+          tldr: info.tldr || data.tldr,
+        };
+        demoFormRef.current = data;
+        setDemoForm(data);
+      }
+    }
+    const value = data[field];
+    if (!value) return false;
+    setForm((prev) => ({ ...prev, [field]: value }));
+    return true;
+  };
+
+  const fillDemoRebuttal = async () => {
+    if (!demoLoaded) return false;
+    let text = demoFormRef.current.rebuttal;
+    if (!text) {
+      text = (await tryLoadDemoRebuttalEn()) || '';
+      if (text) {
+        const next = { ...demoFormRef.current, rebuttal: text };
+        demoFormRef.current = next;
+        setDemoForm(next);
+      }
+    }
+    if (!text) return false;
+    setForm((prev) => ({ ...prev, rebuttal: text }));
+    return true;
+  };
+
+  const applyDemoPaperFields = (
+    field?: 'title' | 'authors' | 'keywords' | 'abstract' | 'tldr',
+  ) => {
+    void (field ? fillDemoPaperField(field) : Promise.all(
+      (['title', 'authors', 'keywords', 'abstract', 'tldr'] as const).map((key) =>
+        fillDemoPaperField(key),
+      ),
+    ));
+  };
+
+  const applyDemoRebuttal = () => {
+    void fillDemoRebuttal();
+    return demoLoaded;
   };
 
   const setRound2Decision = (decision: string, avgScore: number, firstRoundAvg: number) => {
@@ -140,7 +246,10 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     setRound2AvgScore(0);
     setRound1AvgScore(0);
     setApiError(null);
+    setPaperPdfFile(null);
+    setDemoForm(INITIAL_FORM);
     seededKeyRef.current = null;
+    seededProjectRef.current = null;
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -156,6 +265,13 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         round2Decision, round2AvgScore, round1AvgScore, setRound2Decision,
         apiError, setApiError,
         workspaceSeedSource,
+        isDemoLoaded: demoLoaded,
+        paperPdfFile,
+        applyDemoPaperFields,
+        applyDemoRebuttal,
+        pickDemoPdf,
+        fillDemoPaperField,
+        fillDemoRebuttal,
       }}
     >
       {children}
@@ -163,6 +279,8 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Hook and provider intentionally share the context module.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSimulation(): ISimulationContext {
   const ctx = useContext(SimulationContext);
   if (!ctx) throw new Error('useSimulation must be used within SimulationProvider');

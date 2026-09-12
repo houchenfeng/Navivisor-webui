@@ -140,4 +140,29 @@ describe('camera-vad Demo package load (integration)', () => {
     expect(rebuilt.projectId).toBe(registered.projectId);
     rebuiltDb.sqlite.close();
   }, 120_000);
+
+  it('creates and reuses a controlled EviVAD workspace without mutating the template', async () => {
+    const templateManifest = resolve(
+      process.cwd(),
+      'demo-packages/evivad-surveillance-demo/demo/demo-manifest.json',
+    );
+    const before = await readFile(templateManifest, 'utf8');
+    const definitions = await service.listDemoDefinitions();
+    expect(definitions.map((item) => item.id)).toEqual([
+      'camera-vad-scene-memory',
+      'evivad-surveillance-demo',
+    ]);
+
+    const first = await service.activateDemo('evivad-surveillance-demo');
+    expect(first.workspace.rootPath).toContain('demo-workspaces');
+    expect(first.workspace.rootPath).not.toContain('demo-packages');
+    expect(first.load.loadedFiles).toBeGreaterThan(70);
+    expect(first.load.idempotent).toBe(false);
+    expect(first.load.complete).toBe(false);
+
+    const second = await service.activateDemo('evivad-surveillance-demo');
+    expect(second.workspace.projectId).toBe(first.workspace.projectId);
+    expect(second.load.idempotent).toBe(true);
+    expect(await readFile(templateManifest, 'utf8')).toBe(before);
+  }, 180_000);
 });

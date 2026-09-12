@@ -1,7 +1,92 @@
 # 四模块工作目录：剩余实现 TODO
 
-更新：2026-09-12。分支 `feat/writing-workflow-unification`（未授权不 commit/push）。
-本文件是唯一剩余任务和验收账本。此前“按第 14–18 节实施”的说法失效，后续按本文 R1–R7 执行。开始前检查最新代码及未提交改动；不要覆盖其他人的工作。
+更新：2026-09-12。当前分支以实际 `git branch --show-current` 为准；本轮用户已明确授权在完成数据整理、统一 Demo 入口和验证后 commit/push，禁止 force-push。
+本文件是唯一剩余任务和验收账本。此前“按第 14–18 节实施”的说法失效，后续先完成 P0，再按 R1–R7 的未完成项推进。开始前检查最新代码及未提交改动；不要覆盖其他人的工作，也不要把未核对的历史改动一并提交。
+
+## 0. P0：EviVAD 数据包与全局 Demo 数据源（当前最高优先级）
+
+原始素材：
+
+```text
+C:\Users\hcf\Desktop\files\navi-agent\视频异常检测+多智能体\demo演示数据\demo演示数据
+```
+
+格式依据：
+
+- `docs/demo-data-format.md`：当前 schema v3 通用契约。
+- `docs/evivad-demo-data-preparation-guide.md`：本批 EviVAD 素材的逐文件映射、目录、缺失项和验收方法。
+- `demo-packages/camera-vad-scene-memory/`：可运行参考包，只参考结构，不复用它的 projectId、哈希或虚构数据。
+
+### P0.1 整理并登记 EviVAD Demo
+
+- [ ] 保留原始素材只读；在 `demo-packages/evivad-surveillance-demo/` 建立整理后的独立数据包。
+- [ ] 生成新的 `project.json` 和 schema v3 `demo/demo-manifest.json`；所有路径必须相对包根目录，所有 SHA-256 来自最终字节。
+- [ ] 按准备指南完成开题、实验、写作、投稿的结构化 JSON/CSV/Markdown/BibTeX、图片、PDF、ZIP 与缺失声明。
+- [ ] 32 篇文献 PDF 必须通过 DOI、题名或 BibTeX 人工/脚本交叉核对后建立 `paper-manifest.json`，不能只靠文件顺序或模糊文件名猜映射。
+- [ ] 实验汇总表只抽取已有值；无逐 seed 原始结果时登记 missing，禁止从均值和方差反推假数据。
+- [ ] 所有模拟实验、模拟审稿和模拟决定保持 `simulated: true`；真实可打开的 PDF/PNG 不会改变其科学数据仍为模拟的事实。
+- [ ] 新增一个针对 EviVAD 包的校验脚本或扩展现有校验脚本，检查 JSON、JSONL、CSV 列、依赖拓扑、role/stage、哈希、媒体签名、ZIP 成员和引用一致性。
+- [ ] 更新 `docs/README.md`、根 README 的 Demo 使用说明及本节实际执行结果。
+
+Git 与分发门禁：原始素材约 226 MB，且存在单个约 113 MB 的 PDF，超过 GitHub 普通 Git 单文件 100 MB 限制；当前 `.gitattributes` 仅把 PDF/PNG/ZIP 标为 binary，并未启用 LFS。
+
+- 先核对第三方论文全文的再分发权。无明确授权的全文 PDF 不得推到公共仓库；保留本地文件，在 `paper-manifest.json`/manifest `missing` 中记录 DOI、来源、状态和原因，仓库只提交元数据或合法公开链接。
+- 对确认可分发且需入库的大文件，在 `git add` 之前配置 Git LFS，并确认远端 LFS 可用及配额足够；至少追踪目标数据包内的 PDF/ZIP，必要时追踪 PNG。不能先以普通 blob 提交后再补 LFS。
+- 禁止通过压低质量、拆分伪装、改扩展名或绕过 pre-receive 限制来提交大文件。
+
+### P0.2 把四模块入口收敛为一个全局 Demo 选择流程
+
+用户语义不是“在每个页面分别塞一份本地假数据”，而是：**选择一次 Demo 数据包 → 将其注册/载入为当前论文 workspace → 此后开题、实验、写作、投稿及后续功能都读取这个 workspace 的 artifacts 和版本。**
+
+- [x] 四个模块首屏、无需滚动即可看到统一入口；首页复用同一组件和同一业务动作。按最新展示要求，按钮文案为“载入研究数据”。
+- [x] 点击后打开统一选择器，列出 CameraVAD 与 EviVAD；显示标题、简要说明、版本和用户可编辑的数据文件夹主路径。选择器不再展示缺失项明细或实验属性徽标。
+- [ ] 用户确认后，由后端在受控位置创建/复用 Demo 工作副本、注册项目并载入 manifest；绝不直接修改仓库模板包，也不覆盖同名用户目录。
+- [ ] 成功后原子更新全局 `projectId`/workspace 摘要，递增 `demoEpoch`，重新拉取 workspace index 和 artifacts；按钮成功提示必须区分完整载入、部分载入和幂等复用。
+- [ ] 开题、实验、写作、投稿统一通过 `projectId + role + path` hydration 读取数据。页面后续的生成、编辑、保存、翻译、实验、审稿等动作以当前 workspace artifact 作为输入，并将新版本写回同一 workspace。
+- [ ] 移除或降级所有旁路数据源：开题页内部“加载教学演示”、实验 `state.loadDemo()`/SAM localStorage、投稿 mock、写作独立 projectId 均不能在已选 workspace 后静默覆盖数据。确需保留离线样例时只能作为显式“离线回退”，且不得改变当前 workspace。
+- [ ] 刷新、路由跳转和重启后恢复同一 `projectId`；若项目已删除或不可访问，清除失效选择并引导重新选择，不能展示上一个项目的缓存数据。
+- [ ] 切换 Demo 前检测未保存草稿并提示；确认切换后取消旧请求，A 项目的迟到响应不得写入或显示在 B 项目。
+- [x] 每个模块首屏显示当前论文/数据包名称、载入完整性和切换入口；读者界面不展示实验属性标签，结构化数据继续保留 `simulated:true` 供导入校验与状态传播。
+- [ ] loading/error/partial/missing/empty 状态一致；无项目时功能按钮应引导选择 Demo 或工作目录，而不是偷偷加载硬编码数据。
+
+建议的单一状态流：
+
+```text
+选择 DemoDefinition
+  → create/reuse controlled workspace copy
+  → register project
+  → load schema-v3 manifest
+  → set active projectId
+  → bump demoEpoch
+  → invalidate/cancel old hydration
+  → hydrate four modules from workspace artifacts
+  → later actions read inputs and save versions in the same workspace
+```
+
+不要把整个数据包内容持久化到 Zustand/localStorage。前端只持久化活动 `projectId` 和必要偏好，业务事实以服务端 workspace 为唯一来源。
+
+### P0.3 必须通过的验收
+
+- [ ] 新用户从开题、实验、写作或投稿任一首屏点击“选择并载入 Demo”，都能选择 EviVAD 并完成同一流程。
+- [ ] 选择 EviVAD 后依次进入四模块，第一屏和核心内容均来自 EviVAD 文件；不得出现 CameraVAD/SAM 的标题、指标、审稿或缓存残留。
+- [ ] 在任一模块修改并保存一个版本，跳转、刷新和服务重启后仍来自同一 EviVAD workspace。
+- [ ] EviVAD → CameraVAD → EviVAD 双向切换，包含人为延迟请求，数据不串线；未保存内容按交互约定处理。
+- [ ] 重复载入同一 Demo 幂等，不重复创建 runs/artifacts/UI events；源包保持未修改。
+- [ ] manifest 缺文件、坏哈希、非法 role、媒体伪装或超大文件时给出可理解错误，已有安全 artifact 可按 partial 规则展示。
+- [ ] 运行研究工作流专项单测、前后端生产构建、数据包校验和浏览器 E2E；把精确命令、通过数及已知失败回写本文。
+- [ ] `git diff --check` 通过；审查 staged diff 和大文件归属后再 commit。先 `git fetch` 并安全同步远端，禁止覆盖他人提交；最后 push 当前分支并报告 commit SHA、分支和远端。不得顺带合并未授权 PR。
+
+执行记录（2026-09-12，本轮）：
+
+- 数据包：新增 `demo-packages/evivad-surveillance-demo/`、`scripts/prepare-evivad-demo.mjs`、`scripts/verify-evivad-demo.mjs`。原始 80 文件保持只读；输出含 308 条第一轮记录、32 条核心文献、32 篇 PDF、四模块结构化文件、schema v3 manifest（84 个登记文件）及 source/paper manifest。
+- 文献核对：32/32 一对一；23 篇 DOI+完整题名命中，9 篇完整题名+BibTeX 命中。审计保存于 `topic/paper-mapping-audit.json`。按用户最新要求全文随数据文件夹分发；其中 `CORE-023.pdf` 为 118,828,297 bytes，保留在包中但因 workspace 50 MiB 安全上限不导入 artifact，manifest 标记 optional partial。
+- 真实性：`experiment/metrics/*.csv` 每行均为 `simulated:true`；未提供逐 seed 数值，故不生成 `seeds.csv`；无真实代码、训练、投稿、审稿或录用声明，decision 为 `revision_required` 且 `simulated:true`。
+- Git/LFS：`.gitattributes` 已在 add 前为 EviVAD PDF/PNG/ZIP 配置 LFS；`git check-attr` 已确认 filter/diff/merge=lfs。远端 LFS endpoint 可解析；最终配额与上传结果以 push 为准。
+- 全局入口：新增后端 `GET /api/research/demos` 与 `POST /api/research/demos/:demoId/activate`，固定白名单选择 CameraVAD/EviVAD，原子创建或复用 managed workspace，重写副本 projectId 后注册并幂等导入；模板保持不变。
+- 前端：四模块与首页共用同一“选择并载入 Demo”组件和选择器；显示标题、版本、SIMULATED、完整性与缺失项；切换前提示保存草稿。成功后一次性更新 project summary/projectId、bump `demoEpoch`；持久化仅保留 `activeProjectId`，启动时从后端恢复或清理失效项目。
+- 防串线：workspace artifact hydration 使用单调 request version，并在响应提交前再次核对 active projectId，旧项目迟到响应不会写入当前页面。
+- 已通过：`node scripts/verify-evivad-demo.mjs` → pass=620, fail=0；`pnpm exec vitest run src/research-workflow` → 5 files, 17 tests passed；新增受控 EviVAD 副本/重复导入测试单独运行 → 2 tests passed；`pnpm build` 通过；`pnpm --dir web build` 通过（4099 modules，只有既有 chunk-size/动态导入告警）。
+- 待完成后回写：浏览器四模块切换/刷新/重启 E2E、完整前端测试、故障注入、写作草稿从 localStorage 完全迁移为 workspace save-version、投稿生成服务彻底移除 mock 离线实现、最终 git diff/staged/LFS/push 审核。
 
 ## 1. 最终交付边界
 
@@ -254,12 +339,32 @@ project.json 和 demo manifest 是根元数据，不必作为普通 stage 产物
 
 历史参考仅供比较：a612f9f 时定向 9/9 和前后端 tsc 通过，没有端到端通过证据；执行者必须补新测试，不能继续拿 9 项路径/validator 测试宣称 importer 已验收。
 
-## 9. 直接交给新 AI 的执行指令
+## 9. 直接交给下一个 AI 的执行提示词
 
-> 请阅读本仓库 docs/four-module-workflow-migration-todo.md，按 R1–R7 完整实现剩余任务。先检查当前 Git 状态与代码，复用已实现基础设施，保留所有用户改动。目标是一篇论文一个工作目录，首页选择后四模块和对话共用该项目，从目录一键载入 Demo 并真实展示内容，支持版本、刷新、重启、幂等及目录迁移恢复。
+下面整段可直接复制。它已包含本轮 commit/push 授权，但不授权 force-push、合并 PR、外部投稿或上传无分发权的论文全文。
+
+> 你正在维护 `C:\Users\hcf\Desktop\files\navi-agent\Navivisor-webui`。请先完整阅读 `AGENTS.md`（若存在）、`docs/four-module-workflow-migration-todo.md`、`docs/demo-data-format.md` 和 `docs/evivad-demo-data-preparation-guide.md`，再检查当前分支、远端、Git 状态、未提交 diff 与现有 Demo 导入代码。保留用户已有改动，不 reset、checkout 或覆盖；先判断每项改动是否属于当前任务，不要盲目提交无关文件。
 >
-> 重点逐项完成第 4 节 Demo 数据缺口：不是仅创建空文件或按钮，而是补完整实验方案/结果/模拟代码、论文全部章节、有效 GPT 图片和实际编译 PDF；将遗漏的指标、引用、章节和审稿文件纳入 manifest，校验格式、依赖、哈希及模拟标记。GPT/模板/运行环境缺失时先查可用能力，如实记录阻塞并继续独立任务，不造假。
+> 原始 Demo 素材位于 `C:\Users\hcf\Desktop\files\navi-agent\视频异常检测+多智能体\demo演示数据\demo演示数据`。保持原目录只读，按照准备指南把它整理成仓库内 `demo-packages/evivad-surveillance-demo/` 的 schema v3 可导入数据包，补齐 `project.json`、`demo/demo-manifest.json`、四模块结构化文件、依赖、合法 role/stage、真实 SHA-256、媒体校验与 missing。不得伪造逐 seed 数据、真实训练、真实审稿或录用结论，全部演示指标保持 `simulated:true`。逐篇核对 PDF 与文献元数据，不要仅按文件名猜对应关系。
 >
-> 修复存储与导入器的已知问题后接 UI；每完成一项更新本文件状态及测试结果，不另写中间报告。必须运行对应单测和浏览器端到端流程，不能只靠 tsc、文件存在或提交标题宣布完成。未授权不要 commit/push，不进行外部投稿。最后列出实际完成项、验证结果和不可完成项的具体原因。
+> 先处理 Git 和版权门禁：素材约 226 MB，最大 PDF 约 113 MB，当前仓库尚未对这些扩展名启用 LFS。核对第三方论文全文是否有公开仓库再分发权；无明确授权的全文不要 push，只提交元数据/合法链接并在 paper manifest 与 missing 中说明。对确认可分发的大文件，必须在 `git add` 前配置并验证 Git LFS 与远端配额，禁止绕过 GitHub 限制。
+>
+> 同时实现统一 Demo 入口：四个模块首屏都使用同一个“选择并载入 Demo”组件，首页可复用。点击后可选择至少 CameraVAD 或 EviVAD；后端创建/复用受控工作副本、注册并载入 manifest，成功后原子设置全局活动 `projectId`、刷新 workspace index/artifacts 并递增 `demoEpoch`。从此开题、实验、写作、投稿以及生成、编辑、保存、翻译、实验、审稿等后续功能，都必须以该 workspace 的 artifacts 为输入并把版本写回同一 workspace。
+>
+> 收敛现有旁路：开题内部“加载教学演示”、实验 SAM `state.loadDemo()`/localStorage、投稿 mock、写作独立项目状态不能在已有活动 workspace 时覆盖数据。前端只持久化活动 projectId/偏好，不能把业务数据包复制到 localStorage。实现明确的 loading、partial、missing、error、切换和未保存草稿处理；取消旧项目请求，防止 A 的迟到响应污染 B。四模块首屏都要显示当前 Demo 名称、simulated 状态、完整性及切换入口。
+>
+> 按 TODO 的 P0.1–P0.3 逐项实现并回写勾选状态、实际文件和验证证据。补数据包校验测试、workspace/importer 单测和浏览器 E2E，至少覆盖：任一模块进入并选择 EviVAD、四模块均显示 EviVAD、刷新/重启恢复、保存版本、重复载入幂等、EviVAD↔CameraVAD 切换且无串线、坏哈希/缺文件/非法媒体失败。运行前后端生产构建、专项测试、数据包校验和 `git diff --check`；不要用仅 tsc 通过代替行为验收。
+>
+> 用户已授权本任务完成后 commit 并 push。提交前审查 staged diff、敏感信息、绝对路径、版权文件、普通 Git 大文件和生成物；先 fetch 并安全处理远端更新，不 force-push，不覆盖他人提交，不合并 PR，不进行外部投稿。然后 push 当前分支到 origin。最终报告：整理后的包位置、未入库文件及原因、UI/状态流改动、测试精确结果、commit SHA、分支和 push 结果；任何未完成项必须给出具体阻塞，不能宣称全部完成。
 
 执行记录（2026-09-12 本轮）：已按 R1–R7 推进代码与 Demo；未 commit/push。GPT 图片及浏览器最小 E2E 已完成。剩余优先：故障注入与外部编辑/版本闭环、完整 A/B 迟到响应浏览器测试、Codex bridge cwd、OpenAPI SDK、模拟标记自动传播，以及合法 CVPR 模板与可用 LaTeX 编译环境。
+
+执行记录（2026-09-12，统一载入与完整流程复验）：
+- [x] EviVAD 数据包扩展为 schema v3 的 106 个清单文件；自动校验 `pass=754 fail=0`，保留 4 项明确 missing。
+- [x] Demo 载入按清单 SHA-256 生成版本化受控副本；相同版本重复载入复用同一项目，数据包更新后创建新副本，不覆盖已编辑工作区。
+- [x] 开题、实验、写作、投稿均由同一活动 `projectId` 水合；投稿表单对新项目自动载入 workspace seed，项目内 artifact 刷新不覆盖草稿。
+- [x] 实验真实运行模式在当前终端展示 SSH 命令、脚本、标准输出和训练指标流；密码仅在请求期间使用并统一遮蔽。目标服务器 `10.61.48.10:22` 在认证前 TCP 超时，因此未声明远端训练完成。
+- [x] 数据包正文、图中文字及可见投稿流程文案已移除“模拟/演示”类措辞；结构化来源字段 `simulated:true` 继续保留，用于防止将合成结果误认为真实实验。
+- [x] 浏览器流程已核对：首页选择 EviVAD，开题显示课题和 32 篇文献，实验载入 EviVAD 并选择真实运行，写作载入 EviVAD 论文与实验资料，投稿的提交信息、三位评阅意见、回复和结果均来自同一 workspace；页面刷新及服务重启后仍恢复活动项目。
+- [x] 本轮专项测试 `pnpm exec vitest run src/research-workflow` 为 18/18；后端与前端生产构建通过；`git diff --check` 通过（仅 `.gitattributes` 行尾转换提示）。
+- [ ] 尚未补齐：写盘/数据库故障注入的补偿测试、真实 SSH 服务器连通后的远端运行验收、Codex bridge cwd/thread 恢复及合法 CVPR 模板的 LaTeX 编译环境。

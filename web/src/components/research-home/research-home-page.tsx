@@ -42,7 +42,7 @@ const modules = [
   },
   {
     title: '投稿启航',
-    copy: '模拟顶会投稿全流程，体验提交、审稿与回复',
+    copy: '按顶会结构完成提交、审稿与作者回复流程',
     image: 'research-home/submission.png',
     to: '/research/submit',
   },

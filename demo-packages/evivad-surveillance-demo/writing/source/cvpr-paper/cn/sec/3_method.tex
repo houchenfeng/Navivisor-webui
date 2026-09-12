@@ -1,0 +1,156 @@
+\section{方法}
+\label{sec:method}
+
+\subsection{总体框架与问题形式化}
+
+给定摄像头视频流，按 $8$~fps 采样切分为长度 $T{=}32$ 的片段 $X \in \mathbb{R}^{T \times 3 \times H \times W}$（$H{=}W{=}224$，ImageNet 归一化）。模型 $f_{\theta}$ 输出四元组
+\begin{equation}
+\hat{y} = \big(S,\; I,\; E,\; (c, a)\big),
+\end{equation}
+其中 $S \in \mathbb{R}^{T}$ 为帧级异常分数曲线，$I{=}\{(t_s^{(i)}, t_e^{(i)})\}$ 为异常时间区间，$E$ 为带证据引用的解释，$c \in [0,1]$ 与 $a \in \{0,1\}$ 分别为置信度与弃权标志。训练阶段只使用片段级异常标签，帧级标注仅用于评测。
+
+\evivad{} 的整体数据流如图~\ref{fig:framework} 所示：原始片段首先进入质量评估探针 Q-Net 得到质量分 $q$；同时经过\emph{完全冻结}的视觉编码器（CLIP ViT-B/16），并在末端四层由 DAA 注入低秩旁路，得到帧级视觉特征 $F$；文本侧由冻结文本塔提供异常/正常提示词的嵌入；片段级特征在检索增强正常性记忆库中检索 top-$K$（$K{=}8$）邻居，得到检索证据分；DAG 依据 $q$ 在两条打分路径之间连续调制；融合分数经时间平滑后进入 EAD，在结构化解码约束下输出证据引用与解释。各环节张量尺寸见表~\ref{tab:tensor}。
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\linewidth]{framework.png}
+\caption{\evivad{} 算法流程框架图。输入为摄像头视频流（$32$ 帧 / 片段、$8$~fps 采样），可选注入退化网格；主干为全部冻结的视觉编码器，其上由 DAA 注入 Q/V 低秩增量；DAG 依据质量探针的输出在「常规路径」与「检索/先验主导路径」之间调制打分权重并输出弃权；EAD 把打分结果解码为带时间区间与视觉线索引用的结构化解释。最终输出四类结果：帧级异常分数曲线、异常时间区间、证据引用解释、置信度与弃权标志。}
+\label{fig:framework}
+\end{figure*}
+
+\begin{table}[t]
+\centering
+\small
+\caption{\evivad{} 各环节的张量尺寸（$T{=}32$，$D{=}768$，$K$ 为提示词数量，$N$ 为记忆库规模）。}
+\label{tab:tensor}
+\begin{tabular}{lll}
+\toprule
+环节 & 输入 & 输出 \\
+\midrule
+片段采样 & 视频流 & $[T,3,H,W]$ \\
+Q-Net & $[T,3,H,W]$ & $q \in \mathbb{R}$ \\
+冻结视觉塔 + DAA & $[T,3,H,W]$ & $[T,197,D]$ \\
+帧特征池化 & $[T,197,D]$ & $F \in [T,D]$ \\
+时间池化 & $[T,D]$ & $\bar{f} \in [D]$ \\
+文本塔（冻结） & 提示词 & $E_{txt} \in [K,D]$ \\
+对齐打分 & $F, E_{txt}$ & $S_{vl} \in [T]$ \\
+记忆检索 & $\bar{f}, M$ & $\mathcal{N}$，$|\mathcal{N}|{=}8$ \\
+检索证据分 & $F, M, \mathcal{N}$ & $S_{ret} \in [T]$ \\
+DAG 门控 & $q$ & $g \in \mathbb{R}$ \\
+分数融合与平滑 & $S_{vl}, S_{ret}, S_{pri}, g$ & $\hat{S} \in [T]$ \\
+证据解码（EAD） & $F, Z$ & $E$，解释文本 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DAA：低秩领域适配}
+
+\paragraph{动机。} 挑战一（域偏移）的代价不应由重训整个大模型来承担。低秩适配的价值在于：它在几乎不改变模型行为的起点上（上投影矩阵零初始化时前向完全等价于基线）逐层注入领域信息，且注入范围小到可以「一场景一适配器」。
+
+\paragraph{数学定义。} 对视觉编码器末端四个 Transformer 块（第 $9$–$12$ 层）的 $q_{\text{proj}}$ 与 $v_{\text{proj}}$，把冻结线性层 $h = W_0 x$ 改造为
+\begin{equation}
+h = W_0 x + \frac{\alpha}{r}\, B\,(A x),
+\end{equation}
+其中 $W_0 \in \mathbb{R}^{D \times D}$ 冻结，$A \in \mathbb{R}^{r \times D}$，$B \in \mathbb{R}^{D \times r}$，缩放系数 $\alpha/r$ 使不同秩下的有效学习率保持可比。$A$ 采用 Kaiming 初始化，$B$ \emph{零初始化}，因此训练开始时 $({\alpha}/{r}) B A x = 0$，模型输出与基线逐比特一致，为单变量比较提供明确的控制条件。超参数取 $r{=}4$、$\alpha{=}8$、dropout $=0.05$。
+
+\paragraph{数据流与实现要点。} 输入 $[T,3,H,W]$ 逐帧前向得到 patch token $[T,197,D]$，池化为帧级特征 $F \in [T,D]$。只训练 LoRA 参数与打分层，视觉塔其余层、文本塔与 LLM 主干全部冻结。新增可训练参数 $4.7$\,M（约为主干的 $0.9\%$），部署时一个场景对应一个约 $18$\,MB 的适配器文件，可热插拔。
+
+\subsection{EAD：证据锚定解码}
+
+\paragraph{动机。} 挑战二（解释不可验证）的根源在于：解释是自由文本，其论断无法被独立检查。若把每个论断绑定到一个可验证的证据槽位，解释便从「不可证伪的叙述」变为「可证伪的断言」。
+
+\paragraph{证据槽位构造。} 候选区间由粗分数曲线的局部极大与检索到的正常性记忆共同生成，形成槽位集合
+\begin{equation}
+Z = \{\, z_k = (t_s^{(k)},\; t_e^{(k)},\; \mathrm{cue}_k) \,\},
+\end{equation}
+其中 $t_s^{(k)} < t_e^{(k)}$ 为区间端点，$\mathrm{cue}_k$ 为可从片段与检索邻居中提取的语义线索。
+
+\paragraph{结构化输出。} 解码被约束为固定 schema，证据字段为必填项：$\{\texttt{score},\ \texttt{evidence}[\{\texttt{t\_start},\texttt{t\_end},\texttt{cue}\}],\ \texttt{explanation}\}$。
+
+\paragraph{证据对齐损失。} 令 $h_{exp}$ 为解释 token 的池化表征，$h_{z_k}$ 为槽位 $z_k$ 的编码表征，$z^{*}$ 为真值证据槽位，温度 $\tau_c{=}0.07$：
+\begin{equation}
+L_{EA} = -\log \frac{\exp\!\big(\mathrm{sim}(h_{exp}, h_{z^{*}})/\tau_c\big)}{\sum_{k} \exp\!\big(\mathrm{sim}(h_{exp}, h_{z_k})/\tau_c\big)}.
+\end{equation}
+该损失只更新一个两层 MLP 的证据对齐投影头（约 $0.6$\,M 参数），主干 LLM 全程冻结。
+
+\paragraph{弃权判据。} 当证据槽位的最大对齐分低于阈值 $\theta_{ev}$ 时拒绝作答：
+\begin{equation}
+\max_k \mathrm{sim}(h_{exp}, h_{z_k}) < \theta_{ev} \;\Longrightarrow\; \text{解释} \leftarrow \text{「证据不足，拒绝判定」}.
+\end{equation}
+
+\subsection{DAG：退化感知门控与置信度弃权}
+
+\paragraph{动机。} 挑战三（退化下不可降级）的关键在于识别系统的置信边界。弃权机制将低置信样本转交人工复核，并抑制高置信错误告警。
+
+\paragraph{质量评估与门控。} Q-Net 在片段级预测质量分（3 层卷积 + 全局平均池化 + 1 层全连接，约 $0.2$\,M 参数），其监督标签由退化类型与强度自动生成（干净为 $1$，退化为强度映射分）：
+\begin{equation}
+q = \mathrm{QNet}(X) \in [0,1], \qquad
+g(q) = \sigma\!\Big(\frac{\tau_g - q}{T_g}\Big),
+\end{equation}
+其中 $\tau_g{=}0.5$，$T_g{=}0.15$。质量越低则 $g$ 越接近 $1$，打分越依赖检索与先验；质量高时 $g \to 0$，退回常规路径。
+
+\paragraph{融合打分。} 逐帧融合两条路径：
+\begin{equation}
+S^{(t)} = (1 - g)\, s_{vl}^{(t)} + g\,\big(0.7\, s_{ret}^{(t)} + 0.3\, s_{prior}^{(t)}\big),
+\end{equation}
+其中 $s_{vl}$、$s_{ret}$、$s_{prior}$ 分别为视觉-文本对齐分、检索证据分与定义/规则先验分；融合后再做时间平滑得到 $\hat{S}$。
+
+\paragraph{弃权规则。} 以片段级分数 $s = \mathrm{Mean}_t(\hat{S}^{(t)})$ 判定
+\begin{equation}
+\lvert s - \tau_s \rvert < \delta \;\Longrightarrow\; a = 1,
+\end{equation}
+其中 $\tau_s{=}0.5$，$\delta{=}0.08$；此时输出「低置信，转人工复核」，并在下游告警中降级处理。
+
+\subsection{目标函数}
+
+三项模块的联合训练目标为
+\begin{align}
+L_{total} = {} & L_{score} + 0.3\,L_{EA} \nonumber \\
+& + 0.2\,L_{gate} + 0.1\,L_{reg},
+\end{align}
+其中检测打分损失为 BCE 与排序损失的组合，
+\begin{equation}
+L_{score} = L_{BCE} + \lambda_{rank} L_{rank}.
+\end{equation}
+$L_{BCE}$ 为帧级二值交叉熵，$L_{rank}$ 为片段内正负帧的间隔排序损失；质量预测损失 $L_{gate}$ 为对质量标签的交叉熵；$L_{reg} = \lVert \theta_{DA} \rVert_2^2$ 为 LoRA 参数正则，用于抑制低秩旁路在小样本上的过拟合。
+
+\paragraph{梯度隔离。} 这是本框架的一个关键设计：$L_{EA}$ 的梯度不流入视觉塔与 LLM 主干，$L_{gate}$ 的梯度不流入视觉塔，只有 $L_{score} + L_{reg}$ 更新 LoRA。该隔离保证「解释约束不伤害检测主干」，也是第~\ref{sec:exp} 节为 EAD 设置「若帧级 AUC 下降超过 $1$ 个百分点即判定失败」这一准则的技术依据。
+
+\subsection{训练与推理流程}
+
+训练分四个阶段，先用最简单的一维信号把各部分单独校准，再联合微调，避免多变量同时变更导致归因失败：（i）Q-Net 单独训练 $10$ 个 epoch，学习率 $1\times10^{-3}$，batch 为 $8$；（ii）训练 DAA 与打分层，$20$ 个 epoch，LoRA 学习率 $1\times10^{-4}$、打分层 $5\times10^{-4}$，batch 为 $2$ 并做 $8$ 步梯度累积；（iii）训练 EAD 证据投影头 $15$ 个 epoch，学习率 $5\times10^{-4}$，batch 为 $4$；（iv）四组参数联合微调 $20$ 个 epoch，沿用上述分组学习率。全部阶段使用 AdamW、weight decay $1\times10^{-2}$、AMP FP16，学习率调度为 warm-up 加 cosine 衰减。完整前向与训练流程见算法~\ref{alg:evivad}。
+
+\begin{algorithm}[t]
+\caption{\evivad{} 的训练与前向流程}
+\label{alg:evivad}
+\begin{algorithmic}[1]
+\REQUIRE 片段 $X$，记忆库 $M$，规则先验 $\mathcal{R}$，配置 $\theta$
+\ENSURE 分数曲线 $\hat{S}$，区间 $I$，证据 $E$，置信度 $c$，弃权 $a$
+\STATE $q \leftarrow \mathrm{QNet}(X)$ \COMMENT{片段级质量分}
+\STATE $F \leftarrow \mathrm{VisionTower}_{\mathrm{DAA}}(X)$ \COMMENT{冻结塔 + 低秩旁路}
+\STATE $\bar{f} \leftarrow \mathrm{Mean}_t(F)$
+\STATE $S_{vl} \leftarrow \mathrm{Mean}_k \cos(F, E_{txt})$
+\STATE $\mathcal{N} \leftarrow \mathrm{TopK}(\bar{f}, M, K)$
+\IF{$|\mathcal{N}| > 0$}
+    \STATE $S_{ret} \leftarrow \mathrm{Mean}_{n \in \mathcal{N}} \cos(F, m_n)$
+\ELSE
+    \STATE $S_{ret} \leftarrow \mathbf{0}$ \COMMENT{检索缺失，走降级路径}
+\ENDIF
+\STATE $S_{pri} \leftarrow \mathrm{RuleScore}(F, \mathcal{R})$
+\STATE $g \leftarrow \sigma\big((\tau_g - q)/T_g\big)$
+\IF{$|\mathcal{N}| > 0$}
+    \STATE $S \leftarrow (1-g) S_{vl} + g (0.7 S_{ret} + 0.3 S_{pri})$
+\ELSE
+    \STATE $S \leftarrow (1-g) S_{vl} + g S_{pri}$
+\ENDIF
+\STATE $\hat{S} \leftarrow \mathrm{Smooth}(S)$; \quad $s \leftarrow \mathrm{Mean}_t(\hat{S})$
+\STATE $a \leftarrow \mathbb{1}\big[\,|s - \tau_s| < \delta\,\big]$
+\STATE $I \leftarrow \mathrm{ExtractIntervals}(\hat{S}, \tau_s)$
+\STATE $Z \leftarrow \mathrm{BuildSlots}(\hat{S}, M, \mathcal{N})$
+\STATE $E \leftarrow \mathrm{Decode}_{\mathrm{schema}}(F, Z)$
+\IF{$\max_k \mathrm{sim}(h_{exp}, h_{z_k}) < \theta_{ev}$}
+    \STATE $E \leftarrow \varnothing$ \COMMENT{证据不足，拒绝作答}
+\ENDIF
+\RETURN $\hat{S}, I, E, \sigma(s), a$
+\end{algorithmic}
+\end{algorithm}

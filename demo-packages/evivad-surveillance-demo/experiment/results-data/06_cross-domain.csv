@@ -1,0 +1,4 @@
+experiment_id,dataset,protocol,baseline_auc_percent,evivad_auc_percent,baseline_ap_percent,evivad_ap_percent,aggregation,simulated
+EXP-06,XD-Violence,zero-finetune,73.6,77.1,67.4,71.2,aggregate-summary,true
+EXP-06,UBnormal,zero-finetune,68.9,72.0,61.8,65.1,aggregate-summary,true
+EXP-06,MSAD,zero-finetune,71.2,74.6,63.7,67.5,aggregate-summary,true

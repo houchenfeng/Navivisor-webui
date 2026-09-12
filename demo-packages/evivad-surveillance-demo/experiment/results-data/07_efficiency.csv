@@ -1,0 +1,6 @@
+experiment_id,method,trainable_params_m,latency_ms,memory_gb,fps_equivalent,measurement_status,simulated
+EXP-07,Baseline-B0,0.0,118,3.6,271.2,declared-aggregate,true
+EXP-07,DAA,4.7,121,,264.5,declared-aggregate,true
+EXP-07,EAD,0.6,133,,240.6,declared-aggregate,true
+EXP-07,DAG,0.2,126,,254.0,declared-aggregate,true
+EXP-07,EviVAD,5.5,147,4.1,217.7,declared-aggregate,true

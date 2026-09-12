@@ -1,0 +1,519 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-12T00:00:00.000Z",
+  "mappingMethod": "One-to-one DOI/title/BibTeX cross-check; never file-order inference.",
+  "papers": [
+    {
+      "paperId": "CORE-001",
+      "citationKey": "zanella2024harnessing",
+      "title": "Harnessing Large Language Models for Training-Free Video Anomaly Detection",
+      "doi": "10.1109/cvpr52733.2024.01753",
+      "originalFilename": "Harnessing_Large_Language_Models_for_Training-Free_Video_Anomaly_Detection.pdf",
+      "sourceSha256": "512e423f98c9f06913bcc8247743631d5ed9069761c05c9c1e0c22a8028977d4",
+      "sourceBytes": 1619361,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-001.pdf"
+    },
+    {
+      "paperId": "CORE-002",
+      "citationKey": "du2024uncovering",
+      "title": "Uncovering what, why and How: A Comprehensive Benchmark for Causation Understanding of Video Anomaly",
+      "doi": "10.1109/cvpr52733.2024.01778",
+      "originalFilename": "Uncovering_what_why_and_How_A_Comprehensive_Benchmark_for_Causation_Understanding_of_Video_Anomaly.pdf",
+      "sourceSha256": "bc1ec661d8302f30864b8476c5575d7c54623d51b64261a0e0dcac449f096f94",
+      "sourceBytes": 10011902,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-002.pdf"
+    },
+    {
+      "paperId": "CORE-003",
+      "citationKey": "wu2024open",
+      "title": "Open-Vocabulary Video Anomaly Detection",
+      "doi": "10.1109/cvpr52733.2024.01732",
+      "originalFilename": "Open-Vocabulary_Video_Anomaly_Detection.pdf",
+      "sourceSha256": "dac0ba17227167fe292b09e7307cbf84769a0d19e88e86569443c48fb3acb46d",
+      "sourceBytes": 3035129,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-003.pdf"
+    },
+    {
+      "paperId": "CORE-004",
+      "citationKey": "zanella2024delving",
+      "title": "Delving into CLIP latent space for Video Anomaly Recognition",
+      "doi": "10.1016/j.cviu.2024.104163",
+      "originalFilename": "1-s2.0-S1077314224002443-main.pdf",
+      "sourceSha256": "a343f7e5e9e17a2b41543d21b31dc73165a85cc453d91b6939d28b857b6e7f7b",
+      "sourceBytes": 2587308,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-004.pdf"
+    },
+    {
+      "paperId": "CORE-005",
+      "citationKey": "phan2025aadc",
+      "title": "AADC-Net: A Multimodal Deep Learning Framework for Automatic Anomaly Detection in Real-Time Surveillance",
+      "doi": "10.1109/tim.2025.3551832",
+      "originalFilename": "AADC-Net_A_Multimodal_Deep_Learning_Framework_for_Automatic_Anomaly_Detection_in_Real-Time_Surveillance.pdf",
+      "sourceSha256": "03fb72006fc6cd1df10a53f6b1d6abaf5f6da1faecfcecba5d7d7b435874892e",
+      "sourceBytes": 2766720,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-005.pdf"
+    },
+    {
+      "paperId": "CORE-006",
+      "citationKey": "yang2025monitor",
+      "title": "MoniTor: Exploiting Large Language Models with Instruction for Online Video Anomaly Detection",
+      "doi": "10.52202/085713-1204",
+      "originalFilename": "MoniTor.pdf",
+      "sourceSha256": "63d243385769dc8bbacabdb0e1834b1b0645fb9124a050637ca1715c2050456f",
+      "sourceBytes": 4006275,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-006.pdf"
+    },
+    {
+      "paperId": "CORE-007",
+      "citationKey": "yun2025missiongnn",
+      "title": "Missiongnn: Hierarchical Multimodal GNN-Based Weakly Supervised Video Anomaly Recognition with Mission-Specific Knowledge Graph Generation",
+      "doi": "10.1109/wacv61041.2025.00464",
+      "originalFilename": "Missiongnn_Hierarchical_Multimodal_GNN-Based_Weakly_Supervised_Video_Anomaly_Recognition_with_Mission-Specific_Knowledge_Graph_Generation.pdf",
+      "sourceSha256": "db59972957f7b892309f00cdff6d95a6c500576aae97cbff86b2af6d2c117042",
+      "sourceBytes": 860180,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-007.pdf"
+    },
+    {
+      "paperId": "CORE-008",
+      "citationKey": "yun2025continuous",
+      "title": "Continuous GNN-Based Anomaly Detection on Edge Using Efficient Adaptive Knowledge Graph Learning",
+      "doi": "10.23919/date64628.2025.10993194",
+      "originalFilename": "Continuous_GNN-Based_Anomaly_Detection_on_Edge_Using_Efficient_Adaptive_Knowledge_Graph_Learning.pdf",
+      "sourceSha256": "d525d285370ab56fa15eeeccc4fc73cab1ef67a19af5e78b695f17a003924538",
+      "sourceBytes": 1138734,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-008.pdf"
+    },
+    {
+      "paperId": "CORE-009",
+      "citationKey": "biswas2025mmvad",
+      "title": "MMVAD: A vision–language model for cross-domain video anomaly detection with contrastive learning and scale-adaptive frame segmentation",
+      "doi": "10.1016/j.eswa.2025.127857",
+      "originalFilename": "1-s2.0-S0957417425014794-main.pdf",
+      "sourceSha256": "871cd4b55471902ba78b35319ba2fd7c8820ed3dddd484fd050d674a7f62f05b",
+      "sourceBytes": 4283298,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-009.pdf"
+    },
+    {
+      "paperId": "CORE-010",
+      "citationKey": "zhao2025smarthome",
+      "title": "SmartHome-Bench: A Comprehensive Benchmark for Video Anomaly Detection in Smart Homes Using Multi-Modal Large Language Models",
+      "doi": "10.1109/cvprw67362.2025.00382",
+      "originalFilename": "SmartHome-Bench_A_Comprehensive_Benchmark_for_Video_Anomaly_Detection_in_Smart_Homes_Using_Multi-Modal_Large_Language_Models.pdf",
+      "sourceSha256": "02bd5da5e5ccfe135193a9dee0e8d82437fa4ec1f0b558e671dac4e7550de725",
+      "sourceBytes": 1343617,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-010.pdf"
+    },
+    {
+      "paperId": "CORE-011",
+      "citationKey": "abdalla2025video",
+      "title": "Video anomaly detection in 10 years: a survey and outlook",
+      "doi": "10.1007/s00521-025-11659-8",
+      "originalFilename": "s00521-025-11659-8.pdf",
+      "sourceSha256": "ea31242a1d3bac3be7887d955b505d41708ac8de2aeb61b09067d7f47a655e94",
+      "sourceBytes": 2174596,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-011.pdf"
+    },
+    {
+      "paperId": "CORE-012",
+      "citationKey": "kebour2025zero",
+      "title": "Zero-Shot Vision-Language Model for Event Detection in Smart Surveillance",
+      "doi": "10.1109/cbmi66578.2025.11339305",
+      "originalFilename": "Zero-Shot_Vision-Language_Model_for_Event_Detection_in_Smart_Surveillance.pdf",
+      "sourceSha256": "c1d38d3006b34ac2a99d3ff51419690b8a502e654a4e706e9e6dab1543d9363d",
+      "sourceBytes": 362031,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-012.pdf"
+    },
+    {
+      "paperId": "CORE-013",
+      "citationKey": "wang2025holotrace",
+      "title": "HoloTrace: LLM-based Bidirectional Causal Knowledge Graph for Edge-Cloud Video Anomaly Detection",
+      "doi": "10.1145/3746027.3755185",
+      "originalFilename": "Holo Trace.pdf",
+      "sourceSha256": "d1b2cf3129c6f5d0a68d3ace88154aad571cd9b4099213f17e96102896cdb33f",
+      "sourceBytes": 3640013,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-013.pdf"
+    },
+    {
+      "paperId": "CORE-014",
+      "citationKey": "kang2025clip",
+      "title": "CLIP-Based Adaptive Semantic Alignment for Efficient Weakly Supervised Video Anomaly Detection",
+      "doi": "10.1109/iccbdai66607.2025.11388561",
+      "originalFilename": "CLIP-Based_Adaptive_Semantic_Alignment_for_Efficient_Weakly_Supervised_Video_Anomaly_Detection.pdf",
+      "sourceSha256": "2668dacf54002f60ed89f3515af7a2c8f7fea9aea2acd83058d3a5c08625d577",
+      "sourceBytes": 1162004,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-014.pdf"
+    },
+    {
+      "paperId": "CORE-015",
+      "citationKey": "khedher2025enhancing",
+      "title": "Enhancing Trustworthiness in VAD with Rule-Based VLM-LLM Explanations",
+      "doi": "10.1609/aaaiss.v7i1.36886",
+      "originalFilename": "Enhancing.pdf",
+      "sourceSha256": "4c88882a57be6d7a070801b519d71aba420954a6ee2f79c8c70fb61c9b0c6ea8",
+      "sourceBytes": 318931,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-015.pdf"
+    },
+    {
+      "paperId": "CORE-016",
+      "citationKey": "hashimoto2025surveillance",
+      "title": "Surveillance Video Anomaly Detection via Automatic Caption Generation Using Multimodal Large Language Models",
+      "doi": "10.2493/jjspe.91.1136",
+      "originalFilename": "91_1136.pdf",
+      "sourceSha256": "76c369d3107b79579d88a0ce796532a926fb2a5430d8032f3042f69d145d70b5",
+      "sourceBytes": 4752957,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-016.pdf"
+    },
+    {
+      "paperId": "CORE-017",
+      "citationKey": "mishra2026large",
+      "title": "Large Language Models Improve Scene-Invariant Detection of Behavior of Risk in Dementia Residential Care Across Multiple Surveillance Camera Views",
+      "doi": "10.1109/tnsre.2026.3656747",
+      "originalFilename": "Large_Language_Models_Improve_Scene-Invariant_Detection_of_Behavior_of_Risk_in_Dementia_Residential_Care_Across_Multiple_Surveillance_Camera_Views.pdf",
+      "sourceSha256": "f8b4e2448f91dcf5990f0c90248896a3d09426c943013f8f67f0efabee74269b",
+      "sourceBytes": 2240925,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-017.pdf"
+    },
+    {
+      "paperId": "CORE-018",
+      "citationKey": "pei2026dr",
+      "title": "DR-VAD: Definition-guided reasoning for training-free video anomaly detection",
+      "doi": "10.1016/j.neucom.2026.132836",
+      "originalFilename": "1-s2.0-S092523122600233X-main.pdf",
+      "sourceSha256": "32f92f6fa56140bd3e7649cb5ec0cb99d06c0750de24b69884ca2171dc2c01ca",
+      "sourceBytes": 3002067,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-018.pdf"
+    },
+    {
+      "paperId": "CORE-019",
+      "citationKey": "radi2026hierarchical",
+      "title": "Hierarchical vision-language model with comprehensive language description for video anomaly detection",
+      "doi": "10.1016/j.knosys.2026.115466",
+      "originalFilename": "1-s2.0-S0950705126002091-main.pdf",
+      "sourceSha256": "294d0bfafdafd560040088493d730e939436f16b79d559a69c624e6a53766c45",
+      "sourceBytes": 7736521,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-019.pdf"
+    },
+    {
+      "paperId": "CORE-020",
+      "citationKey": "houssein2026deep",
+      "title": "Deep learning techniques for video-based violence detection: a comprehensive review",
+      "doi": "10.1007/s12652-026-05045-y",
+      "originalFilename": "s12652-026-05045-y.pdf",
+      "sourceSha256": "b82626f16cf143ff66d1ba4f79f84eda6beac0a5119cc29da413d9b9e7187529",
+      "sourceBytes": 2365087,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-020.pdf"
+    },
+    {
+      "paperId": "CORE-021",
+      "citationKey": "zou2026unlocking",
+      "title": "Unlocking Vision-Language Models for Video Anomaly Detection via Fine-Grained Prompting",
+      "doi": "10.1109/wacv61042.2026.00411",
+      "originalFilename": "2510.02155v1.pdf",
+      "sourceSha256": "f73524423dfa10b81c425e7d54ef311b467bbdb00ca7ee1ec7a4b6e2dde6aae6",
+      "sourceBytes": 1080113,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-021.pdf"
+    },
+    {
+      "paperId": "CORE-022",
+      "citationKey": "ahn2026anyanomaly",
+      "title": "AnyAnomaly: Zero-Shot Customizable Video Anomaly Detection with LVLM",
+      "doi": "10.1109/wacv61042.2026.00296",
+      "originalFilename": "2503.04504v4.pdf",
+      "sourceSha256": "3db4ff484245aa934e887f075b517789cc9b09c430eac1ba6856add588a8c334",
+      "sourceBytes": 8737363,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-022.pdf"
+    },
+    {
+      "paperId": "CORE-023",
+      "citationKey": "sun2026sor",
+      "title": "SOR-BDNet: Semantic-Optical Representation for Boundary-Aware Video Anomaly Detection with GPT-4o",
+      "doi": "10.1145/3801156",
+      "originalFilename": "3801156.pdf",
+      "sourceSha256": "e6d18ad9b66601122d743569aa694db8cdfc9e9f2bac6fd15dd178fe6be00b34",
+      "sourceBytes": 118828297,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-023.pdf"
+    },
+    {
+      "paperId": "CORE-024",
+      "citationKey": "zhou2026targetvau",
+      "title": "TargetVAU: Multimodal Anomaly-Aware Reasoning for Target Behavior Understanding in Videos",
+      "doi": "10.1609/aaai.v40i16.38378",
+      "originalFilename": "04173-AAAI26.ZhouL-CV.pdf",
+      "sourceSha256": "d386ff3803eef5cc95886e489522211b39d7218cb9dd3963b7879159602bb2fa",
+      "sourceBytes": 3533926,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-024.pdf"
+    },
+    {
+      "paperId": "CORE-025",
+      "citationKey": "li2026semantic",
+      "title": "Toward Semantic-Aware Aerial Video Anomaly Detection by Exploiting Multimodal Large Language Model",
+      "doi": "10.1109/tcsvt.2026.3686230",
+      "originalFilename": "Toward_Semantic-Aware_Aerial_Video_Anomaly_Detection_by_Exploiting_Multimodal_Large_Language_Model.pdf",
+      "sourceSha256": "c74f814e82201cfe25eb5aff4cfad89193c56ffdab458bcf0e9cafa769a9e58d",
+      "sourceBytes": 7900236,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-025.pdf"
+    },
+    {
+      "paperId": "CORE-026",
+      "citationKey": "sun2026rag4vad",
+      "title": "RAG4VAD: A training-free retrieval-augmented generation framework for explainable video anomaly detection",
+      "doi": "10.1016/j.ins.2026.123589",
+      "originalFilename": "1-s2.0-S0020025526005207-main.pdf",
+      "sourceSha256": "071b05b6856d22180a7f32dfcb44eb698f91564ad39271079d0f5e0c0cc7003e",
+      "sourceBytes": 3229857,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-026.pdf"
+    },
+    {
+      "paperId": "CORE-027",
+      "citationKey": "kim2026dtvad",
+      "title": "DTVAD: Dual-branch aligned temporal-aware framework for open-vocabulary video anomaly detection",
+      "doi": "10.1016/j.neucom.2026.134178",
+      "originalFilename": "1-s2.0-S0925231226015766-main.pdf",
+      "sourceSha256": "56456cd8b39a6f3624e4701771096ffa489b0c28b3ab3c205ef7528ccdc6431d",
+      "sourceBytes": 4054080,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-027.pdf"
+    },
+    {
+      "paperId": "CORE-028",
+      "citationKey": "mo2026retrieval",
+      "title": "Retrieval-Guided Contextual Inference for Training-Free Video Anomaly Detection in Low-Light Scenarios",
+      "doi": "10.1145/3805622.3810823",
+      "originalFilename": "3805622.3810823.pdf",
+      "sourceSha256": "f0f1250be966cb7e29cedfe377fbc7413d78b6093badf91eda210a30b33dd483",
+      "sourceBytes": 4877943,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-028.pdf"
+    },
+    {
+      "paperId": "CORE-029",
+      "citationKey": "li2026privacy",
+      "title": "Privacy-preserving video anomaly detection via federated learning",
+      "doi": "10.1016/j.knosys.2026.116454",
+      "originalFilename": "1-s2.0-S0950705126011809-main.pdf",
+      "sourceSha256": "3fb7e3b378532bd6751a6bb8187a37af910ef5d155b651ea37662f3c40150db1",
+      "sourceBytes": 1958514,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-029.pdf"
+    },
+    {
+      "paperId": "CORE-030",
+      "citationKey": "ignatosyan2026reducing",
+      "title": "Reducing Prompt Sensitivity in Video Anomaly Understanding via Conditional Prompt Learning",
+      "doi": "10.1145/3810987.3815535",
+      "originalFilename": "3810987.3815535.pdf",
+      "sourceSha256": "b79366a7ec322d2c5e433adbcf0562a3f5cb04be4ed1cb5e4c719fc37b50e8a8",
+      "sourceBytes": 2841474,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-030.pdf"
+    },
+    {
+      "paperId": "CORE-031",
+      "citationKey": "pravalika2026intelligent",
+      "title": "Intelligent Video Surveillance: A Systematic Review of Deep Learning Architectures, Multimodal Fusion, and the Emerging Role of Conversational AI (2018–2025)",
+      "doi": "10.53941/aiet.2026.100008",
+      "originalFilename": "2606004343.pdf",
+      "sourceSha256": "5e029681a7c2ab397ef551d73f6ff77c2895da14f8ecb695aceb5e103889caa7",
+      "sourceBytes": 5658187,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-031.pdf"
+    },
+    {
+      "paperId": "CORE-032",
+      "citationKey": "saket2026language",
+      "title": "Language-driven models for video anomaly detection: taxonomy, datasets, and future horizons",
+      "doi": "10.1007/s13735-026-00415-w",
+      "originalFilename": "s13735-026-00415-w (1).pdf",
+      "sourceSha256": "1c6a3b5105c86b607aa2a51e5cc5abb893539269678dca5616c1e4f629799775",
+      "sourceBytes": 1055551,
+      "matchedBy": [
+        "title_exact",
+        "doi_or_bibliography_cross_check",
+        "bibtex_key"
+      ],
+      "distributionStatus": "bundled_user_authorized",
+      "repositoryPath": "topic/papers/CORE-032.pdf"
+    }
+  ]
+}

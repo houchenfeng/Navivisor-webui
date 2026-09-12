@@ -81,7 +81,7 @@ function ConversationEventCardsInner({
         <p className="text-[11px] text-[#b45309]">{error}</p>
       ) : events.length === 0 ? (
         <p className="text-[11px] font-medium text-[#7890b6]">
-          载入 Demo 或保存版本后，这里会显示可打开的文件摘要。
+          载入研究数据或保存版本后，这里会显示可打开的文件摘要。
         </p>
       ) : (
         <ul className="space-y-2">

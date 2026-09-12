@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "projectId": "395c301e-d1fb-4fc8-84eb-88056e0870a5",
+  "title": "EviVAD：证据可验证、退化感知的视频异常检测",
+  "description": "面向摄像头监控，采用 DAA、EAD 与 DAG 完成领域适配、证据锚定解释和退化感知门控。",
+  "language": "zh-CN",
+  "directories": {
+    "topic": "topic",
+    "experiment": "experiment",
+    "writing": "writing",
+    "submission": "submission"
+  },
+  "demo": {
+    "id": "evivad-surveillance-demo",
+    "version": "1.0.0",
+    "simulated": true
+  },
+  "createdAt": "2026-09-12T00:00:00.000Z"
+}

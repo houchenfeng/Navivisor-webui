@@ -48,8 +48,6 @@ export function CurrentPaperCard({
     let cancelled = false;
     const projectId = project?.projectId;
     if (!projectId) {
-      setWorkspace(null);
-      setArtifacts([]);
       return;
     }
     async function load() {
@@ -165,7 +163,8 @@ export function CurrentPaperCard({
             <p>{project.description || workspace?.description}</p>
           ) : null}
           <p>
-            Demo：
+            数据包：{workspace?.demo?.id ?? '未选择'}
+            {' · '}
             {project.demoComplete == null
               ? '未载入'
               : project.demoComplete
@@ -186,13 +185,6 @@ export function CurrentPaperCard({
                 </span>
               ))}
             </div>
-          ) : null}
-          {(project.missing?.length ?? 0) > 0 ? (
-            <ul className="list-disc pl-4 text-[#b45309]">
-              {project.missing!.slice(0, 4).map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
           ) : null}
           {recent.length > 0 ? (
             <div className="space-y-1">

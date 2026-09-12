@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "mode": "simulated",
+  "optimizer": "AdamW",
+  "learningRates": {
+    "lora": 0.0001,
+    "heads": 0.0005,
+    "qNet": 0.001
+  },
+  "weightDecay": 0.01,
+  "epochs": 20,
+  "batchSize": 2,
+  "gradientAccumulation": 8,
+  "precision": "fp16",
+  "lora": {
+    "rank": 4,
+    "alpha": 8,
+    "dropout": 0.05,
+    "layers": "last-4 q_proj/v_proj"
+  },
+  "thresholds": {
+    "tau": 0.5,
+    "temperature": 0.15,
+    "tauScore": 0.5,
+    "delta": 0.08
+  },
+  "seeds": [
+    42,
+    3407,
+    2026
+  ],
+  "hardware": "1x RTX 4090 24GB (declared reference configuration)",
+  "software": {
+    "os": "Ubuntu 22.04",
+    "python": "3.10",
+    "pytorch": "2.2",
+    "cuda": "12.1"
+  },
+  "simulated": true
+}

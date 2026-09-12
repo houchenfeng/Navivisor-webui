@@ -1,0 +1,104 @@
+{
+  "paper_title": "EviVAD：面向摄像头监控的大模型视频异常检测——证据可验证、退化可降级的统一框架",
+  "language": "zh-CN",
+  "reviewers": [
+    {
+      "id": 1,
+      "name": "Reviewer 1",
+      "focus": "方法创新性与和已有工作的定位",
+      "rating": 5,
+      "score": 5,
+      "confidence": 4,
+      "summary": "论文抓住大模型进入监控 VAD 后的三个真实失败模式：通用 VLM 相对俯视/低照/小目标监控的域偏移；自由文本解释无法对照视频核验；免训练管线在低光、雨雾、压缩、抖动下崩溃。EviVAD 冻结 CLIP ViT-B/16，叠 DAA（末四层 Q/V 上 rank-4 LoRA，B 零初始化，4.7M）、EAD（证据槽+InfoNCE+弃权）、DAG（质量探针融合视觉–文本与检索/先验并弃权），输出分数曲线、时间区间、带证据解释、置信/弃权。问题切得准。技术贡献是工程化组合而非新骨干。必须证明：这不是「LoRA+RAG+置信度阈值」的平凡拼接，并且要点名、对齐评测 Zanella / Wu / VadCLIP / Khedher / RAG4VAD 等最近邻方法，而不是只打内部 Baseline B0。",
+      "strengths": [
+        "把解释可验证性（EAR/CFS/HR/TCR）和退化可降级（RPR/ECE、显式弃权）提升为一等指标，填补 CLIP/LLM-VAD 长期只报干净输入 AUC 的评测空白。",
+        "DAA 的部署约束写得很清楚：冻骨干、零初始化保证起点与 B0 逐比特一致、一场景一适配器可热插拔，比空喊新结构诚实。",
+        "EAD 是三个模块里最有新意的：强制 (t_s,t_e,cue) 槽位、对比证据损失、证据不足拒绝，使解释可被「去掉关键证据后应失败」证伪。规则约束生成（Khedher）和 RAG4VAD 都没有这套可计算协议。",
+        "DAG 认真对待 Mo 等人低光幻觉结果，用探针+检索/先验回退+弃权回答「何时不能信 VLM」，而不是默默打高分。"
+      ],
+      "weaknesses": [
+        "（主要—组合是否平凡）DAA 是 CLIP 上的 LoRA；EAD 是结构化解码+InfoNCE；DAG 接近 MoE 路由与选择性预测/拒识。必须用一段话写清不可拼接的主张：若只在 Zanella 免训练局部分上挂 LoRA，或在 Wu 开词汇 VAD 上加 RAG4VAD、但不做证据槽和弃权，哪一项会失败。表 1 的「弱正向协同」目前是断言，没有机制（梯度隔离？损失冲突？路由滞后？）。",
+        "（主要—最近邻算法缺失）主表用 Reconstruction-2023、弱监督 CNN-ViT、CLIP-zero-shot、Training-free-LLM-2024 和 B0，对 CVPR 过粗。至少应在同一协议下加入或复现：弱监督 RTFM/S3R/MGFN/UR-DMU；CLIP 系 VadCLIP、CLIP-TSA、PEL4VAD/STPrompt；具名的 Zanella 免训练局部分；解释基线 Khedher 或 Hashimoto 以报 EAR/HR。否则 +5.3 AUC、+26.9 EAR 无法归因到三个模块而非偏弱的 B0。",
+        "（主要—该引未引）Related Work / Intro 应对比并引用：Hu et al. LoRA；Gao et al. CLIP-Adapter；Zhou et al. CoOp/CoCoOp（为何不用 prompt 而用权重适配）；Zanella CLIP-VAD 与免训练 LLM-VAD；Wu 开词汇 VAD；Kim DT-VAD；Sun RAG4VAD；Pei DRVAD；Khedher；Du 因果理解基准；Mo 低光失败；Geifman 选择性预测；Hendrycks ImageNet-C。现在综述（2025–2026）偏多，PEFT/弃权/CLIP-VAD 经典线偏少。",
+        "（次要—写作格式）四元组记号与图中「score/interval/explanation/flag」混用；L_EA 未说明每个 clip 多少 hard negative 证据槽；双栏 8 页表易溢出；Fig.1/Fig.2 与 §3 的 DAA/EAD/DAG 用词需统一。"
+      ],
+      "questions": [
+        "若 EviVAD 只是「B0+LoRA+RAG+置信阈值」，哪一句创新陈述会变成假的？请指向证明它的消融格子。",
+        "为何只在 9–12 层 Q/V 做 LoRA，而不是 CLIP-Adapter、视觉 prompt、或只训最后一层？同等 ≤5.5M 预算的四路 PEFT 对比才能让 DAA 成为贡献。",
+        "EAD 的 InfoNCE 负样本来自人工最小充分证据、自动挖片段，还是 LLM 自己提的槽位？若是后者，后面用类似槽位测 EAR 如何避免自圆其说？",
+        "终稿 Table 1/2 准备加入哪些论文？请各用一行说明协议不一致（clip 长、标签、特征）。"
+      ],
+      "limitations": [
+        "没有具名 SOTA 复现和 PEFT 对照表，创新仍是系统组合。梯度隔离没有「L_EA 是否流入视觉塔」曲线。r=4、α=8、L_EA=0.3、弃权阈值看起来像看过测试趋势后选定，验证集冻结协议应写死。"
+      ],
+      "ethical_concerns": "无。监控伦理一笔带过；补充双用途、检索记忆留存、弃权作为安全阀的一小段即可，不构成拒稿点。",
+      "final_justification": "弱接收（5）。问题切分（可验证解释+可降级）是大模型 VAD 该问的问题，EAD+DAG 不只是口号。升到接收需要：(1) 点名并打过真实 CLIP/弱监督/解释基线；(2) DAA 对其他 PEFT 做隔离；(3) 写出 CLIP-VAD 审稿人认得出的相关工作段。这些是终稿可完成的实验，不是推倒方法。"
+    },
+    {
+      "id": 2,
+      "name": "Reviewer 2",
+      "focus": "实验设计、对比与必须补的实验",
+      "rating": 4,
+      "score": 4,
+      "confidence": 5,
+      "summary": "主评测 UCF-Crime，跨域 XD-Violence/UBnormal/MSAD，4×3 合成退化网格。指标覆盖检测、解释、鲁棒、效率。相对 B0：AUC 76.8→82.1，EAR 41.5→68.4，HR 26.4→9.8，退化网格 AUC 62.5→71.3，+5.5M、+29ms。8 组合消融。协议（32 帧/8fps、三种子、阈值只在验证集冻结）较为完整。但离 CVPR 主会实验标准仍有差距：B0 是内部冻结 VLM 而非文献；UCF-Crime 上弱监督/CLIP-VAD 常见 AUC 可到 80+（协议敏感），没有对齐表就不能直接解读 82.1；合成退化尚未完成校准；EAR 无标注者一致性；无显著性；缺 ShanghaiTech/CUHK Avenue；缺多摄像头评测。",
+      "strengths": [
+        "在同一协议里同时报检测、解释忠实度、损坏鲁棒和效率，实验命题正确。很少有 VAD 论文把幻觉率、弃权和 AUC 放在一起。",
+        "8 格消融加「弱正向协同」结构正确；若数字成立，支持模块互补而非一个巨型模块。",
+        "预登记四类失败模式（门控伤害干净输入、稠密人群证据崩溃、弃权–召回、空检索库）应保留。",
+        "三种子均值方差和「阈值只在 val 冻结」是底线——请把同样规则用到每一条新基线。"
+      ],
+      "weaknesses": [
+        "（主要—与现有算法对比）Table 1 的泛化行不能代替具名方法。在冻结协议下报告：RTFM、S3R、MGFN、UR-DMU；CLIP-TSA、VadCLIP、PEL4VAD/STPrompt；Zanella 免训练局部分；全微调 CLIP 末层上界；无 DAA/DAG 的解释基线（Khedher 规则或 RAG4VAD）。写清骨干与官方权重还是复现。否则 +5.3 AUC 可能只说明 B0 相对 2023–2025 CLIP-VAD 没调好。",
+        "（主要—证实主张必须补的实验）(1) DAA：r∈{1,2,4,8,16}，α∈{4,8,16}，注入末 {2,4,8} 层，画 AUC–参数量。(2) 同等 ≤5.5M 的 LoRA vs CLIP-Adapter vs BitFit vs 视觉 prompt。(3) EAD：Cohen κ / Krippendorff α；公开最小充分证据/干扰/反事实删除的标注手册。(4) DAG：记忆库 N∈{64,256,1024,4096}；UCF→XD 检索缺失率。(5) 视频级配对 bootstrap 或 Wilcoxon，标 p<0.05。(6) 真实退化：夜间 UCF 或小规模雨天/低光子集 vs ImageNet-C 式合成，报 sim-to-real 差。(7) ShanghaiTech 和/或 CUHK Avenue 同 clip 协议的 sanity check。(8) 具名 GPU 上 batch=1 的 FPS，不要只给 latency_ms。",
+        "（主要—B0 与公开 UCF 数字）免训练 CLIP/LLM 与弱监督 SOTA 协议不同（10-crop、I3D vs CLIP、视频级 vs 帧级）。必须附 protocol card。若同卡下复现的 VadCLIP 远高于 B0 的 76.8，则 82.1 不是 SOTA，摘要不得暗示它是。",
+        "（次要—结果写法）表密、正文无 take-home；图注应写清该图支持哪条主张（如 DAA=+2.6 AUC，EAD=+22 EAR 且不解释 AUC）；柱状图加误差棒。"
+      ],
+      "questions": [
+        "在你们的 protocol card 下，复现的 VadCLIP / CLIP-TSA / RTFM 帧级 AUC 是多少？若不能训练，请放到「文献报告、不可比」区，不要和 B0 混排。",
+        "雨雾 β、H.264 码率、抖动幅度、gamma 如何选定？请用一小批真实夜景/雨景帧做亮度/SNR/QP 直方图叠加。做不到就把网格叫压力测试，不要叫「监控退化分布」。",
+        "EAR/CFS：几名标注者、多少小时、κ 多少？区间对但线索词错时 EAR 怎么计？",
+        "DAG 记忆库存什么（仅正常 clip？哪个数据集）？如何避免 UCF-Crime 测试视频泄漏进索引？",
+        "请加计算附录：GPU、DAA 训练小时、显存、EAD 解码是否就是 +29 ms 的瓶颈。"
+      ],
+      "limitations": [
+        "仅单视角，未测摄像头网络一致性。无逐种子原始分。退化网格无雪、眩光、红外、PTZ。解释指标在未公开手册前不可规模化。"
+      ],
+      "ethical_concerns": "实验伦理无问题。检索库保存监控片段有隐私含义；补充本地索引与留存策略一句即可。",
+      "final_justification": "边缘接收（4）。实验骨架对（消融+损坏+解释指标+失败模式），但文献基线是占位符、退化未校准、解释分数无 IAA。终稿若有对齐 SOTA 表、PEFT/r–α 扫描、EAR 的 κ、至少一次真实夜/雨检查，我会提分。否则这些数字不能当作三模块的「证明」。"
+    },
+    {
+      "id": 3,
+      "name": "Reviewer 3",
+      "focus": "写作、CVPR 格式、主张校准与文献组织",
+      "rating": 5,
+      "score": 5,
+      "confidence": 4,
+      "summary": "结构是标准 CVPR 故事：三重挑战→三模块→协议→主表→消融→退化→效率→局限。英文可读，双语 TeX 有利于复现。问题不在语法，而在主张校准、缺专科引用、图文不一致、双栏排版。摘要/引言有时读起来像在提新 VLM，实际是冻结 CLIP 加三个小模块。相关工作堆了 2025–2026 综述，却没有「对 3–4 个最近邻的差异表」。表密、正文解读少。Teaser、框架图与 §3 的模块名漂移。",
+      "strengths": [
+        "每个模块对准一个挑战（DAA↔域偏移，EAD↔不可核验文本，DAG↔不能降级），读者可用实验是否打这三支箭来打分。",
+        "局限性写得坦诚（标注成本、单视角、退化偏移），终稿不要写软。",
+        "可编译双语 TeX 和显式四元组，比把 prompt 藏在附录的 LLM-VAD 更好复现。",
+        "Teaser 若标签与正文一致，适合系统论文的「一张图」：干净 vs 退化 vs 弃权 vs 证据槽。"
+      ],
+      "weaknesses": [
+        "（主要—贡献写法）摘要和引言过度声称「大模型 VAD 统一框架」。应改成：冻结 CLIP ViT-B/16；可训练 5.5M；三模块意图正交。76.8→82.1 必须跟在 protocol card 之后，不能写成协议无关 SOTA。可训练部分是四层 LoRA 时不要说「大模型」。",
+        "（主要—相关工作应是定位不是书单）加对比表：列 Method / Backbone / Trainable / Explanation / Degradation / Abstain，行 Zanella、Wu、VadCLIP、RAG4VAD、Khedher、Mo、EviVAD。这张表比再引 20 篇综述重要。仍应补 LoRA、CLIP-Adapter、CoOp、InfoNCE、选择性预测、ImageNet-C、RTFM/MGFN，让审稿人看到谱系。",
+        "（主要—格式）CVPR 2026 review：\\usepackage[review]{cvpr}、论文编号、8 页正文+参考文献。检查：图注在图下；宽表不溢出；曲线用矢量；Fig.1–2 与 §3 的 DAA/EAD/DAG 别名一致；正文引用公式编号；不要用综述代替 8 条真实基线。",
+        "（次要—结果写作）主表后用两句话写清谁赢哪一轴（DAA→AUC，EAD→EAR/HR，DAG→RPR）以及协同超出加性多少个点。失败模式改成 4 行表。引言主张编号 C1–C3，实验小节标题重复这些编号。"
+      ],
+      "questions": [
+        "终稿会不会有一页「与 Zanella / Wu / Khedher / RAG4VAD / Mo 的差异表」？没有的话相关工作仍是阅读清单。",
+        "请列出 Fig.1、Fig.2 与 §3 中每一个模块缩写；我怀疑 Domain-Adapter vs DAA、「quality gate」vs DAG 不一致。",
+        "跨模态证据槽：一段即可（modality∈{RGB,audio}，独立编码器，共享证据空间）。没有数据就不要许诺热红外/深度。校园 RGB+音频是可信第一步——若有候选数据集请点名。",
+        "页数：加入 Reviewer 2 要的 SOTA 表之后，哪张表进附录（完整 8 格消融？12 配置损坏矩阵？PEFT 扫描）以保证 8 页？"
+      ],
+      "limitations": [
+        "部分表比解读它们的散文更密。边缘/联邦/多摄展望没有可行性数字（延迟目标、GPU、相机图），读起来像套话，除非引用你们效率表里的数。"
+      ],
+      "ethical_concerns": "无。可加一句公共空间视频检索索引的双用途/隐私，对应 CVPR broader impact 可选段。",
+      "final_justification": "弱接收（5），基于写作与框架。叙事已经是连贯的系统论文，还不是定位清楚的 CVPR 论文。收紧主张、加上最近邻对比表、统一图文术语、用正文解释表格。不是要求重写方法，而是让文字匹配真实贡献：冻结 CLIP + LoRA 域适配 + 可证伪证据解码 + 退化感知弃权。"
+    }
+  ],
+  "generated_at": "2026-09-12T09:00:00Z"
+}

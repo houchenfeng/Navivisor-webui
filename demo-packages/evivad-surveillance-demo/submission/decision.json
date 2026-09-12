@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "decision": "poster_accept",
+  "simulated": true,
+  "generatedAt": "2026-09-12T00:00:00.000Z",
+  "language": "en",
+  "reasons": [
+    "After rebuttal, the area chair treats explanation verifiability and degradation-aware abstention as the distinctive contribution, provided the camera-ready adds a matched CLIP-VAD / weakly-supervised table and the PEFT / rank-alpha sweeps.",
+    "The reviewers converge on Weak Accept / Borderline Accept / Weak Accept (5 / 4 / 5). The remaining risk is protocol-mismatched SOTA claims, not the method story."
+  ],
+  "zh-CN": {
+    "decision": "海报接收",
+    "reasons": [
+      "Rebuttal 之后，领域主席将解释可验证性与退化感知弃权视为可区分贡献，前提是终稿补上对齐的 CLIP-VAD / 弱监督对照表以及 PEFT / 秩-α 扫描。",
+      "三位审稿分 5 / 4 / 5。剩余风险是协议不对齐的 SOTA 表述，而不是方法叙事本身。"
+    ]
+  }
+}

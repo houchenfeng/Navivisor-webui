@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "simulated": true,
+  "bundled": false,
+  "datasets": [
+    {
+      "id": "UCF-Crime",
+      "bundled": false,
+      "splitStatus": "planned",
+      "checksum": null
+    },
+    {
+      "id": "XD-Violence",
+      "bundled": false,
+      "splitStatus": "planned",
+      "checksum": null
+    },
+    {
+      "id": "ShanghaiTech",
+      "bundled": false,
+      "splitStatus": "planned",
+      "checksum": null
+    },
+    {
+      "id": "UBnormal",
+      "bundled": false,
+      "splitStatus": "planned",
+      "checksum": null
+    }
+  ],
+  "note": "No training or benchmark video dataset is included."
+}

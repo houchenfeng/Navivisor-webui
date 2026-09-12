@@ -2,13 +2,15 @@
  * Shared helpers for the four research modules to read one workspace projectId
  * and hydrate from loaded demo / stage artifacts.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import type { ResearchArtifact } from '@/components/research-workflow/research-workflow-types';
 import { useResearchProjectStore } from '@/stores/research-project-store';
 
 export class ResearchProjectRequiredError extends Error {
-  constructor(message = '请先在首页注册并选择论文工作目录（projectId）后再执行此操作。') {
+  constructor(
+    message = '请先在首页注册并选择论文工作目录（projectId）后再执行此操作。',
+  ) {
     super(message);
     this.name = 'ResearchProjectRequiredError';
   }
@@ -16,12 +18,16 @@ export class ResearchProjectRequiredError extends Error {
 
 /** Current shared workspace projectId, or throw a clear register-first error. */
 export function requireProjectId(): string {
-  const projectId = useResearchProjectStore.getState().project?.projectId?.trim();
+  const projectId = useResearchProjectStore
+    .getState()
+    .project?.projectId?.trim();
   if (!projectId) throw new ResearchProjectRequiredError();
   return projectId;
 }
 
-export async function loadArtifacts(projectId: string): Promise<ResearchArtifact[]> {
+export async function loadArtifacts(
+  projectId: string,
+): Promise<ResearchArtifact[]> {
   return researchWorkflowClient.listArtifacts(projectId);
 }
 
@@ -65,7 +71,10 @@ export async function fetchLatestArtifactText(
   return fetchArtifactText(projectId, artifact.artifactId);
 }
 
-export function artifactContentUrl(projectId: string, artifactId: string): string {
+export function artifactContentUrl(
+  projectId: string,
+  artifactId: string,
+): string {
   const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
   return `${base}/api/research/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(artifactId)}/content`;
 }
@@ -148,13 +157,17 @@ export type WorkspaceArtifactsState = {
 
 /** List artifacts for the shared project; refreshes when demoEpoch bumps. */
 export function useWorkspaceArtifacts(): WorkspaceArtifactsState {
-  const projectId = useResearchProjectStore((s) => s.project?.projectId ?? null);
+  const projectId = useResearchProjectStore(
+    (s) => s.project?.projectId ?? null,
+  );
   const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
   const [artifacts, setArtifacts] = useState<ResearchArtifact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestVersion = useRef(0);
 
   const reload = useCallback(async () => {
+    const version = ++requestVersion.current;
     if (!projectId) {
       setArtifacts([]);
       setError(null);
@@ -163,17 +176,28 @@ export function useWorkspaceArtifacts(): WorkspaceArtifactsState {
     setLoading(true);
     setError(null);
     try {
-      setArtifacts(await loadArtifacts(projectId));
+      const next = await loadArtifacts(projectId);
+      if (
+        version !== requestVersion.current ||
+        useResearchProjectStore.getState().activeProjectId !== projectId
+      )
+        return;
+      setArtifacts(next);
     } catch (err) {
+      if (version !== requestVersion.current) return;
       setArtifacts([]);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    void reload();
+    const refresh = window.setTimeout(() => void reload(), 0);
+    return () => {
+      window.clearTimeout(refresh);
+      requestVersion.current += 1;
+    };
   }, [reload, demoEpoch]);
 
   return { projectId, artifacts, loading, error, reload };

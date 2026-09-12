@@ -1,0 +1,14 @@
+degradation,severity,baseline_auc_percent,dag_auc_percent,baseline_hr_percent,dag_hr_percent,simulated
+clean,none,76.8,77.6,26.4,24,true
+low-light,light,66.1,74.2,34.1,26.8,true
+low-light,medium,61.3,70.8,42.7,31.4,true
+low-light,heavy,55.4,64.6,51.9,38.6,true
+rain-fog,light,67.4,75,33.5,26.2,true
+rain-fog,medium,62.6,71.5,41.9,30.8,true
+rain-fog,heavy,56.8,66.4,50.4,37.5,true
+compression,light,68.9,76.4,32.2,25.4,true
+compression,medium,64.2,73,40.3,29.6,true
+compression,heavy,58.7,68.8,48.8,36.1,true
+jitter,light,67.8,75.4,32.9,25.9,true
+jitter,medium,62.9,72.1,41.1,30.2,true
+jitter,heavy,57.6,67.4,49.6,36.8,true

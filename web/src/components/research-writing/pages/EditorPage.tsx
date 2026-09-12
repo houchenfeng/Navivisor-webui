@@ -25,7 +25,9 @@ export default function EditorPage() {
   useEffect(() => {
     let cancelled = false;
     const saved = loadData(projectId);
-    setData(saved);
+    const syncSaved = window.setTimeout(() => {
+      if (!cancelled) setData(saved);
+    }, 0);
     const hasSavedDraft = [saved.topic, saved.experimentDetail, saved.experimentResult, saved.bibContent]
       .some((value) => (value ?? "").trim().length > 0);
     if (projectId && !hasSavedDraft) {
@@ -33,7 +35,10 @@ export default function EditorPage() {
         if (!cancelled) setData((current) => ({ ...current, ...result.patch }));
       });
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(syncSaved);
+    };
   }, [projectId]);
 
   useEffect(() => {
@@ -210,9 +215,16 @@ export default function EditorPage() {
             >
               ← 上一步
             </Button>
-            {stepIndex < STEPS.length - 1 && (
+            {stepIndex < STEPS.length - 1 ? (
               <Button className="h-9 px-5 text-sm" onClick={goNext}>
                 下一步 →
+              </Button>
+            ) : (
+              <Button
+                className="h-9 px-5 text-sm"
+                onClick={() => void navigate({ to: "/research/submit" })}
+              >
+                进入投稿模块 →
               </Button>
             )}
           </div>

@@ -1,0 +1,5 @@
+experiment_id,case_id,scene,expected_failure,observable_signal,required_fallback,result_status,simulated
+EXP-08,CASE-01,clean-input,quality-gate-false-positive,quality-score-too-low,bypass-gate,illustrative-only,true
+EXP-08,CASE-02,crowded-scene,evidence-slot-mismatch,low-evidence-alignment,abstain-and-review,illustrative-only,true
+EXP-08,CASE-03,high-abstention-threshold,recall-loss,abstention-rate-rise,threshold-audit,illustrative-only,true
+EXP-08,CASE-04,empty-memory-index,retrieval-failure,retrieval-miss-flag,prior-path-and-review,illustrative-only,true

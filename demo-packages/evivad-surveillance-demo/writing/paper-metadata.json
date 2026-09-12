@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "title": "EviVAD: Verifiable Explanation and Degradation-Aware Gating for Large-Model Video Anomaly Detection in Surveillance Cameras",
+  "language": "en",
+  "authors": "Anonymous Author, Second Anonymous Author",
+  "keywords": "video anomaly detection, surveillance cameras, evidence-anchored explanation, domain adaptation, degradation-aware gating, vision-language models",
+  "tldr": "A frozen CLIP ViT-B/16 system with LoRA domain adaptation, evidence-anchored explanations, and degradation-aware abstention for surveillance VAD.",
+  "abstract": "Anomaly detection in surveillance camera videos is a cornerstone of public safety, yet real deployments face three obstacles. First, general vision-language models suffer a severe domain shift from the surveillance domain, which systematically depresses anomaly scores and prevents thresholds from transferring across scenes. Second, explanations are generated freely by a large model, and there is no way to tell which claims are actually supported by video evidence. Third, training-free pipelines implicitly assume clean inputs: low light, rain and fog, video compression and camera shake collapse their scores and induce hallucinated semantics. We present EviVAD, a unified framework built on a fully frozen vision-language backbone with three complementary modules. (1) DAA (Domain Low-rank Adapter) injects rank-4 low-rank increments into the Q/V projections of the last four encoder blocks, adapting to the surveillance domain with fewer than 5M trainable parameters; the up-projection is zero-initialised so that the starting point is bit-wise identical to the baseline. (2) EAD (Evidence-Anchored Decoding) forces explanations to explicitly cite temporal intervals and visual cues, and is trained with an InfoNCE evidence-alignment loss, so that an explanation can be both supported by evidence and falsified by counterexamples; when evidence is insufficient the model refuses to answer. (3) DAG (Degradation-Aware Gating) uses a lightweight quality probe to blend a vision-text alignment path with a retrieval/prior-driven path, and abstains under low confidence instead of emitting confident false alarms. We establish a unified protocol on UCF-Crime, three cross-domain sets (XD-Violence, UBnormal, MSAD) and a 4x3 degradation grid. Relative to the training-free baseline B0, EviVAD raises frame-level AUC from 76.8 to 82.1, improves evidence-attribution recall from 41.5 to 68.4, reduces the hallucination rate from 26.4 to 9.8, and lifts the average AUC on the degradation grid from 62.5 to 71.3, at a cost of only 5.5M additional trainable parameters.",
+  "translations": [
+    "zh-CN"
+  ],
+  "zh-CN": {
+    "title": "EviVAD：面向摄像头监控的大模型视频异常检测——证据可验证、退化可降级的统一框架",
+    "authors": "匿名作者, 第二匿名作者",
+    "keywords": "视频异常检测, 监控摄像头, 证据锚定解释, 领域适配, 退化感知门控, 视觉语言模型",
+    "tldr": "冻结 CLIP ViT-B/16，叠加低秩领域适配、证据锚定解释与退化感知弃权，用于监控视频异常检测。",
+    "abstract": "监控视频异常检测是公共安全的基础能力，但真实部署面临三重障碍。其一，通用视觉语言模型相对监控域存在严重域偏移，异常分数被系统性压低，阈值难以跨场景迁移。其二，大模型自由生成解释，无法判断各断言是否由视频证据支持。其三，免训练管线隐含干净输入假设：低照、雨雾、压缩与抖动会使分数崩溃并诱发幻觉语义。我们提出 EviVAD：在完全冻结的视觉语言主干上叠加三个互补模块。(1) DAA 在最后四个编码器块的 Q/V 投影注入 rank=4 低秩增量，以不足 5M 可训练参数适配监控域。(2) EAD 强制解释引用时间区间与视觉线索，并以 InfoNCE 证据对齐损失训练；证据不足时拒绝作答。(3) DAG 用轻量质量探针融合视觉–文本路径与检索/先验路径，低置信时弃权。相对免训练基线 B0，EviVAD 将帧级 AUC 从 76.8 提升至 82.1，证据归因召回从 41.5 提升至 68.4，幻觉率从 26.4 降至 9.8，退化网格平均 AUC 从 62.5 提升至 71.3。"
+  },
+  "template": {
+    "name": "CVPR",
+    "status": "bundled"
+  },
+  "figures": [
+    "writing/figures/teaser.png",
+    "writing/figures/architecture.png",
+    "writing/figures/comparison.png",
+    "writing/figures/curves.png"
+  ],
+  "simulated": true,
+  "sourceVersion": "provided-2026-09-12"
+}

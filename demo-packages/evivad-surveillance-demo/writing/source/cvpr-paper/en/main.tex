@@ -1,0 +1,55 @@
+% !TEX program = pdflatex
+% CVPR 2026 Paper Template; see https://github.com/cvpr-org/author-kit
+% English version -- compile with standard pdfLaTeX:  latexmk -pdf main.tex
+
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+%%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
+% \usepackage{cvpr}              % To produce the CAMERA-READY version
+\usepackage[review]{cvpr}      % To produce the REVIEW version
+% \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+
+% Import additional packages in the preamble file, before hyperref
+\input{preamble}
+
+% It is strongly recommended to use hyperref, especially for the review version.
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\paperID{*****} % *** Enter the Paper ID here
+\def\confName{CVPR}
+\def\confYear{2026}
+
+%%%%%%%%% TITLE - PLEASE UPDATE
+\title{\evivad{}: Verifiable Explanation and Degradation-Aware Gating\\ for Large-Model Video Anomaly Detection in Surveillance Cameras}
+
+%%%%%%%%% AUTHORS - PLEASE UPDATE
+\author{Anonymous Author\\
+Anonymous Institution\\
+{\tt\small anonymous@example.edu}
+\and
+Second Anonymous Author\\
+Anonymous Institution\\
+{\tt\small anonymous@example.edu}
+}
+
+\begin{document}
+\maketitle
+\input{fig/teaser}
+\input{sec/0_abstract}
+\input{sec/1_intro}
+\input{sec/2_related}
+\input{sec/3_method}
+\input{sec/4_experiments}
+\input{sec/5_conclusion}
+{
+    \small
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{../main}
+}
+
+% WARNING: do not forget to delete the supplementary pages from your submission
+% \input{sec/X_suppl}
+
+\end{document}

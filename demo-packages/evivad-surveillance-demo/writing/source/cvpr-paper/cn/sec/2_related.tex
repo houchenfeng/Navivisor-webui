@@ -1,0 +1,32 @@
+\section{相关工作}
+\label{sec:related}
+
+\subsection{视频异常检测：从重建到弱监督与开集}
+
+早期 VAD 方法多采用重建或未来帧预测范式，以「正常样本重建误差小、异常样本误差大」为判据。此类方法无需异常样本，但难以区分「重建得不好」与「确实异常」，且对复杂场景的语义变化缺乏鲁棒性。为降低标注成本，弱监督设定成为主流：仅使用视频级标签训练，通过多示例学习把视频级监督下沉到片段级。\citeauthor{yun2025missiongnn}~等人把分层多模态图神经网络与任务特定知识图谱结合，提升了弱监督异常识别的结构化推理能力\cite{yun2025missiongnn}。然而，弱监督方法仍受限于预定义异常类别，面对未见异常时泛化能力有限。
+
+开集与开放词汇方向试图突破这一限制。\citeauthor{wu2024openvocab}~等人提出开放词汇 VAD，使模型能够识别训练中未出现的异常类别\cite{wu2024openvocab}；\citeauthor{kim2026dtvad}~等人进一步以双分支对齐的时序感知框架改进开放词汇设定下的时序定位\cite{kim2026dtvad}。近年综述系统梳理了该领域十年的方法演进与评测协议\cite{abdalla2025vad10years,pravalika2026surveillance}，并指出「检测分数之外的评价维度」长期缺位。近期面向暴力检测的综述亦得出类似结论\cite{houssein2026violence}。
+
+\subsection{视觉-语言大模型用于异常检测与理解}
+
+视觉-语言模型把视频与文本映射到共享语义空间，为异常检测提供了开放词汇的判据。\citeauthor{zanella2024clip}~等人较早把 CLIP 潜在空间用于异常识别，展示了零样本迁移的潜力\cite{zanella2024clip}。此后，研究者从多个角度扩展这一思路：\citeauthor{biswas2025mmvad}~等人以对比学习与尺度自适应帧分割构建跨域视觉-语言 VAD 模型\cite{biswas2025mmvad}；\citeauthor{kang2025clipalign}~等人用 CLIP 自适应语义对齐服务高效弱监督检测\cite{kang2025clipalign}；\citeauthor{ahn2026anyanomaly}~等人提出零样本可定制的 LVLM 异常检测\cite{ahn2026anyanomaly}；\citeauthor{kebour2025zeroshot}~等人把零样本视觉-语言模型用于智能监控中的事件检测\cite{kebour2025zeroshot}；\citeauthor{zou2026prompting}~等人以细粒度提示解锁 VLM 的异常检测能力\cite{zou2026prompting}，而\citeauthor{ignatosyan2026prompt}~等人则专门研究并缓解提示敏感性\cite{ignatosyan2026prompt}。面向理解而非仅检测的工作同样兴起：\citeauthor{zhou2026targetvau}~等人提出多模态异常感知推理以理解目标行为\cite{zhou2026targetvau}，\citeauthor{li2026aerial}~等人把多模态大模型用于航拍视频的语义感知异常检测\cite{li2026aerial}，\citeauthor{yang2025monitor}~等人则以指令方式实现在线视频异常检测\cite{yang2025monitor}。
+
+上述工作共同确立了「大模型可用于 VAD」的事实，但其评测仍以检测指标为主，且普遍假设输入质量良好；域偏移带来的分数偏低与阈值漂移问题，也很少被系统量化。
+
+\subsection{免训练范式与检索增强推理}
+
+免训练范式直接复用预训练大模型，不做域内重训，因而部署成本低、跨域迁移方便。\citeauthor{zanella2024trainingfree}~等人展示了以大语言模型完成免训练异常定位的可行性\cite{zanella2024trainingfree}；\citeauthor{pei2026drvad}~等人以定义引导推理改进免训练的判据稳定性\cite{pei2026drvad}；\citeauthor{sun2026rag4vad}~等人把检索增强生成引入解释环节，使解释可依托外部知识\cite{sun2026rag4vad}。检索增强思路与知识图谱方向相互呼应：\citeauthor{wang2025holotrace}~等人构建双向因果知识图谱支撑边缘-云协同检测\cite{wang2025holotrace}。
+
+免训练范式的关键风险在于其隐含假设：\citeauthor{mo2026lowlight}~等人指出，低光退化会使免训练推理产生幻觉语义与不稳定分数\cite{mo2026lowlight}。这一观察直指本文关注的核心问题，但当前尚缺乏对「什么时候不能用、不能用时怎么办」的系统回答。
+
+\subsection{解释生成与可信度评测}
+
+让模型说明判据是提升部署信任度的直接途径。\citeauthor{hashimoto2025caption}~等人用多模态大模型为监控视频自动生成描述\cite{hashimoto2025caption}；\citeauthor{khedher2025trustworthy}~等人以规则约束 VLM-LLM 的解释以增强可信度\cite{khedher2025trustworthy}；\citeauthor{alradi2026hierarchical}~等人提出带有全面语言描述的分层视觉-语言模型\cite{alradi2026hierarchical}。在评测侧，\citeauthor{du2024causation}~等人给出了面向视频异常因果理解的综合基准\cite{du2024causation}，\citeauthor{zhao2025smarthomebench}~等人构建了智能家居场景的多模态大模型异常检测基准\cite{zhao2025smarthomebench}。
+
+尽管解释生成端已相当拥挤，解释\emph{质量}的评测仍研究数量较少：现有基准主要回答「能否检出/能否描述」，而未回答「解释中的每个论断是否有视频证据支撑、移除关键证据后判定是否依然成立」。本文将这一缺口形式化为可计算指标并给出配套协议。
+
+\subsection{高效部署、边缘计算与隐私保护}
+
+真实部署还受效率与合规约束。\citeauthor{phan2025aadcnet}~等人提出面向实时监控的多模态异常检测框架\cite{phan2025aadcnet}；\citeauthor{yun2025edgegnn}~等人把基于图神经网络的异常检测放到边缘设备上，通过高效自适应知识图谱学习降低开销\cite{yun2025edgegnn}。隐私方面，\citeauthor{li2026federated}~等人以联邦学习实现隐私保护的视频异常检测\cite{li2026federated}。跨摄像头场景同样提出新要求：\citeauthor{mishra2026dementia}~等人表明，大语言模型可提升养老机构多摄像头视角下风险行为的场景不变检测能力\cite{mishra2026dementia}。
+
+这些工作说明「更大模型」与「更低成本」之间存在真实张力。本文的 DAA 以低秩适配而非全量微调回应这一张力，DAG 则通过片段级动态路径与显式弃权把成本花在真正困难的输入上。
