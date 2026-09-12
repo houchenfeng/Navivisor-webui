@@ -145,15 +145,13 @@ export function ResearchHomePage() {
   }, [threadId, selectThread]);
 
   useEffect(() => {
-    if (project?.rootPath) setWorkspacePath(project.rootPath);
-    if (project?.title) setWorkspaceTitle(project.title);
-  }, [project?.rootPath, project?.title]);
-
-  useEffect(() => {
     if (!project) return;
-    setWorkspacePath(project.rootPath);
-    setWorkspaceTitle(project.title);
-  }, [project?.projectId, project?.rootPath, project?.title]);
+    const syncProject = window.setTimeout(() => {
+      setWorkspacePath(project.rootPath);
+      setWorkspaceTitle(project.title);
+    }, 0);
+    return () => window.clearTimeout(syncProject);
+  }, [project]);
 
   async function registerWorkspace() {
     const absolutePath = workspacePath.trim();
@@ -192,7 +190,7 @@ export function ResearchHomePage() {
   return (
     <main className="research-home scrollbar-hide flex min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-4 pt-0 sm:px-7 sm:pb-6 lg:px-10 lg:pb-6">
       <img className="research-home__mountains" src="research-home/mountains.png" alt="" aria-hidden="true" />
-      <section className="brand-enter mx-auto flex w-full max-w-6xl flex-col pb-4 pt-0">
+      <section className="brand-enter mx-auto flex w-full max-w-6xl flex-col pb-4 pt-5 sm:pt-6">
         <div className="research-home__slogan hidden lg:block" aria-hidden="true">
           <span>研途有光</span>
           <small>始于好奇，终于远方</small>
@@ -202,17 +200,17 @@ export function ResearchHomePage() {
           <h1 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#102c65] sm:text-5xl lg:text-[3.4rem]">
             欢迎来到Navivisor研途启航
           </h1>
-          <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-[#55739f] sm:text-lg">
-            从一个研究领域，让AI陪你走完完整的研究旅程。
+          <p className="mt-4 max-w-3xl text-base font-medium leading-7 text-[#55739f] sm:text-lg">
+            从一个模糊的研究想法到投稿会议论文，让AI陪你走完完整的研究旅程。
           </p>
         </div>
 
         <div className="research-home__workspace mt-6 rounded-2xl px-3.5 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-0 flex-1">
-              <h2 className="text-xs font-extrabold text-[#173778]">论文工作目录</h2>
-              <p className="mt-0.5 truncate text-[11px] font-medium text-[#7890b6]">
-                选择服务端可访问目录；四模块共用同一 projectId
+              <h2 className="text-xs font-extrabold text-[#173778]">新论文工作目录</h2>
+              <p className="mt-0.5 text-[11px] font-medium text-[#7890b6]">
+                选择服务端可访问目录，四模块所有数据均储存在此目录。
               </p>
             </div>
             <LoadWorkspaceDemoButton compact />
@@ -239,7 +237,7 @@ export function ResearchHomePage() {
               className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#1F4DCB] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
             >
               <FolderInput className="size-3.5" />
-              {registerBusy ? '注册中…' : '注册目录'}
+              {registerBusy ? '使用中…' : '使用该目录'}
             </button>
           </div>
           {registerMessage ? (
