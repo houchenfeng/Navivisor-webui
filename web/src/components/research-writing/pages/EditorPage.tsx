@@ -19,6 +19,10 @@ import Step9Export from "@/components/research-writing/components/writing/Step9E
 export default function EditorPage() {
   const navigate = useNavigate();
   const projectId = useResearchProjectStore((state) => state.project?.projectId ?? null);
+  const demoEpoch = useResearchProjectStore((state) => state.demoEpoch);
+  const demoMode = useResearchProjectStore(
+    (state) => state.project != null && state.project.demoComplete != null,
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<WritingData>(() => loadData(projectId));
 
@@ -30,7 +34,7 @@ export default function EditorPage() {
     }, 0);
     const hasSavedDraft = [saved.topic, saved.experimentDetail, saved.experimentResult, saved.bibContent]
       .some((value) => (value ?? "").trim().length > 0);
-    if (projectId && !hasSavedDraft) {
+    if (projectId && (demoMode || !hasSavedDraft)) {
       void fillWritingFromExperiment().then((result) => {
         if (!cancelled) setData((current) => ({ ...current, ...result.patch }));
       });
@@ -39,7 +43,7 @@ export default function EditorPage() {
       cancelled = true;
       window.clearTimeout(syncSaved);
     };
-  }, [projectId]);
+  }, [projectId, demoEpoch, demoMode]);
 
   useEffect(() => {
     saveData(data, projectId);

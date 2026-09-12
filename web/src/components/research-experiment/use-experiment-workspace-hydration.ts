@@ -48,6 +48,27 @@ export type ExperimentHydration = {
 
 const DEFAULT_ABLATION_HEADERS = [...DEMO_ABLATION_HEADERS];
 
+const vacantHydration = (): ExperimentHydration => ({
+  source: 'offline-fallback',
+  loading: false,
+  planMarkdown: '',
+  planHeadline: '',
+  shortestPath: '',
+  protocolNote: '',
+  resultsMarkdown: '',
+  architectureMarkdown: '',
+  configJson: null,
+  comparisonHeaders: [],
+  comparisonRows: [],
+  ablationHeaders: [],
+  ablationRows: [],
+  comparisonFigureUrl: null,
+  architectureFigureUrl: null,
+  ideas: [],
+  comparisonMethods: [],
+  error: null,
+});
+
 const emptyHydration = (): ExperimentHydration => ({
   source: 'offline-fallback',
   loading: false,
@@ -199,14 +220,14 @@ function countCsvPdfHints(rows: string[][]): number {
 export function useExperimentWorkspaceHydration(): ExperimentHydration {
   const { projectId, artifacts, loading, error } = useWorkspaceArtifacts();
   const setFields = useExperimentStore((s) => s.setFields);
-  const [hydration, setHydration] = useState<ExperimentHydration>(emptyHydration);
+  const [hydration, setHydration] = useState<ExperimentHydration>(vacantHydration);
 
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
       if (!projectId) {
-        if (!cancelled) setHydration(emptyHydration());
+        if (!cancelled) setHydration(vacantHydration());
         return;
       }
       if (loading) {

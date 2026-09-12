@@ -141,6 +141,7 @@ export function ResearchHomePage() {
   const selectThread = useTimelineStore((s) => s.selectThread);
   const project = useResearchProjectStore((s) => s.project);
   const setProject = useResearchProjectStore((s) => s.setProject);
+  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
   const [workspacePath, setWorkspacePath] = useState(project?.rootPath ?? '');
   const [workspaceTitle, setWorkspaceTitle] = useState(project?.title ?? '');
   const [registerBusy, setRegisterBusy] = useState(false);
@@ -151,13 +152,9 @@ export function ResearchHomePage() {
   }, [threadId, selectThread]);
 
   useEffect(() => {
-    if (!project) return;
-    const syncProject = window.setTimeout(() => {
-      setWorkspacePath(project.rootPath);
-      setWorkspaceTitle(project.title);
-    }, 0);
-    return () => window.clearTimeout(syncProject);
-  }, [project]);
+    setWorkspacePath(project?.rootPath ?? '');
+    setWorkspaceTitle(project?.title ?? '');
+  }, [project?.rootPath, project?.title, demoEpoch]);
 
   async function registerWorkspace() {
     const absolutePath = workspacePath.trim();
@@ -229,13 +226,15 @@ export function ResearchHomePage() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-0 flex-1">
               <h2 className="text-xs font-extrabold text-[#173778]">
-                新论文工作目录
+                {project ? '当前论文工作目录' : '新论文工作目录'}
               </h2>
               <p className="mt-0.5 text-[11px] font-medium text-[#7890b6]">
-                选择服务端可访问目录，四模块所有数据均储存在此目录。
+                {project?.demoComplete != null
+                  ? 'Demo 模式已开启：四模块使用已载入的研究数据。卸载后可恢复空白工作流。'
+                  : '选择服务端可访问目录，四模块所有数据均储存在此目录。'}
               </p>
             </div>
-            <LoadWorkspaceDemoButton compact />
+            <LoadWorkspaceDemoButton compact allowUnload />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
@@ -243,7 +242,7 @@ export function ResearchHomePage() {
               onChange={(event) => setWorkspacePath(event.target.value)}
               placeholder="绝对路径，例如 D:/Research/CameraVAD-SceneMemory"
               aria-label="工作目录绝对路径"
-              className="min-w-[14rem] flex-1 rounded-lg border border-[#c9dbf8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
+              className="min-w-[14rem] flex-1 rounded-lg border border-[#c9dbf8] bg-white px-2.5 py-1.5 font-mono text-xs font-medium text-[#173778] outline-none focus:border-[#1F4DCB]"
             />
             <input
               value={workspaceTitle}
@@ -269,6 +268,9 @@ export function ResearchHomePage() {
           ) : null}
           {project ? (
             <div className="mt-1.5 space-y-2">
+              <p className="break-all font-mono text-[11px] text-[#173778]">
+                {project.rootPath}
+              </p>
               <ConversationEventCards />
             </div>
           ) : null}

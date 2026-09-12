@@ -4,6 +4,7 @@ import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, FileSearch, FlaskC
 import { Button } from '@/components/ui/button';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { fetchArtifactText, findLatestByRole, parseCsvRows, useWorkspaceArtifacts } from '@/components/research-workflow/use-research-project';
+import { useResearchProjectStore } from '@/stores/research-project-store';
 import { getApiToken } from '@/auth-token';
 import { withBasePath } from '@/base-path';
 import { demoTaskSnapshot } from './data';
@@ -22,7 +23,17 @@ export function TopicPage() {
   const [error, setError] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const { projectId, artifacts, loading: artifactsLoading } = useWorkspaceArtifacts();
+  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
   const activeRunKey = `${ACTIVE_RUN_KEY}:${projectId ?? 'unbound'}`;
+  useEffect(() => {
+    if (projectId) return;
+    setInterest('');
+    setContext('');
+    setTask(null);
+    setSelectedCandidate(null);
+    setPage(1);
+    setError('');
+  }, [projectId, demoEpoch]);
   useEffect(() => {
     const runId = window.sessionStorage.getItem(activeRunKey);
     if (!runId) return;

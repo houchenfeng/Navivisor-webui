@@ -9,6 +9,7 @@ import {
 } from "@/components/research-writing/lib/demo-writing";
 import { PdfViewer } from "@/components/files/viewers/pdf-viewer";
 import { filePreviewSource } from "@/components/files/viewers/preview-source";
+import { useResearchProjectStore } from "@/stores/research-project-store";
 
 interface Props {
   data: WritingData;
@@ -62,12 +63,25 @@ export default function Step9Export({ data }: Props) {
   const generatedTex = useMemo(() => buildCvprTex(data), [data]);
   const tex = texOverride ?? generatedTex;
   const safeName = useMemo(() => makeSafeFilename(data.title), [data.title]);
+  const workspaceRoot = useResearchProjectStore((state) => state.project?.rootPath);
 
   useEffect(() => {
     return () => {
       if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
     };
   }, [pdfBlobUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void tryResolveDemoPaperPdf().then((path) => {
+      if (!cancelled && path) {
+        setPdfFilePath(path);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceRoot]);
 
   // 下载 main.tex
   const handleDownloadTex = () => {
@@ -185,6 +199,8 @@ export default function Step9Export({ data }: Props) {
         body: JSON.stringify({
           tex,
           bib: buildCvprBib(data),
+          workspaceRoot: workspaceRoot || undefined,
+          demoPaperDir: workspaceRoot ? "writing/source/cvpr-paper/en" : undefined,
           figures: {
             ...(data.algorithmFlowImage.startsWith("data:")
               ? { "algorithm_flow.png": data.algorithmFlowImage }

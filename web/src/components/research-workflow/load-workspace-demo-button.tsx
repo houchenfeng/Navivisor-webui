@@ -7,25 +7,29 @@ import {
 } from 'lucide-react';
 import { researchWorkflowClient } from './research-workflow-client';
 import type { DemoDefinition, LoadDemoResult } from './research-workflow-types';
-import { useResearchProjectStore } from '@/stores/research-project-store';
+import { useResearchProjectStore, isResearchDemoMode } from '@/stores/research-project-store';
 import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
+import { exitResearchDemo } from '@/components/research-workflow/exit-research-demo';
 import { cn } from '@/lib/utils';
 
 type Props = {
   compact?: boolean;
   className?: string;
   onLoaded?: (result: LoadDemoResult) => void;
+  /** Only the research home page should offer leaving Demo mode. */
+  allowUnload?: boolean;
 };
 
 export function LoadWorkspaceDemoButton({
   compact = false,
   className,
   onLoaded,
+  allowUnload = false,
 }: Props) {
   const project = useResearchProjectStore((state) => state.project);
   const setProject = useResearchProjectStore((state) => state.setProject);
   const bumpDemoEpoch = useResearchProjectStore((state) => state.bumpDemoEpoch);
-  const demoLoaded = project != null && project.demoComplete != null;
+  const demoLoaded = isResearchDemoMode(project);
   const [open, setOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [demos, setDemos] = useState<DemoDefinition[]>([]);
@@ -106,8 +110,22 @@ export function LoadWorkspaceDemoButton({
     }
   }
 
+  async function unload() {
+    if (
+      !window.confirm(
+        '卸载研究数据并退出 Demo 模式？开题、实验、写作、投稿中的 Demo 内容会清空，可重新载入。',
+      )
+    )
+      return;
+    exitResearchDemo();
+    setDetailsOpen(false);
+    setOpen(false);
+    setMessage('已退出 Demo 模式');
+  }
+
   return (
     <div className={cn('flex flex-col gap-1', className)}>
+      <div className="flex flex-wrap items-center justify-end gap-2">
       <button
         type="button"
         onClick={() => {
@@ -120,8 +138,22 @@ export function LoadWorkspaceDemoButton({
         )}
       >
         <FolderOpen className="size-4" />
-        {demoLoaded ? '已载入研究数据' : '载入研究数据'}
+        {demoLoaded ? 'Demo 模式已开启' : '载入研究数据'}
       </button>
+      {allowUnload ? (
+        <button
+          type="button"
+          onClick={() => void unload()}
+          disabled={!demoLoaded}
+          className={cn(
+            'inline-flex items-center justify-center gap-2 rounded-xl border border-[#f3c4c4] bg-white font-bold text-[#b42318] transition hover:bg-[#fff5f5] disabled:cursor-not-allowed disabled:opacity-40',
+            compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm',
+          )}
+        >
+          卸载研究数据
+        </button>
+      ) : null}
+      </div>
       {message ? (
         <p
           role="status"
@@ -144,6 +176,15 @@ export function LoadWorkspaceDemoButton({
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="mb-2 flex items-center justify-end gap-2">
+                  {allowUnload ? (
+                    <button
+                      type="button"
+                      onClick={() => void unload()}
+                      className="rounded-xl border border-[#f3c4c4] bg-white px-3 py-1.5 text-xs font-bold text-[#b42318]"
+                    >
+                      卸载研究数据
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => {

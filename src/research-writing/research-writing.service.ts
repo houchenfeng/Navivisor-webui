@@ -1,8 +1,8 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { execFile } from 'node:child_process';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
@@ -14,11 +14,16 @@ interface CompileBody {
   tex?: string;
   bib?: string;
   figures?: Record<string, string>;
+  workspaceRoot?: string;
+  demoPaperDir?: string;
 }
 
 @Injectable()
 export class ResearchWritingService {
   async compile(body: CompileBody): Promise<Buffer> {
+    const fromDemo = await this.tryCompileDemoPaper(body);
+    if (fromDemo) return fromDemo;
+
     const tex = body.tex?.trim();
     if (!tex) throw new Error('缺少 main.tex 内容');
     if (Buffer.byteLength(tex, 'utf8') > MAX_TEX_BYTES) throw new Error('main.tex 文件过大');
@@ -61,6 +66,97 @@ export class ResearchWritingService {
     throw new ServiceUnavailableException(
       '找不到 CVPR 官方模板文件，请检查 web/public/cvpr-template',
     );
+  }
+
+  private async tryCompileDemoPaper(body: CompileBody): Promise<Buffer | null> {
+    const root = body.workspaceRoot?.trim();
+    const rel = body.demoPaperDir?.trim() || 'writing/source/cvpr-paper/en';
+    if (!root) return null;
+    if (rel.includes('..')) throw new Error('非法论文源路径');
+    const rootResolved = resolve(root);
+    const sourceDir = resolve(rootResolved, rel);
+    const escaped = relative(rootResolved, sourceDir);
+    if (!escaped || escaped.startsWith('..') || escaped.includes(':')) {
+      throw new Error('论文源路径超出工作区');
+    }
+    try {
+      await access(join(sourceDir, 'main.tex'));
+    } catch {
+      return null;
+    }
+    const pdf = await this.compilePaperDirectory(sourceDir);
+    try {
+      await mkdir(join(rootResolved, 'writing'), { recursive: true });
+      await writeFile(join(rootResolved, 'writing', 'paper.pdf'), pdf);
+    } catch {
+      // Preview still succeeds even if the workspace copy cannot be updated.
+    }
+    return pdf;
+  }
+
+  private async compilePaperDirectory(sourceDir: string): Promise<Buffer> {
+    const workDir = join(tmpdir(), `navivisor-latex-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    await mkdir(workDir, { recursive: true });
+    try {
+      await cp(sourceDir, workDir, { recursive: true });
+      await this.copyIfExists(join(sourceDir, '..', 'cvpr.sty'), join(workDir, 'cvpr.sty'));
+      const figSrc = join(sourceDir, '..', 'fig');
+      try {
+        await access(figSrc);
+        await mkdir(join(workDir, 'fig'), { recursive: true });
+        await cp(figSrc, join(workDir, 'fig'), { recursive: true });
+        await cp(figSrc, workDir, { recursive: true });
+      } catch {
+        // Figures may already live next to main.tex.
+      }
+      await this.copyNamedTemplate(workDir, ['cuted.sty', 'cvpr.sty', 'ieeenat_fullname.bst']);
+
+      const args = ['-interaction=nonstopmode', '-halt-on-error', '-file-line-error', 'main.tex'];
+      await this.runLatex(workDir, args);
+      try {
+        await access(join(workDir, 'main.bib'));
+        await this.runCommand(this.bibtexCommand(), ['main'], workDir);
+      } catch {
+        // Bibliography is optional.
+      }
+      await this.runLatex(workDir, args);
+      await this.runLatex(workDir, args);
+      return await readFile(join(workDir, 'main.pdf'));
+    } finally {
+      await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
+
+  private async copyIfExists(from: string, to: string): Promise<void> {
+    try {
+      await copyFile(from, to);
+    } catch {
+      // Optional support file.
+    }
+  }
+
+  private async copyNamedTemplate(workDir: string, names: string[]): Promise<void> {
+    const roots = [
+      join(process.cwd(), 'web', 'public', 'cvpr-template'),
+      join(process.cwd(), 'public', 'cvpr-template'),
+    ];
+    for (const name of names) {
+      const dest = join(workDir, name);
+      try {
+        await access(dest);
+        continue;
+      } catch {
+        // Copy from the bundled template if the source tree did not include it.
+      }
+      for (const root of roots) {
+        try {
+          await copyFile(join(root, name), dest);
+          break;
+        } catch {
+          // Try the next template root.
+        }
+      }
+    }
   }
 
   private async writeFigures(workDir: string, figures: Record<string, string>): Promise<void> {

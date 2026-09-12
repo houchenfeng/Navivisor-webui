@@ -19,7 +19,7 @@ export type ResearchProjectSummary = {
 type ResearchProjectState = {
   activeProjectId: string | null;
   project: ResearchProjectSummary | null;
-  /** Bumped after workspace demo load so modules remount/hydrate. */
+  /** Bumped after workspace demo load/unload so modules remount/hydrate. */
   demoEpoch: number;
   setProject: (project: ResearchProjectSummary | null) => void;
   clearProject: () => void;
@@ -35,12 +35,31 @@ export const useResearchProjectStore = create<ResearchProjectState>()(
       setProject: (project) =>
         set({ project, activeProjectId: project?.projectId ?? null }),
       clearProject: () =>
-        set({ project: null, activeProjectId: null, demoEpoch: 0 }),
+        set((state) => ({
+          project: null,
+          activeProjectId: null,
+          demoEpoch: state.demoEpoch + 1,
+        })),
       bumpDemoEpoch: () => set((state) => ({ demoEpoch: state.demoEpoch + 1 })),
     }),
     {
       name: 'navivisor-research-project',
-      partialize: (state) => ({ activeProjectId: state.activeProjectId }),
+      partialize: (state) => ({
+        activeProjectId: state.activeProjectId,
+        project: state.project,
+      }),
     },
   ),
 );
+
+export function isResearchDemoMode(
+  project: ResearchProjectSummary | null | undefined,
+): boolean {
+  if (!project) return false;
+  if (project.demoComplete != null) return true;
+  const root = project.rootPath.replace(/\\/g, '/').toLowerCase();
+  return (
+    root.includes('/demo-workspaces/') ||
+    root.includes('evivad-surveillance-demo')
+  );
+}

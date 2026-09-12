@@ -113,6 +113,12 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
           setDemoRound2([]);
           setDemoRound2Avg(0);
           setDemoDecision('');
+          setForm(INITIAL_FORM);
+          setRound1Reviewers([]);
+          setRound2Reviewers([]);
+          setRound2DecisionState('');
+          setRound1AvgScore(0);
+          setRound2AvgScore(0);
           return;
         }
 
@@ -124,6 +130,16 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
           tldr: seed.tldr,
           rebuttal: seed.rebuttal,
         });
+        if (demoLoaded) {
+          setForm({
+            title: seed.title,
+            authors: seed.authors,
+            keywords: seed.keywords,
+            abstract: seed.abstract,
+            tldr: seed.tldr,
+            rebuttal: seed.rebuttal,
+          });
+        }
         setPaperPdfFile(seed.paperPdfFile);
         setDemoRound1(seed.round1Reviewers);
         setDemoRound1Avg(seed.round1AvgScore);
