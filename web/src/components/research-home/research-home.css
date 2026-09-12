@@ -4,9 +4,7 @@
   --home-muted: #607ca7;
   position: relative;
   isolation: isolate;
-  background:
-    radial-gradient(circle at 80% 3%, rgba(178, 213, 255, 0.66), transparent 31rem),
-    linear-gradient(180deg, #f7fbff 0%, #eaf4ff 48%, #f8fbff 100%);
+  background: #f2f7fc;
 }
 
 .research-home__mountains {
@@ -17,11 +15,11 @@
   width: 100%;
   height: auto;
   object-fit: contain;
-  opacity: 0.98;
+  opacity: 0.96;
   pointer-events: none;
   filter: saturate(0.92) contrast(0.98);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 77%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 77%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 78%, transparent 100%);
 }
 
 .research-home__slogan {
@@ -75,8 +73,8 @@
 .research-journey__curve {
   position: absolute;
   z-index: 0;
-  inset: 0.5rem -3% auto -3%;
-  width: 106%;
+  inset: 0.5rem 0 auto;
+  width: 100%;
   height: 11.75rem;
   object-fit: fill;
   pointer-events: none;
@@ -84,31 +82,18 @@
   filter: drop-shadow(0 7px 16px rgba(34, 113, 224, 0.13));
 }
 
-.research-journey__road {
-  position: absolute;
-  z-index: 0;
-  right: -0.7rem;
-  top: -12.5rem;
-  width: min(28vw, 23rem);
-  height: 22rem;
-  object-fit: contain;
-  transform: rotate(12deg);
-  transform-origin: 80% 20%;
-  pointer-events: none;
-  opacity: 0.72;
-  mix-blend-mode: screen;
-}
-
 .research-journey__grid {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.25rem;
-  padding-top: 2rem;
+  height: 17rem;
 }
 
 .research-module-card {
+  position: absolute;
+  top: 1.8rem;
+  left: var(--journey-node-x);
+  width: 24%;
+  transform: translateX(-50%);
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -117,9 +102,10 @@
   color: var(--home-ink);
 }
 
-.research-module-card:nth-child(even) {
-  padding-top: 3.85rem;
-}
+.research-module-card:nth-child(1) { --journey-node-x: 11.2%; }
+.research-module-card:nth-child(2) { --journey-node-x: 36.7%; top: 3.9rem; }
+.research-module-card:nth-child(3) { --journey-node-x: 60.3%; }
+.research-module-card:nth-child(4) { --journey-node-x: 85.1%; top: 3.9rem; }
 
 .research-module-card__icon {
   position: relative;
@@ -181,19 +167,24 @@
     margin-top: 2rem;
   }
 
-  .research-journey__curve,
-  .research-journey__road {
+  .research-journey__curve {
     display: none;
   }
 
   .research-journey__grid {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.75rem 0.75rem;
-    padding-top: 0;
+    height: auto;
   }
 
-  .research-module-card:nth-child(even) {
-    padding-top: 0;
+  .research-module-card,
+  .research-module-card:nth-child(2),
+  .research-module-card:nth-child(3),
+  .research-module-card:nth-child(4) {
+    position: static;
+    width: auto;
+    transform: none;
   }
 
   .research-module-card__icon {

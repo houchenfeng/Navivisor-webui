@@ -255,7 +255,6 @@ export function ResearchHomePage() {
         {/* Four module icon buttons + curved path */}
         <div className="research-journey">
           <img className="research-journey__curve hidden md:block" src="research-home/journey-curve.png" alt="" aria-hidden="true" />
-          <img className="research-journey__road hidden md:block" src="research-home/mountain-road.png" alt="" aria-hidden="true" />
           <div className="research-journey__grid">
             {modules.map(({ title, copy, image, to }, index) => (
               <button
