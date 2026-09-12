@@ -56,7 +56,7 @@ export default function Step3To8Text({
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={loading || !data.topic}
+          disabled={loading}
           className="shrink-0 rounded-lg bg-brand-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-brand-700 disabled:opacity-50"
         >
           {loading ? "生成中..." : "✨ AI 生成"}

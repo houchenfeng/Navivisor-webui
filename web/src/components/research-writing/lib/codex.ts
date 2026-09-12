@@ -2,6 +2,7 @@ import { threadsListTurnItems, threadsListTurns } from '@/generated/api/sdk.gen'
 import type { WritingData } from '@/components/research-writing/data/writingSteps';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import { resolveWritingRunContext } from '@/components/research-workflow/use-research-project';
+import { tryLoadDemoWritingSection } from '@/components/research-writing/lib/demo-writing';
 
 export type WritingSection =
   | 'title-abstract'
@@ -76,7 +77,7 @@ function buildSectionInstructions(section: WritingSection, data: WritingData): s
     '   outputs=[{path:"section-output.json",role:"paper-source",mediaType:"application/json",simulated:true}], warnings=[]',
     '',
     'WritingData snapshot (JSON):',
-    JSON.stringify(context),
+    JSON.stringify(context).slice(0, 12_000),
   ].join('\n');
 }
 
@@ -179,6 +180,9 @@ export async function generateWritingSection(
   section: WritingSection,
   data: WritingData,
 ): Promise<string> {
+  const fromDemo = await tryLoadDemoWritingSection(section);
+  if (fromDemo) return fromDemo;
+
   const { projectId, inputArtifactIds } = await resolveWritingRunContext();
   const started = await researchWorkflowClient.startAgentRun({
     projectId,
