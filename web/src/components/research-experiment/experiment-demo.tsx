@@ -70,29 +70,68 @@ function RealBadge() {
   return <Badge className="border-emerald-300 bg-emerald-100 text-emerald-800">真实运行</Badge>;
 }
 
-const DEMO_REAL_RUN_LINES = [
-  '[agent] 正在读取实验方案与运行配置…',
-  '[agent] 已解析方法：EviVAD / DAA + EAD + DAG',
-  '[agent] 正在检查数据集索引、标注文件与输出目录…',
-  '[data] train clips=1,610  validation clips=145  workers=8',
-  '[model] backbone=ViT-B/16  adapter_rank=4  precision=fp16',
-  '[train] epoch 01/20  step 0100/0800  loss=1.2847  loss_score=0.8431  loss_evidence=0.2924  lr=1.00e-05',
-  '[train] epoch 01/20  step 0400/0800  loss=1.1092  loss_score=0.7315  loss_evidence=0.2518  lr=3.72e-05',
-  '[train] epoch 01/20  step 0800/0800  loss=0.9876  loss_score=0.6542  loss_evidence=0.2261  grad_norm=1.38',
-  '[eval ] epoch 01/20  val_auc=0.7741  val_ap=0.6894  ear=0.4628  latency=143ms',
-  '[agent] 验证指标正常，继续执行 DAA 适配阶段。',
-  '[train] epoch 02/20  step 0200/0800  loss=0.9143  loss_score=0.6017  loss_evidence=0.2135  lr=7.15e-05',
-  '[train] epoch 02/20  step 0600/0800  loss=0.8429  loss_score=0.5486  loss_evidence=0.1993  lr=9.62e-05',
-  '[eval ] epoch 02/20  val_auc=0.7868  val_ap=0.7042  ear=0.4971  latency=144ms',
-  '[agent] 正在执行证据锚定解码检查：schema 通过，时间区间引用可解析。',
-  '[train] epoch 03/20  step 0300/0800  loss=0.7816  loss_score=0.5069  loss_evidence=0.1847  lr=9.89e-05',
-  '[train] epoch 03/20  step 0800/0800  loss=0.7248  loss_score=0.4685  loss_evidence=0.1712  grad_norm=0.96',
-  '[eval ] epoch 03/20  val_auc=0.7983  val_ap=0.7169  ear=0.5346  hr=0.1872',
-  '[agent] 退化感知门控测试已排队：low-light / compression / camera-shake。',
-  '[train] epoch 04/20  step 0400/0800  loss=0.6814  loss_score=0.4398  loss_evidence=0.1609  lr=9.43e-05',
-  '[gpu  ] device=0  memory=8.7/24.0GB  utilization=91%  throughput=27.4 clips/s',
-  '[agent] 训练过程展示持续运行；启动 SSH 后，此区域将切换为服务器实际输出。',
-];
+const DEMO_TRAIN_STEPS = [80, 160, 240, 320, 400, 480, 560, 640, 720, 800] as const;
+const DEMO_TRAIN_EPOCHS = 20;
+
+function demoPad(value: number, width: number) {
+  return String(value).padStart(width, '0');
+}
+
+function demoFixed(value: number, digits: number) {
+  return value.toFixed(digits);
+}
+
+function buildDemoRealRunLines() {
+  const lines = [
+    '[agent] 正在读取实验方案与运行配置…',
+    '[agent] 已解析方法：EviVAD / DAA + EAD + DAG',
+    '[agent] 正在检查数据集索引、标注文件与输出目录…',
+    '[data] train clips=1,610  validation clips=145  workers=8',
+    '[model] backbone=ViT-B/16  adapter_rank=4  precision=fp16',
+    '[optim] AdamW  lora_lr=1e-4  score_head_lr=5e-4  wd=1e-2  epochs=20  steps/epoch=800',
+  ];
+  for (let epoch = 1; epoch <= DEMO_TRAIN_EPOCHS; epoch += 1) {
+    const progress = (epoch - 1) / (DEMO_TRAIN_EPOCHS - 1);
+    const warmup = Math.min(1, epoch / 3);
+    const cosine = 0.5 * (1 + Math.cos(Math.PI * progress));
+    const lr = 1e-5 + (1e-4 - 1e-5) * warmup * cosine;
+    for (const step of DEMO_TRAIN_STEPS) {
+      const inner = step / 800;
+      const loss = 1.32 - 0.78 * progress - 0.11 * inner + 0.018 * Math.sin(epoch * 1.7 + step / 90);
+      const lossScore = loss * 0.66;
+      const lossEvidence = loss * 0.23;
+      const line =
+        `[train] epoch ${demoPad(epoch, 2)}/20  step ${demoPad(step, 4)}/0800  ` +
+        `loss=${demoFixed(Math.max(0.41, loss), 4)}  ` +
+        `loss_score=${demoFixed(Math.max(0.26, lossScore), 4)}  ` +
+        `loss_evidence=${demoFixed(Math.max(0.09, lossEvidence), 4)}  ` +
+        (step === 800
+          ? `grad_norm=${demoFixed(1.42 - 0.62 * progress, 2)}`
+          : `lr=${lr.toExponential(2)}`);
+      lines.push(line);
+    }
+    const auc = 0.768 + 0.051 * progress;
+    const ap = 0.682 + 0.058 * progress;
+    const ear = 0.415 + 0.248 * progress;
+    const hr = 0.264 - 0.152 * progress;
+    lines.push(
+      `[eval ] epoch ${demoPad(epoch, 2)}/20  val_auc=${demoFixed(auc, 4)}  val_ap=${demoFixed(ap, 4)}  ` +
+        `ear=${demoFixed(ear, 4)}  hr=${demoFixed(Math.max(0.09, hr), 4)}  latency=${143 + (epoch % 4)}ms`,
+    );
+    if (epoch === 1) lines.push('[agent] 验证指标正常，继续执行 DAA 适配阶段。');
+    if (epoch === 4) lines.push('[agent] 正在执行证据锚定解码检查：schema 通过，时间区间引用可解析。');
+    if (epoch === 8) lines.push('[agent] 退化感知门控测试已排队：low-light / rain-fog / compression / camera-shake。');
+    if (epoch === 12) {
+      lines.push('[gpu  ] device=0  memory=9.4/24.0GB  utilization=93%  throughput=26.8 clips/s');
+    }
+    if (epoch === 16) lines.push('[agent] 跨域外测已排队：XD-Violence / UBnormal / MSAD（零微调）。');
+  }
+  lines.push('[ckpt] 已写出 last.ckpt 与 best_auc.ckpt');
+  lines.push('[agent] 训练过程展示持续运行；启动 SSH 后，此区域将切换为服务器实际输出。');
+  return lines;
+}
+
+const DEMO_REAL_RUN_LINES = buildDemoRealRunLines();
 
 function DemoRealRunTerminal() {
   const [lineCount, setLineCount] = useState(1);
@@ -112,9 +151,9 @@ function DemoRealRunTerminal() {
   }, [lineCount]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#07101f] text-[#d9e7ff]" aria-label="Demo 训练过程终端">
+    <div className="flex h-full min-h-0 flex-col bg-[#07101f] text-[#d9e7ff]" aria-label="真实运行训练过程终端">
       <div className="flex shrink-0 items-center justify-between border-b border-[#24344f] bg-[#0d192b] px-3 py-2 font-mono text-xs text-[#9eb8df]">
-        <span>Demo · 真实运行 · 训练过程</span>
+        <span>真实运行 · 训练过程</span>
         <span className="text-emerald-400">● RUNNING</span>
       </div>
       <pre ref={outputRef} className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-5">
@@ -861,6 +900,16 @@ export function ExperimentDemo() {
   const activeStep = (pathname.split('/').at(-1) || 'intake') as ExperimentStep;
   const index = Math.max(0, steps.findIndex((step) => step.id === activeStep));
   const go = (step: ExperimentStep) => void navigate({ to: stepPath(step) });
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const reset = () => {
+      mainRef.current?.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0 });
+    };
+    reset();
+    const frame = window.requestAnimationFrame(reset);
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeStep]);
   const canAdvance =
     activeStep === 'intake'
       ? Boolean(experiment.projectName.trim() && experiment.researchTopic.trim() && experiment.paperCount > 0)
@@ -883,7 +932,7 @@ export function ExperimentDemo() {
   };
   return (
     <ExperimentHydrationContext.Provider value={hydration}>
-      <main className="navivisor-module scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 text-[#10204A] sm:p-6">
+      <main ref={mainRef} className="navivisor-module scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 text-[#10204A] [overflow-anchor:none] sm:p-6">
         <div className="mx-auto max-w-7xl">
           <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>

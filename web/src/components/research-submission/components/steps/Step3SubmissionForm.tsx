@@ -94,6 +94,7 @@ export default function Step3SubmissionForm() {
       if (demoReady && applyDemoRound1Reviews()) {
         const subNum = String(Math.floor(10000 + Math.random() * 90000));
         setSubmissionNumber(subNum);
+        await new Promise((resolve) => setTimeout(resolve, 1800));
         goToStep(4);
         return;
       }
@@ -102,6 +103,7 @@ export default function Step3SubmissionForm() {
       if (result.paperTitle && result.paperTitle !== form.title) setFormField('title', result.paperTitle);
       const subNum = String(Math.floor(10000 + Math.random() * 90000));
       setSubmissionNumber(subNum);
+      await new Promise((resolve) => setTimeout(resolve, 1800));
       goToStep(4);
     } catch (error) {
       const msg = error instanceof Error ? error.message : '提交失败';
@@ -129,7 +131,7 @@ export default function Step3SubmissionForm() {
 
   return (
     <>
-      {isSubmitting && <LoadingOverlay text={t.submitting} fullscreen />}
+      {isSubmitting && <LoadingOverlay text={t.reviewing} fullscreen />}
       <div className="mx-auto max-w-4xl px-4 py-6">
         <button type="button" onClick={() => goToStep(2)} className="mb-4 flex items-center gap-1 text-sm text-[#336699] hover:underline"><ArrowLeft className="size-4" />{t.goBackHome}</button>
         <div className="mb-4 flex items-center gap-3 rounded-t-md bg-[#2c5f7a] px-3 py-2 text-white">

@@ -1,5 +1,6 @@
 import { useRef, useState, useMemo } from 'react';
-import { ArrowLeft, Trophy, RotateCcw, TrendingUp, FileText, FileUp, CheckCircle, Loader2, Sparkles, XCircle, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Trophy, RotateCcw, TrendingUp, FileText, FileUp, CheckCircle, Loader2, Sparkles, XCircle, Lightbulb, Home } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
 import { useI18n } from '../../context/I18nContext';
 import { useSimulation } from '../../context/SimulationContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,6 +9,7 @@ type DecisionType = 'oral' | 'poster' | 'rejected';
 
 export default function Step6FinalResult() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { form, goToStep, resetSimulation, round2Reviewers, round2Decision, round2AvgScore, round1AvgScore, submissionNumber, isDemoLoaded, pickDemoPdf } = useSimulation();
   const displayTitle = form.title || 'Untitled Submission';
   const [cameraReadyFile, setCameraReadyFile] = useState<File | null>(null);
@@ -100,7 +102,10 @@ export default function Step6FinalResult() {
         <div className="border border-[#ccc] bg-white p-4"><h3 className="mb-3 text-sm font-bold text-[#333]">Average Score Progression</h3><div className="space-y-3"><div><div className="mb-1 flex justify-between text-xs"><span className="text-[#666]">{t.round1Score}</span><span className="font-bold text-[#c62828]">{(reviewers.reduce((s, r) => s + r.round1Score, 0) / reviewers.length).toFixed(2)}/6</span></div><div className="h-3 w-full rounded-full bg-[#f0f0f0]"><div className="h-full rounded-full bg-[#c62828]" style={{ width: `${((reviewers.reduce((s, r) => s + r.round1Score, 0) / reviewers.length / 6) * 100).toFixed(1)}%` }} /></div></div><div><div className="mb-1 flex justify-between text-xs"><span className="text-[#666]">{t.round2Score}</span><span className="font-bold text-[#2e7d32]">{(reviewers.reduce((s, r) => s + r.round2Score, 0) / reviewers.length).toFixed(2)}/6</span></div><div className="h-3 w-full rounded-full bg-[#f0f0f0]"><div className="h-full rounded-full bg-[#2e7d32]" style={{ width: `${((reviewers.reduce((s, r) => s + r.round2Score, 0) / reviewers.length / 6) * 100).toFixed(1)}%` }} /></div></div></div></div>
         <div className="border border-[#ccc] bg-white p-4"><h3 className="mb-3 text-sm font-bold text-[#333]">Per-Reviewer Score Change</h3><div className="space-y-2">{reviewers.map((r) => { const change = r.round2Score - r.round1Score; return (<div key={r.id} className="flex items-center gap-2 text-xs"><span className="w-28 shrink-0 truncate text-[#555]">{r.name}</span><span className="font-bold text-[#c62828]">{r.round1Score}</span>{change >= 0 ? <TrendingUp className="size-3 text-[#2e7d32]" /> : <TrendingUp className="size-3 rotate-180 text-[#c62828]" />}<span className="font-bold text-[#2e7d32]">{r.round2Score}</span><span className={`ml-auto rounded px-1.5 py-0.5 font-semibold ${change >= 0 ? 'bg-[#e8f5e9] text-[#2e7d32]' : 'bg-[#ffebee] text-[#c62828]'}`}>{change >= 0 ? `+${change}` : change}</span></div>); })}</div></div>
       </div>
-      <div className="flex justify-center"><button type="button" onClick={resetSimulation} className="flex items-center gap-2 rounded-md bg-[#2e7d32] px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-[#1b5e20]"><RotateCcw className="size-4" />{t.restart}</button></div>
+      <div className="flex flex-wrap justify-center gap-3">
+        <button type="button" onClick={resetSimulation} className="flex items-center gap-2 rounded-md bg-[#2e7d32] px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-[#1b5e20]"><RotateCcw className="size-4" />{t.restart}</button>
+        <button type="button" onClick={() => void navigate({ to: '/research/home' })} className="flex items-center gap-2 rounded-md border-2 border-[#2c5f7a] bg-white px-6 py-2.5 text-sm font-bold text-[#2c5f7a] shadow-md hover:bg-[#eef5f8]"><Home className="size-4" />{t.returnHome}</button>
+      </div>
     </div>
   );
 }
