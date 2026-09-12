@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
-import { generateWithQwen } from "@/components/research-writing/lib/qwen";
+import { generateWritingSection } from "@/components/research-writing/lib/codex";
 import WordCounter from "./WordCounter";
 import TranslateButton from "./TranslateButton";
 
@@ -18,7 +18,7 @@ export default function Step6Experiment({ data, onChange }: Props) {
     setLoading(true);
     setError("");
     try {
-      const raw = await generateWithQwen("experiment", data);
+      const raw = await generateWritingSection("experiment", data);
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {

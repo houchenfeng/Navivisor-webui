@@ -423,7 +423,7 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
             <Input
               value={runtime.apiEndpoint}
               onChange={(e) => patch({ apiEndpoint: e.target.value })}
-              placeholder="例如 https://api.openai.com/v1"
+              placeholder="例如实验平台或数据服务地址"
             />
           </label>
           <label className="flex flex-col gap-2 text-sm font-medium">
@@ -431,7 +431,7 @@ function RealRuntimeConfigPage({ go }: { go: (step: ExperimentStep) => void }) {
             <Input
               value={runtime.apiKeyHint}
               onChange={(e) => patch({ apiKeyHint: e.target.value })}
-              placeholder="例如：使用本机环境变量 OPENAI_API_KEY"
+              placeholder="例如：使用本机环境变量中的服务凭证"
             />
           </label>
         </div>

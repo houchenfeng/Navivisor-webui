@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
-import { generateWithQwen } from "@/components/research-writing/lib/qwen";
+import { generateWritingSection } from "@/components/research-writing/lib/codex";
 import WordCounter from "./WordCounter";
 import TranslateButton from "./TranslateButton";
 
@@ -37,7 +37,7 @@ export default function Step3To8Text({
     setLoading(true);
     setError("");
     try {
-      const text = await generateWithQwen(field, data);
+      const text = await generateWritingSection(field, data);
       onChange({ [field]: text } as Partial<WritingData>);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

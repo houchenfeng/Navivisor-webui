@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
-import { generateWithQwen } from "@/components/research-writing/lib/qwen";
+import { generateWritingSection } from "@/components/research-writing/lib/codex";
 import WordCounter from "./WordCounter";
 import TranslateButton from "./TranslateButton";
 
@@ -17,7 +17,7 @@ export default function Step2TitleAbstract({ data, onChange }: Props) {
     setLoading(true);
     setError("");
     try {
-      const raw = await generateWithQwen("title-abstract", data);
+      const raw = await generateWritingSection("title-abstract", data);
       const match = raw.match(/\{[\s\S]*\}/);
       if (match) {
         try {
@@ -27,7 +27,9 @@ export default function Step2TitleAbstract({ data, onChange }: Props) {
             abstract: parsed.abstract ?? data.abstract,
           });
           return;
-        } catch {}
+        } catch {
+          // The agent may return plain text; use it as the abstract below.
+        }
       }
       onChange({ abstract: raw });
     } catch (e) {

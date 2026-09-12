@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
-import { generateWithQwen, generateWritingFigure } from "@/components/research-writing/lib/qwen";
+import { generateWritingFigure, generateWritingSection } from "@/components/research-writing/lib/codex";
 import WordCounter from "./WordCounter";
 import TranslateButton from "./TranslateButton";
 
@@ -43,7 +43,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
     setLoading(true);
     setError("");
     try {
-      const text = await generateWithQwen("algorithm", data);
+      const text = await generateWritingSection("algorithm", data);
       onChange({ algorithm: text });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -403,6 +403,7 @@ function ImageSlot({
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   const dragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
 
@@ -415,6 +416,7 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (scale <= 1) return;
     dragging.current = true;
+    setIsDragging(true);
     dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
   };
 
@@ -428,6 +430,7 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
 
   const handleMouseUp = () => {
     dragging.current = false;
+    setIsDragging(false);
   };
 
   const reset = () => {
@@ -455,9 +458,8 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
           onMouseLeave={handleMouseUp}
           style={{
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-            cursor:
-              scale > 1 ? (dragging.current ? "grabbing" : "grab") : "default",
-            transition: dragging.current ? "none" : "transform 0.15s ease-out",
+            cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "default",
+            transition: isDragging ? "none" : "transform 0.15s ease-out",
           }}
           className="max-h-[85vh] max-w-[90vw] select-none rounded-lg object-contain shadow-2xl"
         />

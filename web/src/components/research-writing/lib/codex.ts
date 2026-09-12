@@ -11,9 +11,6 @@ export type WritingSection =
   | 'experiment'
   | 'discussion';
 
-/** @deprecated Prefer WritingSection — kept for existing Step imports */
-export type QwenSection = WritingSection;
-
 export interface AlgorithmFlowchartContext {
   topic?: string;
   algorithm?: string;
@@ -198,7 +195,6 @@ export async function generateWritingSection(
     turnText = await waitForTurnText(started.threadId, started.turnId);
   } catch (error) {
     turnFailure = error;
-    turnText = '';
   }
 
   if (turnText) return unwrapSectionPayload(turnText, section);
@@ -222,14 +218,6 @@ export async function generateWritingSection(
       ? `写作生成失败：${errorMessage(turnFailure)}`
       : `写作生成失败：Research run ${run.status}`,
   );
-}
-
-/** @deprecated Use generateWritingSection — kept so existing Step imports keep working */
-export async function generateWithQwen(
-  section: WritingSection,
-  data: WritingData,
-): Promise<string> {
-  return generateWritingSection(section, data);
 }
 
 /**

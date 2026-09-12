@@ -55,6 +55,12 @@ Demo 位于 [camera-vad-scene-memory](./demo-packages/camera-vad-scene-memory/)�
 
 写作 AI 需 Codex 已登录。第 10 步可由后端调用本机 LaTeX 编译 PDF；也可下载包含官方模板文件的 zip 后离线编译。页面中的模拟结果必须视为教学 Demo，不能作为真实论文证据。
 
+### 模型服务边界
+
+科研模块的文本生成、翻译和论文配图统一通过 Research Workflow 调用当前登录的 Codex，不在浏览器或业务后端中维护 Qwen、Gemini、Anthropic、DeepSeek、Ollama 等独立 LLM 客户端、密钥或模型接口。写作实现位于 `web/src/components/research-writing/lib/codex.ts`；生成任务携带 `projectId`、`runId` 和输入 `artifactId`，便于追踪来源与恢复上下文。
+
+OpenAlex 文献检索、文件解析、校验和、LaTeX 编译及实验 runner 属于确定性工具，不是 LLM 服务，继续由后端执行。实验页的可选 API 字段仅用于用户自己的实验平台或数据服务，不会被 Navivisor 当作模型接口调用。
+
 ### LaTeX / CVPR PDF 编译环境
 
 项目使用你提供的 CVPR 官方 Author Kit（当前模板为 CVPR 2026 风格），生成包会包含 `cvpr.sty`、`preamble.tex` 和 `ieeenat_fullname.bst`。一键编译依赖本机安装以下工具之一：
@@ -79,6 +85,22 @@ bibtex main
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
+
+### 质量检查
+
+提交前建议运行：
+
+```bash
+pnpm build
+pnpm test
+pnpm --dir web build
+pnpm --dir web test
+pnpm --dir web lint
+```
+
+Windows 未启用开发者模式或管理员权限时，创建 symlink 的测试可能因 `EPERM` 失败；工作区根目录覆盖系统临时目录时，Files 服务的“目录外拒绝”用例也可能不成立。这些属于测试环境约束，应与真实功能回归分开判断。
+
+当前全量前端 lint 还会报告部分既有 React Hook、Fast Refresh 和旧投稿模拟代码问题；新增或修改文件应至少做到无新增 lint error，并逐步清理存量问题。生产构建和前后端测试仍应分别执行，不能以 lint 结果代替运行验证。
 
 真实开题检索需在后端 `.env` 配置 `OPENALEX_API_KEY`。密钥仅由后端调用 OpenAlex 时使用；不得写入前端、浏览器存储或检索产物。检索会从 focused 自适应放宽到 balanced/broad，并记录每次查询、去重结果和切换原因。详细接入说明见 [OpenAlex 本地接入交接文档](./outputs/OpenAlex本地接入_AI协作者交接文档.md)。
 
