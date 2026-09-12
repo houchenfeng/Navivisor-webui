@@ -2,6 +2,8 @@
 
 面向科研新手的工作台：从开题、实验、论文写作到会议投稿，四个模块共用同一篇论文的工作目录。同时保留 Codex 对话、文件、终端和工具管理能力。
 
+![Navivisor 科研首页预览](docs/screenshots/show-1.png)
+
 ## 安装与启动
 
 需要 Node.js 22.12+、pnpm 10（仓库锁定 10.18.3）。后端为 NestJS，前端为 React/Vite，数据使用 SQLite 和本地文件目录。
