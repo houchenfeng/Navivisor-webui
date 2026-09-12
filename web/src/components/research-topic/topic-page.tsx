@@ -10,7 +10,6 @@ import {
 } from '@/stores/research-project-store';
 import { getApiToken } from '@/auth-token';
 import { withBasePath } from '@/base-path';
-import { demoTaskSnapshot } from './data';
 import { TopicPrimerDialog } from './topic-primer-dialog';
 import { buildOpenAlexQueryPlan } from './openalex-query';
 import type { ResearchTaskSnapshot } from './topic-workflow-contract';
@@ -183,6 +182,27 @@ export function TopicPage() {
   const generateCandidates = async () => {
     if (!task || !isComplete) return;
     setError('');
+    const demoProject = useResearchProjectStore.getState().project;
+    if (task.isDemo || isResearchDemoMode(demoProject)) {
+      if (!projectId) {
+        setError('请先在首页载入研究数据。');
+        return;
+      }
+      setTask((current) => current ? { ...current, candidateStatus: 'running', candidateError: undefined } : current);
+      try {
+        const topicsArtifact = findArtifactFile(artifacts, 'candidate-topics', '.json');
+        if (!topicsArtifact) throw new Error('Demo 工作区缺少候选课题数据。');
+        const topicsValue = JSON.parse(await fetchArtifactText(projectId, topicsArtifact.artifactId)) as { simulated?: boolean; candidates?: unknown[] };
+        const topics = parseCandidateTopics(topicsValue);
+        if (topics.length !== 3) throw new Error('Demo 候选课题需要恰好三个结果。');
+        setTask((current) => current ? { ...current, candidateStatus: 'completed', candidates: topics, isDemo: true } : current);
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : '无法读取 Demo 候选课题。';
+        setError(message);
+        setTask((current) => current ? { ...current, candidateStatus: 'failed', candidateError: message } : current);
+      }
+      return;
+    }
     try {
       const response = await fetch(withBasePath(`/api/research/topic/tasks/${encodeURIComponent(task.runId)}/candidates`), { method: 'POST', headers: authorizationHeaders() });
       if (!response.ok) throw new Error(response.status === 400 ? '请先完成第一环节并确认有可用文献。' : '候选课题任务创建失败，请稍后重试。');
@@ -197,7 +217,42 @@ export function TopicPage() {
   };
 
   const startCoreLiterature = async () => {
-    if (task?.isDemo) { setPage(3); return; }
+    const demoProject = useResearchProjectStore.getState().project;
+    if (task?.isDemo || isResearchDemoMode(demoProject)) {
+      setPage(3);
+      setError('');
+      if (!projectId) {
+        setError('请先在首页载入研究数据。');
+        return;
+      }
+      try {
+        const coreArtifact = findArtifactFile(artifacts, 'core-references', '.csv');
+        if (!coreArtifact) throw new Error('Demo 工作区缺少核心参考文献。');
+        const coreLiterature = parseCoreLiterature(
+          parseCsvRows(await fetchArtifactText(projectId, coreArtifact.artifactId)),
+        );
+        if (!coreLiterature.length) throw new Error('Demo 核心参考文献为空。');
+        setTask((current) =>
+          current
+            ? {
+                ...current,
+                isDemo: true,
+                coreStatus: 'completed',
+                coreManifest: {
+                  status: 'completed',
+                  files: ['core-references.csv'],
+                  counts: { references: coreLiterature.length, pdfDownloaded: 0 },
+                },
+                demoCoreLiterature: coreLiterature,
+              }
+            : current,
+        );
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : '无法读取 Demo 核心参考文献。';
+        setError(message);
+      }
+      return;
+    }
     if (!task || !selectedCandidate || task.coreStatus === 'completed' || task.coreStatus === 'partial') { setPage(3); return; }
     setPage(3); setError('');
     try {
@@ -207,6 +262,43 @@ export function TopicPage() {
     } catch (requestError) { const message = requestError instanceof Error ? requestError.message : '核心文献检索失败，请稍后重试。'; setError(message); }
   };
 
+  useEffect(() => {
+    if (page !== 3 || !projectId || artifactsLoading) return;
+    const demoProject = useResearchProjectStore.getState().project;
+    if (!isResearchDemoMode(demoProject) && !task?.isDemo) return;
+    if (task?.demoCoreLiterature?.length) return;
+    const coreArtifact = findArtifactFile(artifacts, 'core-references', '.csv');
+    if (!coreArtifact) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const coreLiterature = parseCoreLiterature(
+          parseCsvRows(await fetchArtifactText(projectId, coreArtifact.artifactId)),
+        );
+        if (cancelled || !coreLiterature.length) return;
+        setTask((current) =>
+          current
+            ? {
+                ...current,
+                isDemo: true,
+                coreStatus: 'completed',
+                coreManifest: {
+                  status: 'completed',
+                  files: ['core-references.csv'],
+                  counts: { references: coreLiterature.length, pdfDownloaded: 0 },
+                },
+                demoCoreLiterature: coreLiterature,
+              }
+            : current,
+        );
+      } catch {
+        // Keep the empty state; startCoreLiterature surfaces a readable error.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [artifacts, artifactsLoading, page, projectId, task?.demoCoreLiterature?.length, task?.isDemo]);
   const isRunning = task?.status === 'queued' || task?.status === 'running';
   const isComplete = task?.status === 'completed';
 
@@ -402,7 +494,7 @@ function findArtifactFile(artifacts: Parameters<typeof findLatestByRole>[0], ste
   return artifacts.filter((artifact) => artifact.role === stem && artifact.path.toLowerCase().endsWith(extension)).sort((a, b) => Number(b.createdAt) - Number(a.createdAt))[0];
 }
 
-function DemoCoreLiteraturePage({ onBack, papers = demoTaskSnapshot.demoCoreLiterature ?? [] }: { onBack: () => void; papers?: Array<{ title: string; openalexId: string; whyRelevant: string }> }) { return <section className="mt-7 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-10"><div className="flex items-start gap-4"><div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><FlaskConical className="size-6" /></div><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">Step 03</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">核心参考文献</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#617da9]">确定课题后，AI 会查找最相关的参考文献及可获取的全文。</p></div></div><div className="mt-6 space-y-3">{papers.map((paper) => <article key={paper.openalexId} className="rounded-2xl border border-[#d8e5f6] bg-[#fbfdff] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 flex-1 text-sm font-black leading-6 text-[#244a7d]">{paper.title}</h3><a href={paper.openalexId} target="_blank" rel="noreferrer" className="text-xs font-black text-[#1f4dcb] underline">来源</a></div><p className="mt-2 text-xs font-semibold leading-5 text-[#526e98]">{paper.whyRelevant}</p></article>)}</div><div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#e3ecf8] pt-5"><Button variant="outline" onClick={onBack} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><ArrowLeft />返回候选课题</Button><GoToExperimentButton /></div></section>; }
+function DemoCoreLiteraturePage({ onBack, papers }: { onBack: () => void; papers?: Array<{ title: string; openalexId: string; whyRelevant: string }> }) { return <section className="mt-7 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-10"><div className="flex items-start gap-4"><div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><FlaskConical className="size-6" /></div><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">Step 03</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">核心参考文献</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#617da9]">确定课题后，AI 会查找最相关的参考文献及可获取的全文。</p></div></div><div className="mt-6 space-y-3">{(papers ?? []).map((paper) => <article key={paper.openalexId} className="rounded-2xl border border-[#d8e5f6] bg-[#fbfdff] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 flex-1 text-sm font-black leading-6 text-[#244a7d]">{paper.title}</h3><a href={paper.openalexId} target="_blank" rel="noreferrer" className="text-xs font-black text-[#1f4dcb] underline">来源</a></div><p className="mt-2 text-xs font-semibold leading-5 text-[#526e98]">{paper.whyRelevant}</p></article>)}</div><div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#e3ecf8] pt-5"><Button variant="outline" onClick={onBack} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><ArrowLeft />返回候选课题</Button><GoToExperimentButton /></div></section>; }
 
 export function FuturePage({ number, title, icon: Icon, description, detail, onBack }: { number: string; title: string; icon: typeof Sparkles; description: string; detail: string; onBack: () => void }) { return <section className="mt-7 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-10"><div className="flex items-start gap-4"><div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><Icon className="size-6" /></div><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">Step {number} · 待接入</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">{title}</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#617da9]">{description}</p></div></div><div className="mt-8 rounded-2xl border border-dashed border-[#b9d0ef] bg-[#f7faff] p-8 text-center"><Icon className="mx-auto size-8 text-[#6594ce]" /><h3 className="mt-4 text-sm font-black text-[#315a98]">当前功能尚未接入</h3><p className="mx-auto mt-2 max-w-xl text-xs font-semibold leading-5 text-[#7189aa]">{detail}</p></div><div className="mt-7 border-t border-[#e3ecf8] pt-5"><Button variant="outline" onClick={onBack} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><ArrowLeft />返回上一步</Button></div></section>; }
 
