@@ -1,5 +1,8 @@
 # CameraVAD Demo 文件格式与实际示例
 
+更新：2026-09-12。对应 `demo-packages/camera-vad-scene-memory/` **demo.version 1.1.0**。
+**Manifest schemaVersion=3**：`files[].required`、结构化 `missing[{path,reason,requiredBy,optional}]`；保留对旧 schemaVersion=2 的读取适配（见工作目录 TODO R2）。本文其余示例仍可能展示历史片段，以包内实际文件与 `demo/demo-manifest.json` 为准。
+
 更新：2026-09-11。对应仓库基线 `a612f9f` 的 `demo-packages/camera-vad-scene-memory/`。
 本文是数据参考，不是执行计划；剩余实现与验收只维护在 [工作目录 TODO](./four-module-workflow-migration-todo.md)。
 

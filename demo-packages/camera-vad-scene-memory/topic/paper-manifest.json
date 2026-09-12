@@ -6,27 +6,34 @@
       "citationKey": "demo_fast_screening",
       "sourceUrl": null,
       "license": "synthetic",
-      "downloadStatus": "missing",
-      "reason": "demo_pdf_not_provided",
-      "artifactRef": null
+      "downloadStatus": "synthetic_sample",
+      "reason": "synthetic_reading_sample_not_a_real_paper; labeled SYNTHETIC SAMPLE in PDF",
+      "artifactRef": "topic/papers/DEMO-001.pdf",
+      "verified": false,
+      "fulltextStatus": "synthetic_sample"
     },
     {
       "paperId": "DEMO-002",
       "citationKey": "demo_memory_retrieval",
       "sourceUrl": null,
       "license": "synthetic",
-      "downloadStatus": "missing",
-      "reason": "demo_pdf_not_provided",
-      "artifactRef": null
+      "downloadStatus": "synthetic_sample",
+      "reason": "synthetic_reading_sample_not_a_real_paper; labeled SYNTHETIC SAMPLE in PDF",
+      "artifactRef": "topic/papers/DEMO-002.pdf",
+      "verified": false,
+      "fulltextStatus": "synthetic_sample"
     },
     {
       "paperId": "DEMO-003",
       "citationKey": "demo_vlm_verify",
       "sourceUrl": null,
       "license": "synthetic",
-      "downloadStatus": "missing",
-      "reason": "demo_pdf_not_provided",
-      "artifactRef": null
+      "downloadStatus": "synthetic_sample",
+      "reason": "synthetic_reading_sample_not_a_real_paper; labeled SYNTHETIC SAMPLE in PDF",
+      "artifactRef": "topic/papers/DEMO-003.pdf",
+      "verified": false,
+      "fulltextStatus": "synthetic_sample"
     }
-  ]
+  ],
+  "notes": "Real publisher PDFs are not_applicable for fictional DEMO records. Bundled PDFs are clearly marked SYNTHETIC SAMPLE for reader UI demos only."
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, Code2, Database, Download, ExternalLink, FileText, FlaskConical, Loader2, Play, RotateCcw, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -8,14 +8,42 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
+import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
 import { cn } from '@/lib/utils';
 import { type ExperimentStep, useExperimentStore } from '@/stores/experiment-store';
 import {
-  DEMO_ABLATION_ROWS as ablationRows,
-  DEMO_ARCHITECTURE_MARKDOWN as architectureDocument,
-  DEMO_COMPARISON_ROWS as comparisonRows,
-  DEMO_RESULTS_MARKDOWN as resultsDocument,
+  DEMO_ABLATION_ROWS,
+  DEMO_ARCHITECTURE_MARKDOWN,
+  DEMO_COMPARISON_HEADERS,
+  DEMO_COMPARISON_ROWS,
+  DEMO_RESULTS_MARKDOWN,
 } from '@/components/research-experiment/demo-artifacts';
+import {
+  type ExperimentHydration,
+  useExperimentWorkspaceHydration,
+} from '@/components/research-experiment/use-experiment-workspace-hydration';
+
+const ExperimentHydrationContext = createContext<ExperimentHydration | null>(null);
+
+function useHydration(): ExperimentHydration {
+  return (
+    useContext(ExperimentHydrationContext) ?? {
+      source: 'offline-fallback',
+      loading: false,
+      planMarkdown: '',
+      resultsMarkdown: DEMO_RESULTS_MARKDOWN,
+      architectureMarkdown: DEMO_ARCHITECTURE_MARKDOWN,
+      configJson: null,
+      comparisonHeaders: [...DEMO_COMPARISON_HEADERS],
+      comparisonRows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
+      ablationHeaders: ['DLA', 'BED', 'CMP', 'mIoU ↑', 'Dice ↑', 'Boundary-F1 ↑', '延迟 ms'],
+      ablationRows: DEMO_ABLATION_ROWS.map((row) => [...row]),
+      comparisonFigureUrl: null,
+      architectureFigureUrl: null,
+      error: null,
+    }
+  );
+}
 
 const steps: Array<{ id: ExperimentStep; label: string }> = [
   { id: 'intake', label: '课题与文献' }, { id: 'plan', label: '方案确认' },
@@ -68,7 +96,13 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
         {csvName ? <p className="text-sm text-[#16A36A]"><Check className="mr-1 inline size-4" />{csvName} · {state.paperCount} 篇论文</p> : null}
         {error ? <p className="text-sm text-[#DC3C4A]">{error}</p> : null}
         <div className="grid grid-cols-3 gap-2 text-center"><div><strong>{state.paperCount}</strong><small className="block text-muted-foreground">论文总数</small></div><div><strong>{Math.max(0, state.paperCount - 3)}</strong><small className="block text-muted-foreground">PDF 可用</small></div><div><strong>{Math.min(3, state.paperCount)}</strong><small className="block text-muted-foreground">仅摘要</small></div></div>
-        <div className="mt-auto flex justify-between"><Button variant="outline" onClick={state.loadDemo}><Database data-icon="inline-start" />一键导入 SAM Demo</Button><Button disabled={!canContinue} onClick={() => go('plan')}>生成实验方案<ChevronRight data-icon="inline-end" /></Button></div>
+        <div className="mt-auto flex flex-col gap-2">
+          <p className="text-[11px] font-medium text-muted-foreground">无工作目录产物时，可手动载入离线 SAM Demo 作为回退。</p>
+          <div className="flex justify-between gap-2">
+            <Button variant="outline" onClick={state.loadDemo}><Database data-icon="inline-start" />离线回退：SAM Demo</Button>
+            <Button disabled={!canContinue} onClick={() => go('plan')}>生成实验方案<ChevronRight data-icon="inline-end" /></Button>
+          </div>
+        </div>
       </section>
     </div>
   );
@@ -76,11 +110,22 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
 
 function PlanPage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
+  const hydration = useHydration();
   const [selectedIdea, setSelectedIdea] = useState<(typeof state.ideas)[number] | null>(null);
   return <div className="flex flex-col gap-5">
     <section className="rounded-2xl bg-white/90 p-6">
       <h2 className="text-xl font-semibold text-[#10204A]">实验方案确认</h2>
-      <p className="mt-2 text-sm text-muted-foreground">任务：道路裂缝二分类语义分割 · Baseline：冻结 SAM ViT-B + 轻量 Mask Decoder · 对比：U-Net、DeepLabV3+</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {hydration.source === 'workspace' && hydration.planMarkdown
+          ? '已从工作目录 experiment-plan 载入方案摘要；下方 Idea 卡仍可对照离线结构。'
+          : '任务：道路裂缝二分类语义分割 · Baseline：冻结 SAM ViT-B + 轻量 Mask Decoder · 对比：U-Net、DeepLabV3+'}
+      </p>
+      {hydration.planMarkdown ? (
+        <pre className="mt-4 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl bg-muted/60 p-4 text-sm leading-6">{hydration.planMarkdown}</pre>
+      ) : null}
+      {hydration.configJson ? (
+        <pre className="mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-xl border border-dashed border-[#c9dbf8] bg-white p-3 text-xs text-muted-foreground">{hydration.configJson}</pre>
+      ) : null}
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
         <div className="rounded-xl bg-blue-50 p-4 text-sm"><strong>最短验证路径：</strong>先复现冻结 SAM Baseline，再分别验证“领域适配、边界监督、多尺度提示”三个单变量改动；只有单项通过 Go 标准后才做组合实验。</div>
         <div className="rounded-xl border border-blue-200 bg-white p-4 text-sm"><strong>统一数据与评测协议：</strong>Crack500 固定划分 250/50/200，DeepCrack 537 张只作零微调外部测试；统一 1024×1024 输入、三随机种子、mIoU/Dice/Boundary-F1/Recall 和同一推理计时协议。</div>
@@ -124,7 +169,7 @@ function ModePage({ go }: { go: (step: ExperimentStep) => void }) {
           <Play className="size-8 text-[#1F4DCB]" />
           <h3 className="mt-4 text-lg font-semibold">真实运行</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            连接本机或 SSH 服务器，配置算力、工作目录与可选 API 后执行实验。
+            可先填写本机/SSH 与算力配置；真实训练执行链路尚未接入，当前不会真正跑实验。
           </p>
         </button>
       </div>
@@ -522,28 +567,122 @@ function QualitativeFigure() {
 }
 
 function ResultsPage({ go }: { go: (step: ExperimentStep) => void }) {
-  const state = useExperimentStore(); const winners = state.ideas.filter((idea) => idea.status === '成功').slice(0, 3);
+  const state = useExperimentStore();
+  const hydration = useHydration();
+  const winners = state.ideas.filter((idea) => idea.status === '成功').slice(0, 3);
   const [document, setDocument] = useState<'architecture' | 'results' | null>(null);
+  const architectureDocument = hydration.architectureMarkdown;
+  const resultsDocument = hydration.resultsMarkdown;
+  const comparisonRows = hydration.comparisonRows;
+  const ablationRows = hydration.ablationRows;
+  const comparisonHeaders = hydration.comparisonHeaders;
+  const ablationHeaders = hydration.ablationHeaders;
   const activeDocument = document === 'architecture' ? architectureDocument : resultsDocument;
+  const fromWorkspace = hydration.source === 'workspace';
   return <div className="flex flex-col gap-5">
-    <section className="rounded-2xl bg-white/90 p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-semibold text-[#10204A]">成果交付</h2><p className="mt-1 text-sm text-muted-foreground">论文级结构：算法、协议、主实验、消融、资源和定性效果</p></div><SimulatedBadge /></div><div className="mt-5 grid gap-3 lg:grid-cols-3">{winners.map((idea, index) => <article key={idea.id} className="rounded-xl border-l-4 border-[#1F4DCB] bg-blue-50 p-4"><span className="text-xs text-muted-foreground">创新点 {index + 1}</span><h3 className="mt-1 font-semibold">{idea.name}</h3><p className="mt-2 text-sm">{idea.hypothesis}</p><p className="mt-3 text-sm font-semibold text-[#16A36A]">模拟贡献 {idea.gain}</p></article>)}</div></section>
-    <section className="grid gap-4 lg:grid-cols-2"><article className="rounded-2xl border-2 border-[#1F4DCB] bg-white p-5"><Code2 className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">算法完整详细架构</h3><p className="mt-2 text-sm text-muted-foreground">含数学定义、张量尺寸、DLA/BED/CMP 全模块、损失函数、训练推理逻辑、工程目录、伪代码与失败处理。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('architecture')}><ExternalLink data-icon="inline-start"/>打开架构 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(architectureDocument, 'CrackSAM-MVE_算法架构.md')}><Download data-icon="inline-start"/>下载</Button></div></article><article className="rounded-2xl border bg-white p-5"><FileText className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">完整实验结果文件</h3><p className="mt-2 text-sm text-muted-foreground">含数据划分、三个随机种子、超参数、GPU/CPU 环境、主实验、跨数据集、消融、敏感性和效率分析。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('results')}><ExternalLink data-icon="inline-start"/>打开结果 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(resultsDocument, 'CrackSAM-MVE_实验结果.md')}><Download data-icon="inline-start"/>下载</Button></div></article></section>
-    <ArchitectureFigure />
+    <section className="rounded-2xl bg-white/90 p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-semibold text-[#10204A]">成果交付</h2><p className="mt-1 text-sm text-muted-foreground">{fromWorkspace ? '已优先展示工作目录 experiment-results / 指标表 / 图（缺项仍回退离线 Demo）。' : '论文级结构：算法、协议、主实验、消融、资源和定性效果（离线 Demo 回退）'}</p></div><SimulatedBadge /></div><div className="mt-5 grid gap-3 lg:grid-cols-3">{winners.map((idea, index) => <article key={idea.id} className="rounded-xl border-l-4 border-[#1F4DCB] bg-blue-50 p-4"><span className="text-xs text-muted-foreground">创新点 {index + 1}</span><h3 className="mt-1 font-semibold">{idea.name}</h3><p className="mt-2 text-sm">{idea.hypothesis}</p><p className="mt-3 text-sm font-semibold text-[#16A36A]">模拟贡献 {idea.gain}</p></article>)}</div></section>
+    <section className="grid gap-4 lg:grid-cols-2"><article className="rounded-2xl border-2 border-[#1F4DCB] bg-white p-5"><Code2 className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">算法完整详细架构</h3><p className="mt-2 text-sm text-muted-foreground">含数学定义、张量尺寸、DLA/BED/CMP 全模块、损失函数、训练推理逻辑、工程目录、伪代码与失败处理。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('architecture')}><ExternalLink data-icon="inline-start"/>打开架构 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(architectureDocument, '算法架构.md')}><Download data-icon="inline-start"/>下载</Button></div></article><article className="rounded-2xl border bg-white p-5"><FileText className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">完整实验结果文件</h3><p className="mt-2 text-sm text-muted-foreground">含数据划分、三个随机种子、超参数、GPU/CPU 环境、主实验、跨数据集、消融、敏感性和效率分析。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('results')}><ExternalLink data-icon="inline-start"/>打开结果 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(resultsDocument, '实验结果.md')}><Download data-icon="inline-start"/>下载</Button></div></article></section>
+    {hydration.architectureFigureUrl ? (
+      <figure className="rounded-2xl bg-white/90 p-5">
+        <figcaption className="font-semibold">架构图（workspace paper-figure）</figcaption>
+        <img src={hydration.architectureFigureUrl} alt="architecture figure" className="mt-3 max-h-80 w-full object-contain" />
+      </figure>
+    ) : (
+      <ArchitectureFigure />
+    )}
     <section className="rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">统一实验设置与计算资源</h3><div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">{[['数据集','Crack500 250/50/200；DeepCrack 537 外测'],['训练','50 epoch · batch 2×累积4 · seeds 42/3407/2026'],['优化','AdamW · LoRA 1e-4 · Decoder 5e-4 · WD 1e-2'],['环境','RTX 4090 24GB · i9-13900K · RAM 64GB · PyTorch 2.2']].map(([label,value]) => <div key={label} className="rounded-xl bg-muted/60 p-3"><strong>{label}</strong><p className="mt-1 text-muted-foreground">{value}</p></div>)}</div></section>
-    <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">主实验结果 · Crack500 测试集</h3><p className="mt-1 text-xs text-muted-foreground">mean±std，3 seeds；↑ 越高越好，延迟越低越好</p><table className="mt-3 w-full min-w-[760px] text-sm"><thead><tr className="border-b text-left">{['方法','mIoU ↑','Dice ↑','Boundary-F1 ↑','Recall ↑','延迟 ↓'].map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{comparisonRows.map((row) => <tr key={row[0]} className="border-b last:border-0">{row.map((cell,index) => <td key={cell} className={cn('p-2', row[0] === 'CrackSAM-MVE' && 'font-semibold text-[#1F4DCB]', index === 0 && 'whitespace-nowrap')}>{cell}</td>)}</tr>)}</tbody></table></section>
-    <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">模块消融实验</h3><p className="mt-1 text-xs text-muted-foreground">DLA：低秩领域适配；BED：边界增强解码；CMP：粗到细多尺度提示</p><table className="mt-3 w-full min-w-[680px] text-sm"><thead><tr className="border-b">{['DLA','BED','CMP','mIoU ↑','Dice ↑','Boundary-F1 ↑','延迟 ms'].map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{ablationRows.map((row,index) => <tr key={index} className="border-b text-center last:border-0">{row.map((cell, cellIndex) => <td key={`${index}-${cellIndex}`} className={cn('p-2', index === ablationRows.length - 1 && 'font-semibold text-[#1F4DCB]')}>{cell}</td>)}</tr>)}</tbody></table></section>
-    <QualitativeFigure />
-    <div className="rounded-xl bg-amber-50 p-4 text-sm"><AlertTriangle className="mr-2 inline size-4 text-amber-700"/>以上数据与效果图均为明确标注的 Demo 模拟结果；工程规格可实施，但尚未真实训练，不能作为投稿证据。</div>
-    <div className="flex flex-wrap justify-between gap-3"><Button variant="outline" onClick={() => go('simulate')}><RotateCcw data-icon="inline-start"/>重新配置</Button><Button onClick={() => downloadMarkdown(resultsDocument, 'CrackSAM-MVE_完整交付.md')}><Download data-icon="inline-start"/>下载完整结果</Button></div>
+    <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">主实验结果</h3><p className="mt-1 text-xs text-muted-foreground">{fromWorkspace ? '优先来自工作目录 metrics/main.csv（若已登记为 artifact）' : 'mean±std，3 seeds；↑ 越高越好，延迟越低越好'}</p><table className="mt-3 w-full min-w-[760px] text-sm"><thead><tr className="border-b text-left">{comparisonHeaders.map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{comparisonRows.map((row, rowIndex) => <tr key={`${row[0]}-${rowIndex}`} className="border-b last:border-0">{row.map((cell,index) => <td key={`${rowIndex}-${index}`} className={cn('p-2', index === 0 && 'whitespace-nowrap')}>{cell}</td>)}</tr>)}</tbody></table></section>
+    <section className="overflow-x-auto rounded-2xl bg-white/90 p-5"><h3 className="font-semibold">模块消融实验</h3><p className="mt-1 text-xs text-muted-foreground">{fromWorkspace ? '优先来自工作目录 metrics/ablation.csv（若已登记为 artifact）' : 'DLA：低秩领域适配；BED：边界增强解码；CMP：粗到细多尺度提示'}</p><table className="mt-3 w-full min-w-[680px] text-sm"><thead><tr className="border-b">{ablationHeaders.map((head) => <th key={head} className="p-2">{head}</th>)}</tr></thead><tbody>{ablationRows.map((row,index) => <tr key={index} className="border-b text-center last:border-0">{row.map((cell, cellIndex) => <td key={`${index}-${cellIndex}`} className={cn('p-2', index === ablationRows.length - 1 && 'font-semibold text-[#1F4DCB]')}>{cell}</td>)}</tr>)}</tbody></table></section>
+    {hydration.comparisonFigureUrl ? (
+      <figure className="rounded-2xl bg-white/90 p-5">
+        <figcaption className="font-semibold">对比图（workspace paper-figure）</figcaption>
+        <img src={hydration.comparisonFigureUrl} alt="comparison figure" className="mt-3 max-h-80 w-full object-contain" />
+      </figure>
+    ) : (
+      <QualitativeFigure />
+    )}
+    <div className="rounded-xl bg-amber-50 p-4 text-sm"><AlertTriangle className="mr-2 inline size-4 text-amber-700"/>{fromWorkspace ? '工作目录产物可能仍为 simulated / placeholder；请核对后再写入论文。' : '以上数据与效果图均为明确标注的 Demo 模拟结果；工程规格可实施，但尚未真实训练，不能作为投稿证据。'}</div>
+    <div className="flex flex-wrap justify-between gap-3"><Button variant="outline" onClick={() => go('simulate')}><RotateCcw data-icon="inline-start"/>重新配置</Button><Button onClick={() => downloadMarkdown(resultsDocument, '实验结果_完整交付.md')}><Download data-icon="inline-start"/>下载完整结果</Button></div>
     <Dialog open={document !== null} onOpenChange={(open) => { if (!open) setDocument(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"><DialogHeader><DialogTitle>{document === 'architecture' ? '算法完整详细架构.md' : '实验结果报告.md'}</DialogTitle><DialogDescription>论文级 Demo 交付文件，可浏览或下载保存。</DialogDescription></DialogHeader><pre className="whitespace-pre-wrap rounded-xl bg-muted p-5 font-sans text-sm leading-7">{activeDocument}</pre></DialogContent></Dialog>
   </div>;
 }
 
 export function ExperimentDemo() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname }); const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const hydration = useExperimentWorkspaceHydration();
   const activeStep = (pathname.split('/').at(-1) || 'intake') as ExperimentStep;
   const index = Math.max(0, steps.findIndex((step) => step.id === activeStep));
   const go = (step: ExperimentStep) => void navigate({ to: stepPath(step) });
-  const pages = { intake: <IntakePage go={go}/>, plan: <PlanPage go={go}/>, mode: <ModePage go={go}/>, simulate: <ConfigPage go={go}/>, run: <RunPage go={go}/>, results: <ResultsPage go={go}/> };
-  return <main className="navivisor-module scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 text-[#10204A] sm:p-6"><div className="mx-auto max-w-7xl"><header className="mb-4 flex items-center justify-between gap-3"><div><h1 className="text-2xl font-semibold">实验智能体</h1><p className="text-sm text-[#10204A]/70">从核心文献到可复现方案，一站式模拟实验规划</p></div><div className="flex items-center gap-2"><LoadWorkspaceDemoButton compact /><Badge className="bg-[#1F4DCB] text-white">Demo · 离线模拟</Badge></div></header><nav className="mb-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/70 p-3 lg:grid-cols-6">{steps.map((step, i) => <button key={step.id} onClick={() => i <= index || (i === index + 1) ? go(step.id) : undefined} className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm', i === index ? 'bg-[#1F4DCB] text-white' : i < index ? 'bg-white text-[#1F4DCB]' : 'text-[#10204A]/55')}><span className="flex size-6 shrink-0 items-center justify-center rounded-full border text-xs">{i < index ? <Check className="size-3"/> : i + 1}</span>{step.label}</button>)}</nav>{pages[activeStep] ?? pages.intake}<footer className="mt-5 flex justify-between">{index > 0 ? <Button variant="outline" onClick={() => go(steps[index - 1].id)}><ChevronLeft data-icon="inline-start" />上一步</Button> : <span/>}{index < steps.length - 1 ? <Button variant="ghost" onClick={() => go(steps[index + 1].id)}>下一步<ChevronRight data-icon="inline-end" /></Button> : null}</footer></div></main>;
+  const pages = {
+    intake: <IntakePage go={go} />,
+    plan: <PlanPage go={go} />,
+    mode: <ModePage go={go} />,
+    simulate: <ConfigPage go={go} />,
+    run: <RunPage go={go} />,
+    results: <ResultsPage go={go} />,
+  };
+  return (
+    <ExperimentHydrationContext.Provider value={hydration}>
+      <main className="navivisor-module scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 text-[#10204A] sm:p-6">
+        <div className="mx-auto max-w-7xl">
+          <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-semibold">实验智能体</h1>
+              <p className="text-sm text-[#10204A]/70">
+                {hydration.source === 'workspace'
+                  ? '已绑定当前工作目录产物（Demo 载入后自动刷新）'
+                  : '从核心文献到可复现方案；无工作目录时使用离线回退'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <CurrentPaperCard defaultOpen={false} className="w-full max-w-sm" />
+              <LoadWorkspaceDemoButton compact />
+              <Badge className="bg-[#1F4DCB] text-white">
+                {hydration.source === 'workspace' ? 'Workspace' : 'Demo · 离线回退'}
+              </Badge>
+            </div>
+          </header>
+          <nav className="mb-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/70 p-3 lg:grid-cols-6">
+            {steps.map((step, i) => (
+              <button
+                key={step.id}
+                onClick={() => (i <= index || i === index + 1 ? go(step.id) : undefined)}
+                className={cn(
+                  'flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm',
+                  i === index
+                    ? 'bg-[#1F4DCB] text-white'
+                    : i < index
+                      ? 'bg-white text-[#1F4DCB]'
+                      : 'text-[#10204A]/55',
+                )}
+              >
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full border text-xs">
+                  {i < index ? <Check className="size-3" /> : i + 1}
+                </span>
+                {step.label}
+              </button>
+            ))}
+          </nav>
+          {pages[activeStep] ?? pages.intake}
+          <footer className="mt-5 flex justify-between">
+            {index > 0 ? (
+              <Button variant="outline" onClick={() => go(steps[index - 1].id)}>
+                <ChevronLeft data-icon="inline-start" />
+                上一步
+              </Button>
+            ) : (
+              <span />
+            )}
+            {index < steps.length - 1 ? (
+              <Button variant="ghost" onClick={() => go(steps[index + 1].id)}>
+                下一步
+                <ChevronRight data-icon="inline-end" />
+              </Button>
+            ) : null}
+          </footer>
+        </div>
+      </main>
+    </ExperimentHydrationContext.Provider>
+  );
 }

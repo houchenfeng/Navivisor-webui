@@ -12,8 +12,9 @@
   },
   "demo": {
     "id": "camera-vad-scene-memory",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "simulated": true
   },
-  "createdAt": "2026-09-11T12:00:00Z"
+  "createdAt": "2026-09-11T12:00:00Z",
+  "updatedAt": "2026-09-12T00:00:00Z"
 }

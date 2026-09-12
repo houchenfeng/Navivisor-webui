@@ -6,54 +6,95 @@
       "id": "I1",
       "title": "不确定性触发",
       "selected": true,
-      "hypothesis": "Only review uncertain clips",
-      "implementation": "threshold on s and u",
-      "baseline": "always/never VLM",
-      "ablation": "trigger on/off",
+      "hypothesis": "Only review uncertain or high-score clips to cut VLM cost while preserving F1 under a fixed budget.",
+      "implementation": "Compute s,u from fast_score; should_review=(s>=0.65)|(u>=0.2); slow path only when true. Executable params in config.trigger.",
+      "baseline": "always-VLM (VLM-all) and never-VLM (Lightweight)",
+      "ablation": "trigger on/off: baseline vs trigger rows in ablation.csv",
       "cost": "low",
-      "acceptanceCriteria": "call rate < 20%"
+      "acceptanceCriteria": "simulated VLM call rate < 20%; F1 not below FastSlow-I1 when memory/VLM added",
+      "executableParams": {
+        "scoreThreshold": 0.65,
+        "uncertaintyThreshold": 0.2
+      },
+      "comparisonDesign": "Compare Lightweight, FastSlow-I1, VLM-all on same camera-demo clips and seeds policy"
     },
     {
       "id": "I2",
       "title": "场景正常记忆",
       "selected": true,
-      "hypothesis": "Normal memory helps hard clips",
-      "implementation": "top-k retrieval",
-      "baseline": "no memory",
-      "ablation": "memory on/off",
+      "hypothesis": "Retrieving top-k normal scene memories improves hard-clip discrimination and can reduce redundant VLM calls.",
+      "implementation": "Build memory from train-normal only; retrieve topK=5; produce s_mem. excludeTestLabels=true.",
+      "baseline": "no memory (FastSlow-I1 / trigger)",
+      "ablation": "memory on/off: trigger vs trigger-memory",
       "cost": "medium",
-      "acceptanceCriteria": "no test leakage"
+      "acceptanceCriteria": "no test-label leakage into memory bank; AUROC of trigger-memory >= trigger",
+      "executableParams": {
+        "topK": 5,
+        "maxEntries": 10000,
+        "excludeTestLabels": true
+      },
+      "comparisonDesign": "Identical trigger thresholds; toggle memory retrieval only"
     },
     {
       "id": "I3",
       "title": "证据化 VLM 复核",
       "selected": true,
-      "hypothesis": "Explanations improve trust",
-      "implementation": "VLM JSON evidence",
-      "baseline": "score-only",
-      "ablation": "VLM on/off",
+      "hypothesis": "Structured VLM evidence improves trust and calibrated fusion versus score-only slow path.",
+      "implementation": "Simulated VLM returns JSON {score, rationale, evidence_spans}; fuse with weights fast/memory/vlm.",
+      "baseline": "score-only slow path without structured evidence (trigger-memory)",
+      "ablation": "VLM evidence on/off: trigger-memory vs full",
       "cost": "high",
-      "acceptanceCriteria": "structured outputs"
+      "acceptanceCriteria": "every reviewed clip yields parseable JSON evidence fields; full AUROC >= trigger-memory",
+      "executableParams": {
+        "fastWeight": 0.4,
+        "memoryWeight": 0.2,
+        "vlmWeight": 0.4
+      },
+      "comparisonDesign": "Same memory bank; enable/disable VLM JSON evidence and fusion"
     },
     {
       "id": "I4",
       "title": "融合分数校准",
-      "selected": false
+      "selected": false,
+      "hypothesis": "Temperature scaling on fused scores improves calibration (ECE) without hurting AUROC.",
+      "implementation": "Fit temperature T on val logits; apply s'=sigmoid(logit(s)/T) before thresholding.",
+      "baseline": "uncalibrated fusion (current full pipeline)",
+      "ablation": "calibration on/off",
+      "cost": "low",
+      "acceptanceCriteria": "ECE decreases on val; AUROC change within ±0.5 pp (when implemented)"
     },
     {
       "id": "I5",
       "title": "记忆污染过滤",
-      "selected": false
+      "selected": false,
+      "hypothesis": "Rejecting anomalous or low-confidence inserts prevents memory bank pollution.",
+      "implementation": "Gate memory writes with fast_score < 0.3 and uniqueness check before insert.",
+      "baseline": "unfiltered train-normal inserts",
+      "ablation": "pollution filter on/off",
+      "cost": "low",
+      "acceptanceCriteria": "injected anomaly clips are not retained; AUROC does not drop vs filtered bank"
     },
     {
       "id": "I6",
       "title": "时间一致性约束",
-      "selected": false
+      "selected": false,
+      "hypothesis": "Temporal smoothing reduces flicker false positives on adjacent clips.",
+      "implementation": "HMM or moving-average over clip scores with window W=3.",
+      "baseline": "per-clip independent decisions",
+      "ablation": "temporal constraint on/off",
+      "cost": "low",
+      "acceptanceCriteria": "false positive rate on contiguous normal segments decreases; latency overhead < 5 ms"
     },
     {
       "id": "I7",
       "title": "跨场景适配",
-      "selected": false
+      "selected": false,
+      "hypothesis": "Lightweight scene adapters reduce drift when camera location changes.",
+      "implementation": "Per-scene affine adapter on fast features; optional memory rebuild per scene.",
+      "baseline": "single global model/memory",
+      "ablation": "adapter on/off across held-out scenes",
+      "cost": "medium",
+      "acceptanceCriteria": "cross-scene AUROC gap narrows; not claimed in this simulated demo"
     }
   ]
 }

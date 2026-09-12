@@ -1,11 +1,20 @@
 {
   "title": "Scene-Memory Guided Fast–Slow Video Anomaly Detection with Selective Vision–Language Verification",
-  "abstract": "我们研究固定摄像头异常检测的推理成本问题，提出轻量筛查、场景记忆和按需视觉语言复核流程。本文教学示例使用合成数据说明方法与评估过程，不报告真实模型性能。",
+  "abstract": "我们研究固定摄像头异常检测的推理成本问题，提出轻量筛查、场景记忆和按需视觉语言复核流程。教学示例在合成数据上报告模拟指标（Ours AUROC 87.1%，VLM call 12%），不报告真实模型性能。",
   "template": {
-    "name": "cvpr",
-    "version": "unbundled",
+    "name": "article",
+    "version": "demo-substitute",
     "engine": "pdflatex",
-    "status": "missing_template"
+    "status": "cvpr_sty_missing_article_class_used",
+    "cvprSty": {
+      "path": "writing/template/cvpr.sty",
+      "status": "missing",
+      "reason": "No redistributable cvpr.sty bundled; legal CVPR template not included in this Demo package."
+    }
   },
-  "simulated": true
+  "simulated": true,
+  "figures": [
+    "writing/figures/architecture.png",
+    "writing/figures/comparison.png"
+  ]
 }

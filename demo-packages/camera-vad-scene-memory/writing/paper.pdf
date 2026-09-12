@@ -1,5 +1,105 @@
-%PDF-1.1
-1 0 obj<<>>endobj
-trailer<< /Root 1 0 R >>
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 626 >>
+stream
+BT
+/F1 11 Tf
+50 750 Td
+14 TL
+(SIMULATED DEMO COMPILED SUBSTITUTE) Tj
+T* () Tj
+T* (NOT produced by pdflatex \(engine unavailable or cvpr.sty missing\).) Tj
+T* () Tj
+T* (Title: Scene-Memory Guided Fast-Slow Video Anomaly Detection) Tj
+T* (       with Selective Vision-Language Verification) Tj
+T* () Tj
+T* (Abstract:) Tj
+T* (We study inference-cost control for fixed-camera VAD using lightweight) Tj
+T* (screening, scene-normal memory, and selective VLM review. On synthetic) Tj
+T* (camera-demo, Ours reaches AUROC 87.1% at 12% VLM call rate vs Lightweight) Tj
+T* (81.2% and VLM-all 100% calls. ALL METRICS ARE SIMULATED.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+7 0 obj
+<< /Length 507 >>
+stream
+BT
+/F1 11 Tf
+50 750 Td
+14 TL
+(SIMULATED DEMO COMPILED SUBSTITUTE) Tj
+T* () Tj
+T* (Method) Tj
+T* () Tj
+T* (Pipeline: sample -> fast_score\(s,u\) -> should_review -> retrieve_memory) Tj
+T* (-> verify_with_vlm -> fuse -> event.) Tj
+T* (I1 trigger: s>=0.65 or u>=0.2) Tj
+T* (I2 memory: topK=5 train-normal only) Tj
+T* (I3 VLM: simulated JSON evidence; fusion weights 0.4/0.2/0.4) Tj
+T* () Tj
+T* (Figures: figures/architecture.png, figures/comparison.png) Tj
+T* (\(valid PNGs present; not GPT originals\).) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 9 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+9 0 obj
+<< /Length 635 >>
+stream
+BT
+/F1 11 Tf
+50 750 Td
+14 TL
+(SIMULATED DEMO COMPILED SUBSTITUTE) Tj
+T* () Tj
+T* (Results) Tj
+T* () Tj
+T* (Method                     AUROC   AP    F1   VLM%   ms) Tj
+T* (Lightweight                 81.2  57.8  61.4     0   18) Tj
+T* (VLM-all                     85.9  64.1  66.2   100  680) Tj
+T* (FastSlow-I1                 84.8  62.5  65.1    18  137) Tj
+T* (MemoryFastSlow-I1I2I3       87.1  67.2  68.0    12   99) Tj
+T* () Tj
+T* (Ablation AUROC: 81.2 -> 84.8 -> 85.6 -> 87.1) Tj
+T* (Seeds 11/23/47 Ours AUROC mean+/-std: 87.10 +/- 0.30) Tj
+T* () Tj
+T* (Conclusion: teaching demo only; real measurement required for claims.) Tj
+ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000133 00000 n 
+0000000203 00000 n 
+0000000329 00000 n 
+0000001006 00000 n 
+0000001132 00000 n 
+0000001690 00000 n 
+0000001816 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+2502
 %%EOF
-PLACEHOLDER SYNTHETIC DEMO PDF

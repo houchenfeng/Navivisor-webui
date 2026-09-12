@@ -8,10 +8,12 @@ import {
 import { createHash, randomUUID } from 'node:crypto';
 import {
   copyFile,
+  cp,
   mkdir,
   readFile,
   readdir,
   rename,
+  rm,
   stat,
   writeFile,
 } from 'node:fs/promises';
@@ -30,14 +32,19 @@ import type {
   ResearchModule,
   ResearchRunMode,
   ResearchStage,
+  ResearchUiEvent,
   WorkspaceProjectJson,
+  DemoManifestV3,
+  DemoManifestMissing,
 } from './research-contracts';
 import {
   RESEARCH_MODULES,
   isResearchArtifactRole,
   isResearchStage,
+  moduleForStage,
 } from './research-contracts';
 import { ResearchPathsService } from './research-paths.service';
+import { validateFileForRole } from './research-result-validator.service';
 import { ResearchWorkflowService } from './research-workflow.service';
 
 const DEFAULT_DIRS: Record<ResearchModule, string> = {
@@ -61,6 +68,7 @@ export interface DemoManifestNodeFile {
   mediaType: string;
   sha256: string;
   placeholder?: boolean;
+  required?: boolean;
 }
 
 export interface DemoManifestNode {
@@ -70,7 +78,7 @@ export interface DemoManifestNode {
   inputs: string[];
 }
 
-export interface DemoManifest {
+export interface DemoManifestV2 {
   schemaVersion: 2;
   demoId: string;
   version: string;
@@ -78,6 +86,7 @@ export interface DemoManifest {
   nodes: DemoManifestNode[];
   missing: string[];
 }
+type DemoManifest = DemoManifestV2 | DemoManifestV3;
 
 export interface LoadDemoResult {
   projectId: string;
@@ -94,6 +103,7 @@ export interface LoadDemoResult {
 
 @Injectable()
 export class ResearchWorkspaceService {
+  private readonly demoLoads = new Map<string, Promise<LoadDemoResult>>();
   constructor(
     @Inject(DRIZZLE_DB) private readonly db: AppDatabase,
     private readonly paths: ResearchPathsService,
@@ -125,9 +135,14 @@ export class ResearchWorkspaceService {
       projectJson = JSON.parse(
         await readFile(projectJsonPath, 'utf8'),
       ) as WorkspaceProjectJson;
-    } catch {
-      projectJson = null;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw new BadRequestException(
+          'project.json is invalid; original file was preserved',
+        );
+      }
     }
+    if (projectJson) this.assertProjectJson(projectJson);
 
     let projectId = projectJson?.projectId;
     if (projectId) {
@@ -207,6 +222,7 @@ export class ResearchWorkspaceService {
   async getWorkspace(projectId: string) {
     const row = this.requireProject(projectId);
     this.paths.bind(row.projectId, row.rootPath);
+    await this.recoverIncompleteDemoLoads(projectId);
     const projectJson = await this.readProjectJson(projectId);
     const index = await this.readOrRebuildIndex(projectId);
     return {
@@ -244,11 +260,113 @@ export class ResearchWorkspaceService {
     };
   }
 
+  /**
+   * Read UI conversation cards from `.navivisor/conversations/ui-events.jsonl`.
+   * Dedupes by eventId (keeps earliest), returns chronological ascending pages.
+   */
+  async listUiEvents(
+    projectId: string,
+    options?: { limit?: number; before?: string },
+  ): Promise<{ events: ResearchUiEvent[]; nextBefore?: string }> {
+    this.requireProject(projectId);
+    const path = join(
+      this.paths.conversationsDir(projectId),
+      'ui-events.jsonl',
+    );
+    let raw = '';
+    try {
+      raw = await readFile(path, 'utf8');
+    } catch {
+      return { events: [] };
+    }
+
+    const seen = new Set<string>();
+    const events: ResearchUiEvent[] = [];
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        continue;
+      }
+      if (!parsed || typeof parsed !== 'object') continue;
+      const row = parsed as Record<string, unknown>;
+      const eventId = typeof row.eventId === 'string' ? row.eventId.trim() : '';
+      const summary = typeof row.summary === 'string' ? row.summary.trim() : '';
+      const kind = typeof row.kind === 'string' ? row.kind.trim() : '';
+      const createdAt =
+        typeof row.createdAt === 'string' && row.createdAt
+          ? row.createdAt
+          : new Date(0).toISOString();
+      if (!eventId || !summary || !kind) continue;
+      if (seen.has(eventId)) continue;
+      seen.add(eventId);
+
+      const event: ResearchUiEvent = {
+        eventId,
+        projectId:
+          typeof row.projectId === 'string' && row.projectId
+            ? row.projectId
+            : projectId,
+        kind,
+        summary,
+        createdAt,
+      };
+      if (typeof row.module === 'string' && row.module) {
+        event.module = row.module;
+      }
+      if (Array.isArray(row.artifactIds)) {
+        event.artifactIds = row.artifactIds.filter(
+          (id): id is string => typeof id === 'string' && id.length > 0,
+        );
+      }
+      if (typeof row.runId === 'string' && row.runId) {
+        event.runId = row.runId;
+      }
+      events.push(event);
+    }
+
+    events.sort((a, b) => {
+      const byTime = a.createdAt.localeCompare(b.createdAt);
+      if (byTime !== 0) return byTime;
+      return a.eventId.localeCompare(b.eventId);
+    });
+
+    const limit = Math.min(Math.max(options?.limit ?? 50, 1), 200);
+    const before = options?.before?.trim();
+    let endExclusive = events.length;
+    if (before) {
+      const byIdOrTime = events.findIndex(
+        (event) => event.eventId === before || event.createdAt === before,
+      );
+      if (byIdOrTime >= 0) {
+        endExclusive = byIdOrTime;
+      } else {
+        const byThreshold = events.findIndex(
+          (event) => event.createdAt >= before,
+        );
+        endExclusive = byThreshold >= 0 ? byThreshold : events.length;
+      }
+    }
+
+    const start = Math.max(0, endExclusive - limit);
+    const page = events.slice(start, endExclusive);
+    const nextBefore =
+      start > 0 ? (page[0]?.createdAt ?? page[0]?.eventId) : undefined;
+    return nextBefore ? { events: page, nextBefore } : { events: page };
+  }
+
   async saveVersion(
     projectId: string,
     relativePath: string,
     role: ResearchArtifactRole,
-    options: { stage: ResearchStage; mode?: ResearchRunMode; simulated?: boolean } ,
+    options: {
+      stage: ResearchStage;
+      mode?: ResearchRunMode;
+      simulated?: boolean;
+    },
   ) {
     this.requireProject(projectId);
     if (!isResearchStage(options.stage) || !isResearchArtifactRole(role)) {
@@ -256,6 +374,7 @@ export class ResearchWorkspaceService {
     }
     const absolute = this.paths.resolveProjectRelative(projectId, relativePath);
     const bytes = await readFile(absolute);
+    validateFileForRole(role, guessMediaType(relativePath), bytes);
     const run = await this.workflow.createRun(
       projectId,
       options.stage,
@@ -276,12 +395,37 @@ export class ResearchWorkspaceService {
     await this.workflow.transitionRun(run.runId, 'completed', {
       provenance: { saveVersion: true, sourcePath: relativePath },
     });
-    await this.projectCurrentFile(projectId, relativePath, absolute);
+    await this.publishCurrentProjection(
+      projectId,
+      relativePath.replaceAll('\\', '/'),
+      artifact.artifactId,
+    );
     await this.rebuildPortableIndex(projectId);
+    await this.appendConversationCard(projectId, {
+      eventId: randomUUID(),
+      projectId,
+      kind: 'ui.save',
+      module: moduleForStage(options.stage),
+      summary: `已保存版本：${relativePath.replaceAll('\\', '/')}`,
+      artifactIds: [artifact.artifactId],
+      runId: run.runId,
+      createdAt: new Date().toISOString(),
+    });
     return artifact;
   }
 
   async loadDemoFromWorkspace(projectId: string): Promise<LoadDemoResult> {
+    const active = this.demoLoads.get(projectId);
+    if (active) return active;
+    const operation = this.loadDemoUnlocked(projectId).finally(() => {
+      if (this.demoLoads.get(projectId) === operation)
+        this.demoLoads.delete(projectId);
+    });
+    this.demoLoads.set(projectId, operation);
+    return operation;
+  }
+
+  private async loadDemoUnlocked(projectId: string): Promise<LoadDemoResult> {
     const workspace = await this.getWorkspace(projectId);
     const manifestPath = join(workspace.rootPath, 'demo', 'demo-manifest.json');
     let raw: string;
@@ -292,17 +436,21 @@ export class ResearchWorkspaceService {
         'demo/demo-manifest.json not found in workspace',
       );
     }
-    const manifest = JSON.parse(raw) as DemoManifest;
-    if (manifest.schemaVersion !== 2 || !manifest.demoId || !manifest.version) {
-      throw new BadRequestException('Invalid demo-manifest.json');
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new BadRequestException('demo-manifest.json is not valid JSON');
     }
+    const manifest = this.parseDemoManifest(parsed);
     const manifestSha256 = sha256Buffer(Buffer.from(raw, 'utf8'));
     const index = await this.readOrRebuildIndex(projectId);
     if (
       index.demo &&
       index.demo.demoId === manifest.demoId &&
       index.demo.version === manifest.version &&
-      index.demo.manifestSha256 === manifestSha256
+      index.demo.manifestSha256 === manifestSha256 &&
+      (await this.manifestFilesStillMatch(projectId, manifest))
     ) {
       return {
         projectId,
@@ -312,13 +460,15 @@ export class ResearchWorkspaceService {
         idempotent: true,
         complete: index.demo.complete,
         loadedFiles: index.artifacts.length,
-        missing: index.demo.missing,
+        missing: index.demo.missing.map((item) =>
+          typeof item === 'string' ? item : item.path,
+        ),
         runIds: index.runs.map((r) => r.runId),
         warnings: ['Demo already loaded with identical manifest hash'],
       };
     }
 
-    this.assertAcyclic(manifest.nodes);
+    const orderedNodes = this.validateAndSortManifest(manifest);
     const warnings: string[] = [];
     const runIds: string[] = [];
     const fileKeyToArtifact = new Map<string, string>();
@@ -340,43 +490,112 @@ export class ResearchWorkspaceService {
     });
 
     try {
-      for (const node of manifest.nodes) {
+      const dynamicMissing: DemoManifestMissing[] = [];
+      for (const node of orderedNodes) {
         if (!isResearchStage(node.stage)) {
           throw new BadRequestException(`Unknown demo stage: ${node.stage}`);
         }
         for (const inputKey of node.inputs) {
-          if (!fileKeyToArtifact.has(inputKey) && !this.findFileKey(manifest, inputKey)) {
+          if (
+            !fileKeyToArtifact.has(inputKey) &&
+            !this.findFileKey(manifest, inputKey)
+          ) {
             throw new BadRequestException(
               `Demo node ${node.key} references unknown input ${inputKey}`,
             );
           }
         }
 
-        const inputArtifactIds = node.inputs
-          .map((key) => fileKeyToArtifact.get(key))
-          .filter((id): id is string => Boolean(id));
+        const unresolvedInputs = node.inputs.filter(
+          (key) => !fileKeyToArtifact.has(key),
+        );
+        if (unresolvedInputs.length) {
+          warnings.push(
+            `Blocked ${node.key}: missing required inputs ${unresolvedInputs.join(', ')}`,
+          );
+          dynamicMissing.push(
+            ...unresolvedInputs.map((key) => ({
+              path: key,
+              reason: 'file_missing' as const,
+              requiredBy: [node.key],
+              optional: false,
+            })),
+          );
+          continue;
+        }
+        const inputArtifactIds = node.inputs.map(
+          (key) => fileKeyToArtifact.get(key)!,
+        );
 
         const presentFiles: DemoManifestNodeFile[] = [];
         for (const file of node.files) {
           const abs = this.paths.resolveProjectRelative(projectId, file.path);
           try {
-            const bytes = await readFile(abs);
+            const safeAbs = await this.paths.resolveExistingFile(
+              projectId,
+              file.path,
+            );
+            const info = await stat(safeAbs);
+            if (info.size > 50 * 1024 * 1024)
+              throw new BadRequestException(
+                `Demo file exceeds size limit: ${file.path}`,
+              );
+            const bytes = await readFile(safeAbs);
             const digest = sha256Buffer(bytes);
             if (digest !== file.sha256.toLowerCase()) {
               throw new BadRequestException(
                 `Checksum mismatch for ${file.path}: expected ${file.sha256}, got ${digest}`,
               );
             }
-            presentFiles.push(file);
+            if (file.placeholder) {
+              warnings.push(`Placeholder isolated: ${file.path}`);
+              if (file.required !== false)
+                dynamicMissing.push({
+                  path: file.path,
+                  reason: 'invalid_content',
+                  requiredBy: [node.key],
+                  optional: false,
+                });
+            } else presentFiles.push(file);
           } catch (error) {
             if (error instanceof BadRequestException) throw error;
             warnings.push(`Missing demo file skipped: ${file.path}`);
+            dynamicMissing.push({
+              path: file.path,
+              reason: 'file_missing',
+              requiredBy: [node.key],
+              optional: file.required === false,
+            });
           }
         }
 
-        if (presentFiles.length === 0) {
+        const missingRequired = node.files.some(
+          (file) => file.required !== false && !presentFiles.includes(file),
+        );
+        const requiresPaperPdf =
+          node.stage === 'writing.final' || node.stage === 'submission.prepare';
+        const presentHasPaperPdf = presentFiles.some(
+          (file) => file.role === 'paper-pdf',
+        );
+        const inputHasPaperPdf = inputArtifactIds.some((artifactId) => {
+          try {
+            return (
+              this.workflow.getArtifact(projectId, artifactId).role ===
+              'paper-pdf'
+            );
+          } catch {
+            return false;
+          }
+        });
+        if (
+          presentFiles.length === 0 ||
+          missingRequired ||
+          (requiresPaperPdf && !presentHasPaperPdf && !inputHasPaperPdf)
+        ) {
           warnings.push(
-            `Stage ${node.stage} has no present files; not marking completed`,
+            requiresPaperPdf && !presentHasPaperPdf && !inputHasPaperPdf
+              ? `Stage ${node.stage} missing usable paper-pdf; not marking completed`
+              : `Stage ${node.stage} has no present files; not marking completed`,
           );
           continue;
         }
@@ -398,8 +617,14 @@ export class ResearchWorkspaceService {
         });
 
         for (const file of presentFiles) {
-          const abs = this.paths.resolveProjectRelative(projectId, file.path);
+          const abs = await this.paths.resolveExistingFile(
+            projectId,
+            file.path,
+          );
           const bytes = await readFile(abs);
+          validateFileForRole(file.role, file.mediaType, bytes, {
+            placeholder: Boolean(file.placeholder),
+          });
           const artifact = await this.workflow.createArtifact(
             run.runId,
             file.role,
@@ -412,6 +637,11 @@ export class ResearchWorkspaceService {
               sourcePath: file.path,
               placeholder: Boolean(file.placeholder),
             },
+          );
+          await this.publishCurrentProjection(
+            projectId,
+            file.path,
+            artifact.artifactId,
           );
           fileKeyToArtifact.set(file.key, artifact.artifactId);
           loadedFiles += 1;
@@ -427,7 +657,23 @@ export class ResearchWorkspaceService {
         });
       }
 
-      const missing = [...manifest.missing];
+      const declaredMissing =
+        manifest.schemaVersion === 2
+          ? manifest.missing.map((path) => ({
+              path,
+              reason: 'file_missing' as const,
+              requiredBy: [],
+              optional: false,
+            }))
+          : manifest.missing;
+      const missing = [
+        ...new Map(
+          [...declaredMissing, ...dynamicMissing].map((item) => [
+            item.path,
+            item,
+          ]),
+        ).values(),
+      ];
       const complete = missing.length === 0 && warnings.length === 0;
       const projectJson = await this.readProjectJson(projectId);
       projectJson.demo = {
@@ -445,7 +691,7 @@ export class ResearchWorkspaceService {
         version: manifest.version,
         manifestSha256,
         complete,
-        missing,
+        missing: missing.map((item) => item.path),
       });
 
       await this.appendConversationCard(projectId, {
@@ -478,7 +724,7 @@ export class ResearchWorkspaceService {
         idempotent: false,
         complete,
         loadedFiles,
-        missing,
+        missing: missing.map((item) => item.path),
         runIds,
         warnings,
       };
@@ -493,6 +739,472 @@ export class ResearchWorkspaceService {
     }
   }
 
+  async moveWorkspace(projectId: string, newAbsolutePath: string) {
+    const row = this.requireProject(projectId);
+    const dest = await this.prepareEmptyDestination(newAbsolutePath);
+    if (this.sameFsPath(row.rootPath, dest)) {
+      return this.getWorkspace(projectId);
+    }
+    const conflict = this.db
+      .select()
+      .from(researchProjects)
+      .where(eq(researchProjects.rootPath, dest))
+      .get();
+    if (conflict && conflict.projectId !== projectId) {
+      throw new ConflictException(
+        'Destination path is already registered to another project',
+      );
+    }
+
+    const oldRoot = row.rootPath;
+    try {
+      await rename(oldRoot, dest);
+    } catch {
+      await cp(oldRoot, dest, { recursive: true, dereference: false });
+      await rm(oldRoot, { recursive: true, force: true });
+    }
+
+    try {
+      this.files.addWorkspaceRoot(dest);
+    } catch {
+      // Parent workspace root already covers this path.
+    }
+    this.paths.unbind(projectId);
+    this.paths.bind(projectId, dest);
+    const now = Date.now();
+    this.db
+      .update(researchProjects)
+      .set({ rootPath: dest, updatedAt: now })
+      .where(eq(researchProjects.projectId, projectId))
+      .run();
+    await this.rebuildPortableIndex(projectId);
+    return this.getWorkspace(projectId);
+  }
+
+  async copyWorkspaceAsNew(
+    projectId: string,
+    newAbsolutePath: string,
+    title?: string,
+  ) {
+    const row = this.requireProject(projectId);
+    const dest = await this.prepareEmptyDestination(newAbsolutePath);
+    if (this.sameFsPath(row.rootPath, dest)) {
+      throw new BadRequestException(
+        'Copy destination must differ from the source workspace',
+      );
+    }
+    const conflict = this.db
+      .select()
+      .from(researchProjects)
+      .where(eq(researchProjects.rootPath, dest))
+      .get();
+    if (conflict) {
+      throw new ConflictException(
+        'Destination path is already registered to another project',
+      );
+    }
+
+    await cp(row.rootPath, dest, { recursive: true, dereference: false });
+    const newProjectId = randomUUID();
+    const now = Date.now();
+    const sourceJson = await this.readProjectJson(projectId);
+    const nextTitle =
+      title?.trim() || `${sourceJson.title || row.name} (copy)`;
+    const written: WorkspaceProjectJson = {
+      ...sourceJson,
+      projectId: newProjectId,
+      title: nextTitle,
+      createdAt: new Date(now).toISOString(),
+    };
+    this.assertProjectJson(written);
+    await this.atomicJson(join(dest, 'project.json'), written);
+
+    try {
+      this.files.addWorkspaceRoot(dest);
+    } catch {
+      // covered by parent
+    }
+    this.paths.bind(newProjectId, dest);
+    this.db
+      .insert(researchProjects)
+      .values({
+        projectId: newProjectId,
+        name: nextTitle,
+        rootPath: dest,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
+
+    // Fresh DB rows for the copy: runs/artifacts start empty; index rebuilt from files.
+    const indexPath = join(dest, '.navivisor', 'project-index.json');
+    try {
+      await rm(indexPath, { force: true });
+    } catch {
+      // ignore
+    }
+    await this.rebuildPortableIndex(newProjectId);
+    return this.getWorkspace(newProjectId);
+  }
+
+  async rebuildDatabaseFromWorkspace(absolutePath: string) {
+    const resolved = await this.assertAllowedDirectory(absolutePath, false);
+    const projectJsonPath = join(resolved, 'project.json');
+    let projectJson: WorkspaceProjectJson;
+    try {
+      projectJson = JSON.parse(
+        await readFile(projectJsonPath, 'utf8'),
+      ) as WorkspaceProjectJson;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new BadRequestException(
+          'project.json is required to rebuild the database',
+        );
+      }
+      throw new BadRequestException(
+        'project.json is invalid; original file was preserved',
+      );
+    }
+    this.assertProjectJson(projectJson);
+
+    const projectId = projectJson.projectId;
+    const existing = this.db
+      .select()
+      .from(researchProjects)
+      .where(eq(researchProjects.projectId, projectId))
+      .get();
+    if (existing && !this.sameFsPath(existing.rootPath, resolved)) {
+      throw new ConflictException(
+        'projectId already registered at another path; move or copy instead',
+      );
+    }
+    const byPath = this.db
+      .select()
+      .from(researchProjects)
+      .where(eq(researchProjects.rootPath, resolved))
+      .get();
+    if (byPath && byPath.projectId !== projectId) {
+      throw new ConflictException(
+        'Path already registered under a different projectId',
+      );
+    }
+
+    this.paths.bind(projectId, resolved);
+    const now = Date.now();
+    if (!existing) {
+      this.db
+        .insert(researchProjects)
+        .values({
+          projectId,
+          name: projectJson.title,
+          rootPath: resolved,
+          createdAt: Date.parse(projectJson.createdAt) || now,
+          updatedAt: now,
+        })
+        .run();
+    } else {
+      this.db
+        .update(researchProjects)
+        .set({
+          name: projectJson.title,
+          rootPath: resolved,
+          updatedAt: now,
+        })
+        .where(eq(researchProjects.projectId, projectId))
+        .run();
+    }
+
+    // Rebuild index rows for this project without wiping workspace files.
+    const priorArtifacts = this.db
+      .select()
+      .from(researchArtifacts)
+      .where(eq(researchArtifacts.projectId, projectId))
+      .all();
+    for (const artifact of priorArtifacts) {
+      this.db
+        .delete(researchArtifacts)
+        .where(eq(researchArtifacts.artifactId, artifact.artifactId))
+        .run();
+    }
+    const priorRuns = this.db
+      .select()
+      .from(researchRuns)
+      .where(eq(researchRuns.projectId, projectId))
+      .all();
+    for (const run of priorRuns) {
+      this.db
+        .delete(researchRuns)
+        .where(eq(researchRuns.runId, run.runId))
+        .run();
+    }
+
+    await this.importRunsFromManifests(projectId);
+    await this.rebuildPortableIndex(projectId);
+    return this.getWorkspace(projectId);
+  }
+
+  private async importRunsFromManifests(projectId: string): Promise<void> {
+    const runsDir = join(this.paths.navivisor(projectId), 'runs');
+    let entries: string[] = [];
+    try {
+      entries = await readdir(runsDir);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const manifestPath = join(runsDir, entry, 'manifest.json');
+      let raw: string;
+      try {
+        raw = await readFile(manifestPath, 'utf8');
+      } catch {
+        continue;
+      }
+      let manifest: {
+        projectId?: string;
+        runId?: string;
+        module?: string;
+        stage?: string;
+        status?: string;
+        mode?: string;
+        createdAt?: string;
+        updatedAt?: string;
+        artifacts?: Array<{
+          artifactId: string;
+          runId: string;
+          projectId: string;
+          role: string;
+          name: string;
+          path: string;
+          mediaType: string;
+          size: number;
+          sha256: string;
+          simulated: boolean;
+          metadata?: Record<string, unknown>;
+          createdAt: string;
+        }>;
+      };
+      try {
+        manifest = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+      if (
+        !manifest.runId ||
+        manifest.projectId !== projectId ||
+        !manifest.stage ||
+        !manifest.status ||
+        !manifest.mode ||
+        !manifest.module
+      ) {
+        continue;
+      }
+      const createdAt = Date.parse(manifest.createdAt ?? '') || Date.now();
+      const updatedAt = Date.parse(manifest.updatedAt ?? '') || createdAt;
+      this.db
+        .insert(researchRuns)
+        .values({
+          runId: manifest.runId,
+          projectId,
+          module: manifest.module,
+          stage: manifest.stage,
+          status: manifest.status,
+          mode: manifest.mode,
+          manifestPath: this.paths.relativeToProject(projectId, manifestPath),
+          retryOfRunId: null,
+          createdAt,
+          updatedAt,
+        })
+        .run();
+      for (const artifact of manifest.artifacts ?? []) {
+        if (!artifact?.artifactId || artifact.projectId !== projectId) continue;
+        this.db
+          .insert(researchArtifacts)
+          .values({
+            artifactId: artifact.artifactId,
+            runId: artifact.runId || manifest.runId,
+            projectId,
+            role: artifact.role,
+            name: artifact.name,
+            path: artifact.path,
+            mediaType: artifact.mediaType,
+            size: artifact.size,
+            sha256: artifact.sha256,
+            simulated: Boolean(artifact.simulated),
+            metadataJson: artifact.metadata
+              ? JSON.stringify(artifact.metadata)
+              : null,
+            createdAt: Date.parse(artifact.createdAt) || createdAt,
+          })
+          .run();
+      }
+    }
+  }
+
+  private async prepareEmptyDestination(absolutePath: string): Promise<string> {
+    const parentSafe = await this.files.resolveSafeTargetPath(absolutePath, {
+      recursiveParent: true,
+    });
+    const dest = this.paths.normalizeRoot(parentSafe);
+    try {
+      const info = await stat(dest);
+      if (!info.isDirectory()) {
+        throw new BadRequestException('Destination must be a directory');
+      }
+      const entries = await readdir(dest);
+      if (entries.length > 0) {
+        throw new ConflictException('Destination directory is not empty');
+      }
+      await rm(dest, { recursive: true, force: true });
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    try {
+      this.files.addWorkspaceRoot(dirname(dest));
+    } catch {
+      // parent already allowed
+    }
+    return dest;
+  }
+
+  private sameFsPath(a: string, b: string): boolean {
+    const na = resolve(a).replace(/[/\\]+$/, '');
+    const nb = resolve(b).replace(/[/\\]+$/, '');
+    if (process.platform === 'win32') {
+      return na.toLowerCase() === nb.toLowerCase();
+    }
+    return na === nb;
+  }
+
+  private parseDemoManifest(value: unknown): DemoManifest {
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      throw new BadRequestException('Invalid demo-manifest.json');
+    const candidate = value as Record<string, unknown>;
+    if (
+      (candidate.schemaVersion !== 2 && candidate.schemaVersion !== 3) ||
+      typeof candidate.demoId !== 'string' ||
+      !candidate.demoId ||
+      typeof candidate.version !== 'string' ||
+      typeof candidate.simulated !== 'boolean' ||
+      !Array.isArray(candidate.nodes) ||
+      !Array.isArray(candidate.missing)
+    )
+      throw new BadRequestException('Invalid demo-manifest.json');
+    return candidate as unknown as DemoManifest;
+  }
+
+  private validateAndSortManifest(manifest: DemoManifest): DemoManifestNode[] {
+    const nodeKeys = new Set<string>();
+    const fileToNode = new Map<string, string>();
+    const nodes = manifest.nodes as DemoManifestNode[];
+    for (const node of nodes) {
+      if (!node || nodeKeys.has(node.key))
+        throw new BadRequestException(`Duplicate demo node key: ${node?.key}`);
+      nodeKeys.add(node.key);
+      if (
+        !isResearchStage(node.stage) ||
+        !Array.isArray(node.inputs) ||
+        !Array.isArray(node.files)
+      )
+        throw new BadRequestException(`Invalid demo node: ${node.key}`);
+      for (const file of node.files) {
+        if (!file.key || fileToNode.has(file.key))
+          throw new BadRequestException(`Duplicate demo file key: ${file.key}`);
+        if (
+          !isResearchArtifactRole(file.role) ||
+          !/^[0-9a-f]{64}$/i.test(file.sha256) ||
+          !file.path ||
+          !file.mediaType
+        )
+          throw new BadRequestException(`Invalid demo file: ${file.key}`);
+        if (manifest.schemaVersion === 3 && typeof file.required !== 'boolean')
+          throw new BadRequestException(
+            `Demo v3 file required flag missing: ${file.key}`,
+          );
+        fileToNode.set(file.key, node.key);
+      }
+    }
+    const indegree = new Map<string, number>(nodes.map((n) => [n.key, 0]));
+    const edges = new Map<string, Set<string>>();
+    for (const node of nodes)
+      for (const input of node.inputs) {
+        const producer = fileToNode.get(input);
+        if (!producer)
+          throw new BadRequestException(
+            `Demo node ${node.key} references unknown input ${input}`,
+          );
+        if (producer === node.key)
+          throw new BadRequestException(
+            `Demo node ${node.key} has self reference ${input}`,
+          );
+        const set = edges.get(producer) ?? new Set<string>();
+        if (!set.has(node.key)) {
+          set.add(node.key);
+          edges.set(producer, set);
+          indegree.set(node.key, (indegree.get(node.key) ?? 0) + 1);
+        }
+      }
+    const queue = nodes.filter((n) => indegree.get(n.key) === 0);
+    const result: DemoManifestNode[] = [];
+    while (queue.length) {
+      const node = queue.shift()!;
+      result.push(node);
+      for (const next of edges.get(node.key) ?? []) {
+        indegree.set(next, (indegree.get(next) ?? 0) - 1);
+        if (indegree.get(next) === 0) {
+          const nextNode = nodes.find((n) => n.key === next);
+          if (nextNode) queue.push(nextNode);
+        }
+      }
+    }
+    if (result.length !== nodes.length)
+      throw new BadRequestException('Demo manifest has a dependency cycle');
+    return result;
+  }
+
+  private async manifestFilesStillMatch(
+    projectId: string,
+    manifest: DemoManifest,
+  ): Promise<boolean> {
+    for (const node of manifest.nodes)
+      for (const file of node.files) {
+        if (file.placeholder || file.required === false) continue;
+        try {
+          if (
+            sha256Buffer(
+              await readFile(
+                await this.paths.resolveExistingFile(projectId, file.path),
+              ),
+            ) !== file.sha256.toLowerCase()
+          )
+            return false;
+        } catch {
+          return false;
+        }
+      }
+    return true;
+  }
+
+  private assertProjectJson(value: WorkspaceProjectJson): void {
+    if (
+      value.schemaVersion !== 2 ||
+      typeof value.projectId !== 'string' ||
+      !/^[0-9a-f-]{36}$/i.test(value.projectId) ||
+      typeof value.title !== 'string' ||
+      !value.title.trim() ||
+      !value.directories ||
+      typeof value.createdAt !== 'string' ||
+      Number.isNaN(Date.parse(value.createdAt))
+    )
+      throw new BadRequestException('project.json schema is invalid');
+    this.assertRelativeDirs(value.directories);
+  }
+
   async rebuildPortableIndex(
     projectId: string,
     demoOverride?: {
@@ -500,7 +1212,7 @@ export class ResearchWorkspaceService {
       version: string;
       manifestSha256: string;
       complete: boolean;
-      missing: string[];
+      missing: Array<string | DemoManifestMissing>;
     },
   ): Promise<PortableProjectIndex> {
     const row = this.requireProject(projectId);
@@ -527,20 +1239,13 @@ export class ResearchWorkspaceService {
         await this.walkFiles(moduleDir, async (abs) => {
           const rel = relative(row.rootPath, abs).replaceAll('\\', '/');
           const digest = sha256Buffer(await readFile(abs));
-          const matched = artifacts.find(
-            (a) =>
-              a.sha256 === digest ||
-              (typeof a.metadataJson === 'string' &&
-                a.metadataJson.includes(rel)),
-          );
+          const matched = this.matchArtifactForCurrentFile(artifacts, rel);
           const externalModified = Boolean(
             matched && matched.sha256 !== digest,
           );
           currentFiles.push({
             path: rel,
-            role: matched
-              ? (matched.role as ResearchArtifactRole)
-              : undefined,
+            role: matched ? (matched.role as ResearchArtifactRole) : undefined,
             sha256: digest,
             artifactId: matched?.artifactId,
             externalModified,
@@ -594,6 +1299,49 @@ export class ResearchWorkspaceService {
     return index;
   }
 
+  private matchArtifactForCurrentFile(
+    artifacts: Array<{
+      artifactId: string;
+      role: string;
+      path: string;
+      sha256: string;
+      metadataJson: string | null;
+      createdAt: number;
+    }>,
+    relativePath: string,
+  ) {
+    const rel = relativePath.replaceAll('\\', '/');
+    const matches = artifacts.filter((artifact) => {
+      const artifactPath = artifact.path.replaceAll('\\', '/');
+      let sourcePath: string | undefined;
+      if (artifact.metadataJson) {
+        try {
+          const meta = JSON.parse(artifact.metadataJson) as {
+            sourcePath?: unknown;
+          };
+          if (typeof meta.sourcePath === 'string') {
+            sourcePath = meta.sourcePath.replaceAll('\\', '/');
+          }
+        } catch {
+          sourcePath = undefined;
+        }
+      }
+      if (sourcePath && sourcePath === rel) return true;
+      if (artifactPath === rel) return true;
+      if (
+        sourcePath &&
+        (rel.endsWith(`/${sourcePath}`) || sourcePath.endsWith(`/${rel}`))
+      ) {
+        return true;
+      }
+      return false;
+    });
+    if (!matches.length) return undefined;
+    return matches.reduce((latest, item) =>
+      item.createdAt > latest.createdAt ? item : latest,
+    );
+  }
+
   private findFileKey(manifest: DemoManifest, key: string): boolean {
     return manifest.nodes.some((n) => n.files.some((f) => f.key === key));
   }
@@ -622,7 +1370,9 @@ export class ResearchWorkspaceService {
     const dfs = (key: string) => {
       if (visited.has(key)) return;
       if (visiting.has(key)) {
-        throw new BadRequestException(`Demo manifest has a dependency cycle at ${key}`);
+        throw new BadRequestException(
+          `Demo manifest has a dependency cycle at ${key}`,
+        );
       }
       visiting.add(key);
       for (const next of adj.get(key) ?? []) dfs(next);
@@ -653,29 +1403,122 @@ export class ResearchWorkspaceService {
     });
   }
 
+  private async publishCurrentProjection(
+    projectId: string,
+    relativePath: string,
+    artifactId: string,
+  ) {
+    const snapshot = this.workflow.artifactAbsolutePath(projectId, artifactId);
+    await this.projectCurrentFile(projectId, relativePath, snapshot);
+  }
+
   private async projectCurrentFile(
     projectId: string,
     relativePath: string,
     sourceAbsolute: string,
   ) {
     const target = this.paths.resolveProjectRelative(projectId, relativePath);
-    if (resolve(target) === resolve(sourceAbsolute)) return;
+    const sourceResolved = resolve(sourceAbsolute);
+    const targetResolved = resolve(target);
+    if (this.sameFsPath(sourceResolved, targetResolved)) {
+      const sourceBytes = await readFile(sourceResolved);
+      const targetBytes = await readFile(targetResolved);
+      if (
+        sourceBytes.byteLength === targetBytes.byteLength &&
+        sourceBytes.equals(targetBytes)
+      ) {
+        return;
+      }
+      throw new BadRequestException(
+        `Current file projection mismatch for ${relativePath}`,
+      );
+    }
     await mkdir(dirname(target), { recursive: true });
     const temp = `${target}.${randomUUID()}.tmp`;
     await copyFile(sourceAbsolute, temp);
     await rename(temp, target);
   }
 
+  async recoverIncompleteDemoLoads(projectId: string): Promise<number> {
+    this.requireProject(projectId);
+    const recoveryDir = this.paths.recoveryDir(projectId);
+    let files: string[] = [];
+    try {
+      files = (await readdir(recoveryDir)).filter((name) =>
+        name.endsWith('.json'),
+      );
+    } catch {
+      return 0;
+    }
+    let recovered = 0;
+    for (const name of files) {
+      const path = join(recoveryDir, name);
+      let raw: string;
+      try {
+        raw = await readFile(path, 'utf8');
+      } catch {
+        continue;
+      }
+      let journal: { type?: string; status?: string };
+      try {
+        journal = JSON.parse(raw) as { type?: string; status?: string };
+      } catch {
+        continue;
+      }
+      if (journal.type !== 'demo-load' || journal.status !== 'running') continue;
+      await this.atomicJson(path, {
+        ...journal,
+        status: 'failed',
+        finishedAt: new Date().toISOString(),
+        error: 'Recovered incomplete demo load after restart',
+        recovered: true,
+      });
+      recovered += 1;
+    }
+    return recovered;
+  }
+
   private async appendConversationCard(
     projectId: string,
     card: Record<string, unknown>,
   ) {
+    const eventId =
+      typeof card.eventId === 'string' ? card.eventId.trim() : '';
+    const kind = typeof card.kind === 'string' ? card.kind.trim() : '';
+    const summary =
+      typeof card.summary === 'string' ? card.summary.trim() : '';
+    if (!eventId || !kind || !summary) {
+      throw new BadRequestException(
+        'Conversation card requires eventId, kind, and summary',
+      );
+    }
+    const normalized: ResearchUiEvent = {
+      eventId,
+      projectId,
+      kind,
+      summary,
+      createdAt:
+        typeof card.createdAt === 'string' && card.createdAt
+          ? card.createdAt
+          : new Date().toISOString(),
+    };
+    if (typeof card.module === 'string' && card.module) {
+      normalized.module = card.module;
+    }
+    if (Array.isArray(card.artifactIds)) {
+      normalized.artifactIds = card.artifactIds.filter(
+        (id): id is string => typeof id === 'string' && id.length > 0,
+      );
+    }
+    if (typeof card.runId === 'string' && card.runId) {
+      normalized.runId = card.runId;
+    }
     const path = join(
       this.paths.conversationsDir(projectId),
       'ui-events.jsonl',
     );
     await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, `${JSON.stringify(card)}\n`, { flag: 'a' });
+    await writeFile(path, `${JSON.stringify(normalized)}\n`, { flag: 'a' });
   }
 
   private async readProjectJson(

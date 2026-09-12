@@ -1,3 +1,10 @@
+/**
+ * Legacy one-shot generator for the camera-vad Demo skeleton.
+ * For hash/manifest refresh after content edits, prefer:
+ *   node scripts/rebuild-demo-manifest.mjs
+ *   node scripts/verify-camera-vad-demo.mjs
+ * Do not re-run this file blindly — it may overwrite expanded Demo content with stubs.
+ */
 import { createHash } from 'node:crypto';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';

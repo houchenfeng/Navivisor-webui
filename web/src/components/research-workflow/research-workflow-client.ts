@@ -16,6 +16,7 @@ import type {
   ResearchRun,
   ResearchRunMode,
   ResearchRunStatus,
+  ResearchUiEventsPage,
   ResearchWorkspace,
   StartedResearchRun,
 } from './research-workflow-types';
@@ -98,6 +99,18 @@ export const researchWorkflowClient = {
       { method: 'POST', body: '{}' },
     );
   },
+  async listUiEvents(
+    projectId: string,
+    options?: { limit?: number; before?: string },
+  ): Promise<ResearchUiEventsPage> {
+    const params = new URLSearchParams();
+    if (options?.limit != null) params.set('limit', String(options.limit));
+    if (options?.before) params.set('before', options.before);
+    const qs = params.toString();
+    return apiJson(
+      `/api/research/projects/${encodeURIComponent(projectId)}/conversations/ui-events${qs ? `?${qs}` : ''}`,
+    );
+  },
   async listRuns(projectId: string): Promise<ResearchRun[]> {
     return dataOf(
       await researchWorkflowListRuns({ path: { projectId }, throwOnError: true }),
@@ -129,6 +142,20 @@ export const researchWorkflowClient = {
       throwOnError: true,
     });
     return String(response.data ?? '');
+  },
+  /** Binary-safe fetch for previews (PNG/PDF); do not inject into chat timeline. */
+  async getArtifactBlob(projectId: string, artifactId: string): Promise<Blob> {
+    const authorization = getAuthorizationHeader();
+    const response = await fetch(
+      `/api/research/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(artifactId)}/content`,
+      {
+        headers: authorization ? { Authorization: authorization } : {},
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to load artifact content (${response.status})`);
+    }
+    return response.blob();
   },
   async startAgentRun(input: {
     projectId: string;

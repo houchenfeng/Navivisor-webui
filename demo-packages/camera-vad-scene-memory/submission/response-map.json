@@ -1,17 +1,22 @@
 {
+  "schemaVersion": 1,
+  "simulated": true,
   "R1-Q1": {
     "responseSection": "rebuttal.md#R1-Q1",
     "evidenceArtifactIds": [],
-    "status": "planned"
+    "status": "planned",
+    "plannedAction": "Run fixed val-set threshold grid and publish cost curve when real measurements exist."
   },
   "R2-Q1": {
     "responseSection": "rebuttal.md#R2-Q1",
     "evidenceArtifactIds": [],
-    "status": "planned"
+    "status": "planned",
+    "plannedAction": "Persist split hashes and memory-build logs in dataset manifest for audit."
   },
   "R3-Q1": {
     "responseSection": "rebuttal.md#R3-Q1",
     "evidenceArtifactIds": [],
-    "status": "planned"
+    "status": "planned",
+    "plannedAction": "Add cross-scene tests and memory update strategy comparison; no drift robustness claim yet."
   }
 }

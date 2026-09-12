@@ -1,10 +1,8 @@
 import { threadsListTurnItems, threadsListTurns } from '@/generated/api/sdk.gen';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
+import { resolveWritingRunContext } from '@/components/research-workflow/use-research-project';
 
 export type TranslateDirection = 'zh2en' | 'en2zh';
-
-const PROJECT_STORAGE_KEY = 'navivisor-writing-research-project-id';
-const PROJECT_NAME = 'Navivisor Writing';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,29 +16,6 @@ function errorMessage(error: unknown): string {
     if (typeof record.message === 'string') return record.message;
   }
   return 'Unknown Codex error';
-}
-
-async function ensureWritingProjectId(): Promise<string> {
-  const cached = localStorage.getItem(PROJECT_STORAGE_KEY)?.trim();
-  if (cached) {
-    try {
-      const projects = await researchWorkflowClient.listProjects();
-      if (projects.some((project) => project.projectId === cached)) return cached;
-    } catch {
-      // recreate below
-    }
-  }
-
-  const projects = await researchWorkflowClient.listProjects();
-  const existing = projects.find((project) => project.name === PROJECT_NAME);
-  if (existing) {
-    localStorage.setItem(PROJECT_STORAGE_KEY, existing.projectId);
-    return existing.projectId;
-  }
-
-  const created = await researchWorkflowClient.createProject(PROJECT_NAME);
-  localStorage.setItem(PROJECT_STORAGE_KEY, created.projectId);
-  return created.projectId;
 }
 
 async function extractTurnText(threadId: string, turnId: string): Promise<string> {
@@ -101,7 +76,7 @@ export async function translateText(
 ): Promise<string> {
   if (!text.trim()) return '';
 
-  const projectId = await ensureWritingProjectId();
+  const { projectId, inputArtifactIds } = await resolveWritingRunContext();
   const directionLabel =
     direction === 'en2zh' ? 'English → Simplified Chinese' : 'Simplified Chinese → English';
 
@@ -109,7 +84,7 @@ export async function translateText(
     projectId,
     stage: 'writing.draft',
     mode: 'simulated',
-    inputArtifactIds: [],
+    inputArtifactIds,
     instructions: [
       'ACTION: translate-section',
       `DIRECTION: ${directionLabel}`,

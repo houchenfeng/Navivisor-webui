@@ -1,6 +1,8 @@
-﻿import { createContext, useContext, useState, type ReactNode } from 'react';
+﻿import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { IReviewer } from '../data/reviewersRound1';
 import type { IRound2Reviewer } from '../data/mockData';
+import { loadSubmissionWorkspaceSeed } from '../lib/workspace-submission-seed';
+import { useWorkspaceArtifacts } from '@/components/research-workflow/use-research-project';
 
 export type StepId = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -31,6 +33,7 @@ interface ISimulationContext {
   setRound2Decision: (decision: string, avgScore: number, firstRoundAvg: number) => void;
   apiError: string | null;
   setApiError: (error: string | null) => void;
+  workspaceSeedSource: 'workspace' | 'local-mock' | 'loading';
 }
 
 const SimulationContext = createContext<ISimulationContext | null>(null);
@@ -45,6 +48,7 @@ const INITIAL_FORM: ISubmissionForm = {
 };
 
 export function SimulationProvider({ children }: { children: ReactNode }) {
+  const { projectId, artifacts, loading: artifactsLoading } = useWorkspaceArtifacts();
   const [step, setStep] = useState<StepId>(1);
   const [form, setForm] = useState<ISubmissionForm>(INITIAL_FORM);
   const [round1Reviewers, setRound1Reviewers] = useState<IReviewer[]>([]);
@@ -54,6 +58,59 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [round2AvgScore, setRound2AvgScore] = useState(0);
   const [round1AvgScore, setRound1AvgScore] = useState(0);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [workspaceSeedSource, setWorkspaceSeedSource] = useState<
+    'workspace' | 'local-mock' | 'loading'
+  >('local-mock');
+  const seededKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function seed() {
+      if (artifactsLoading) {
+        setWorkspaceSeedSource('loading');
+        return;
+      }
+      const seedKey = `${projectId ?? 'none'}:${artifacts.map((a) => a.artifactId).join(',')}`;
+      if (seededKeyRef.current === seedKey) return;
+
+      try {
+        const seed = await loadSubmissionWorkspaceSeed(projectId, artifacts);
+        if (cancelled) return;
+        seededKeyRef.current = seedKey;
+        setWorkspaceSeedSource(seed.source);
+        if (seed.source !== 'workspace') return;
+
+        setForm((prev) => ({
+          ...prev,
+          title: seed.title || prev.title,
+          rebuttal: seed.rebuttal || prev.rebuttal,
+        }));
+        if (seed.round1Reviewers.length > 0) {
+          setRound1Reviewers(seed.round1Reviewers);
+          setRound1AvgScore(seed.round1AvgScore);
+        }
+        if (seed.round2Reviewers.length > 0) {
+          setRound2Reviewers(seed.round2Reviewers);
+          setRound2AvgScore(seed.round2AvgScore);
+        }
+        if (seed.decision) {
+          setRound2DecisionState(seed.decision);
+        }
+        setSubmissionNumber((prev) => prev || `WS-${(projectId ?? 'demo').slice(0, 8)}`);
+      } catch (err) {
+        if (!cancelled) {
+          setWorkspaceSeedSource('local-mock');
+          setApiError(err instanceof Error ? err.message : String(err));
+        }
+      }
+    }
+
+    void seed();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, artifacts, artifactsLoading]);
 
   const goToStep = (nextStep: StepId) => {
     setStep(nextStep);
@@ -83,6 +140,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     setRound2AvgScore(0);
     setRound1AvgScore(0);
     setApiError(null);
+    seededKeyRef.current = null;
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -97,6 +155,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         round2Reviewers, setRound2Reviewers,
         round2Decision, round2AvgScore, round1AvgScore, setRound2Decision,
         apiError, setApiError,
+        workspaceSeedSource,
       }}
     >
       {children}

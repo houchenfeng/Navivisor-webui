@@ -3,6 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { STEPS, type WritingData } from "@/components/research-writing/data/writingSteps";
 import { loadData, saveData } from "@/components/research-writing/lib/storage";
+import { fillWritingFromExperiment } from "@/components/research-writing/lib/fillFromExperiment";
+import { useResearchProjectStore } from "@/stores/research-project-store";
 import { cn } from "@/lib/utils";
 
 import Step1Upload from "@/components/research-writing/components/writing/Step1Upload";
@@ -16,12 +18,27 @@ import Step9Export from "@/components/research-writing/components/writing/Step9E
 
 export default function EditorPage() {
   const navigate = useNavigate();
+  const projectId = useResearchProjectStore((state) => state.project?.projectId ?? null);
   const [stepIndex, setStepIndex] = useState(0);
-  const [data, setData] = useState<WritingData>(() => loadData());
+  const [data, setData] = useState<WritingData>(() => loadData(projectId));
 
   useEffect(() => {
-    saveData(data);
-  }, [data]);
+    let cancelled = false;
+    const saved = loadData(projectId);
+    setData(saved);
+    const hasSavedDraft = [saved.topic, saved.experimentDetail, saved.experimentResult, saved.bibContent]
+      .some((value) => (value ?? "").trim().length > 0);
+    if (projectId && !hasSavedDraft) {
+      void fillWritingFromExperiment().then((result) => {
+        if (!cancelled) setData((current) => ({ ...current, ...result.patch }));
+      });
+    }
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  useEffect(() => {
+    saveData(data, projectId);
+  }, [data, projectId]);
 
   const handleChange = (patch: Partial<WritingData>) => {
     setData((prev) => ({ ...prev, ...patch }));

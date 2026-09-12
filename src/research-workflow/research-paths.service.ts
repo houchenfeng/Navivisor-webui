@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { realpathSync } from 'node:fs';
+import { lstat, realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { isAbsolute, join, relative, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -149,6 +150,26 @@ export class ResearchPathsService {
     const target = resolve(this.project(projectId), path);
     this.relativeToProject(projectId, target);
     return target;
+  }
+
+  async resolveExistingFile(projectId: string, path: string): Promise<string> {
+    const candidate = this.resolveProjectRelative(projectId, path);
+    const info = await lstat(candidate);
+    if (!info.isFile() || info.isSymbolicLink()) {
+      throw new Error('Project path must be a regular file');
+    }
+    const root = await realpath(this.project(projectId));
+    const actual = await realpath(candidate);
+    const rel = relative(root, actual);
+    if (
+      !rel ||
+      rel === '..' ||
+      rel.startsWith(`..${sep}`) ||
+      isAbsolute(rel)
+    ) {
+      throw new Error('Project file resolves outside research project');
+    }
+    return actual;
   }
 
   private samePath(a: string, b: string): boolean {

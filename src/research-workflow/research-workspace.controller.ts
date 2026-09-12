@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -35,6 +36,18 @@ class RegisterWorkspaceDto {
   createIfMissing?: boolean;
 }
 
+class WorkspacePathDto {
+  @ApiProperty({ description: 'Absolute server-side destination directory' })
+  absolutePath!: string;
+
+  @ApiPropertyOptional() title?: string;
+}
+
+class RebuildWorkspaceDto {
+  @ApiProperty({ description: 'Absolute server-side workspace directory' })
+  absolutePath!: string;
+}
+
 class SaveVersionDto {
   @ApiProperty() relativePath!: string;
   @ApiProperty() role!: string;
@@ -59,10 +72,21 @@ export class ResearchWorkspaceController {
       absolutePath,
       title: body.title,
       directories: body.directories as
-        | Partial<Record<'topic' | 'experiment' | 'writing' | 'submission', string>>
+        | Partial<
+            Record<'topic' | 'experiment' | 'writing' | 'submission', string>
+          >
         | undefined,
       createIfMissing: body.createIfMissing ?? true,
     });
+  }
+
+  @Post('workspaces/rebuild')
+  rebuild(@Body() body: RebuildWorkspaceDto) {
+    const absolutePath = body?.absolutePath?.trim();
+    if (!absolutePath) {
+      throw new BadRequestException('absolutePath is required');
+    }
+    return this.workspaces.rebuildDatabaseFromWorkspace(absolutePath);
   }
 
   @Get('projects/:projectId/workspace')
@@ -70,9 +94,57 @@ export class ResearchWorkspaceController {
     return this.workspaces.getWorkspace(projectId);
   }
 
+  @Get('projects/:projectId/conversations/ui-events')
+  listUiEvents(
+    @Param('projectId') projectId: string,
+    @Query('limit') limit?: string,
+    @Query('before') before?: string,
+  ) {
+    const parsedLimit =
+      limit === undefined || limit === '' ? undefined : Number(limit);
+    if (
+      parsedLimit !== undefined &&
+      (!Number.isFinite(parsedLimit) || parsedLimit < 1)
+    ) {
+      throw new BadRequestException('limit must be a positive number');
+    }
+    return this.workspaces.listUiEvents(projectId, {
+      limit: parsedLimit,
+      before: before?.trim() || undefined,
+    });
+  }
+
   @Post('projects/:projectId/workspace/scan')
   scan(@Param('projectId') projectId: string) {
     return this.workspaces.scanWorkspace(projectId);
+  }
+
+  @Post('projects/:projectId/workspace/move')
+  move(
+    @Param('projectId') projectId: string,
+    @Body() body: WorkspacePathDto,
+  ) {
+    const absolutePath = body?.absolutePath?.trim();
+    if (!absolutePath) {
+      throw new BadRequestException('absolutePath is required');
+    }
+    return this.workspaces.moveWorkspace(projectId, absolutePath);
+  }
+
+  @Post('projects/:projectId/workspace/copy')
+  copy(
+    @Param('projectId') projectId: string,
+    @Body() body: WorkspacePathDto,
+  ) {
+    const absolutePath = body?.absolutePath?.trim();
+    if (!absolutePath) {
+      throw new BadRequestException('absolutePath is required');
+    }
+    return this.workspaces.copyWorkspaceAsNew(
+      projectId,
+      absolutePath,
+      body.title,
+    );
   }
 
   @Post('projects/:projectId/demo/load')

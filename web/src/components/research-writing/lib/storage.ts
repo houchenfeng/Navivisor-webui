@@ -1,14 +1,18 @@
 import { initialWritingData, type WritingData } from "@/components/research-writing/data/writingSteps";
 
-const STORAGE_KEY = "writing-app:data:v1";
+const STORAGE_KEY_PREFIX = "writing-app:data:v2";
+
+function storageKey(projectId?: string | null): string {
+  return `${STORAGE_KEY_PREFIX}:${projectId?.trim() || "unbound"}`;
+}
 
 /**
  * 从 localStorage 读取保存的数据。
  * 读取失败或数据损坏时，返回初始数据。
  */
-export function loadData(): WritingData {
+export function loadData(projectId?: string | null): WritingData {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(projectId));
     if (!raw) return initialWritingData;
 
     const parsed = JSON.parse(raw);
@@ -23,9 +27,9 @@ export function loadData(): WritingData {
 /**
  * 保存数据到 localStorage。
  */
-export function saveData(data: WritingData): void {
+export function saveData(data: WritingData, projectId?: string | null): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(storageKey(projectId), JSON.stringify(data));
   } catch (e) {
     console.warn("[storage] 保存失败（可能超出配额）", e);
   }
@@ -34,9 +38,9 @@ export function saveData(data: WritingData): void {
 /**
  * 清空已保存的数据。
  */
-export function clearData(): void {
+export function clearData(projectId?: string | null): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey(projectId));
   } catch (e) {
     console.warn("[storage] 清空失败", e);
   }

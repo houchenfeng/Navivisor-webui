@@ -1,28 +1,112 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "simulated": true,
+  "editSource": "writing/sections/*.md",
+  "generatedProducts": [
+    "writing/paper.tex",
+    "writing/paper.pdf"
+  ],
+  "note": "Markdown sections are the human edit source; paper.tex is the article-class projection. Do not maintain contradictory body text.",
   "sections": {
     "abstract": {
+      "path": "writing/sections/abstract.md",
       "inputs": [
-        "topic/intake.json",
-        "topic/confirmed-topic.json"
+        {
+          "key": "intake-json",
+          "path": "topic/intake.json",
+          "sha256": "fcf0cbbde01b62467cee32f7b4eda534bd5f2375b2811005a51639a4eadd6371"
+        },
+        {
+          "key": "confirmed-topic",
+          "path": "topic/confirmed-topic.json",
+          "sha256": "1592bf22dfeeb1813345a41954c5cfdf1bc22c4ce9282fc299135e8ea2b4169a"
+        }
+      ]
+    },
+    "introduction": {
+      "path": "writing/sections/introduction.md",
+      "inputs": [
+        {
+          "key": "confirmed-topic",
+          "path": "topic/confirmed-topic.json",
+          "sha256": "1592bf22dfeeb1813345a41954c5cfdf1bc22c4ce9282fc299135e8ea2b4169a"
+        }
       ]
     },
     "related": {
+      "path": "writing/sections/related.md",
       "inputs": [
-        "topic/core-references.csv"
+        {
+          "key": "core-references",
+          "path": "topic/core-references.csv",
+          "sha256": "c56d5ee0758c6283597e212d9ffef26daf0496a814d34435efcc333083248ecc"
+        },
+        {
+          "key": "literature-bib",
+          "path": "topic/references.bib",
+          "sha256": "2d246ea622aed36c40804b813c291ae9947733faa5d4d99191e775f08326bc7a"
+        }
       ]
     },
     "method": {
+      "path": "writing/sections/method.md",
       "inputs": [
-        "experiment/algorithm-details.md",
-        "experiment/config.json"
+        {
+          "key": "algorithm-details",
+          "path": "experiment/algorithm-details.md",
+          "sha256": "b7c4c42c1d049b7b62a006ac36c5b4a1c2fa2789eac2565560441c47d92e596e"
+        },
+        {
+          "key": "experiment-config",
+          "path": "experiment/config.json",
+          "sha256": "ecfc0bb43f64f00b1be4597940fcc8b29f66215dce7ea7368f758d4b325f8e14"
+        }
       ]
     },
     "experiments": {
+      "path": "writing/sections/experiments.md",
       "inputs": [
-        "experiment/metrics/main.csv",
-        "experiment/results.md"
+        {
+          "key": "metrics-main",
+          "path": "experiment/metrics/main.csv",
+          "sha256": "1c20eb3ced5956eda75ae01fb66d0f91639b9b07401bcff6c716ff9b09724666"
+        },
+        {
+          "key": "results-md",
+          "path": "experiment/results.md",
+          "sha256": "e494d361d310e2e67ad63b7057158fc38732a908759bedf311cea07f791aadf7"
+        }
+      ]
+    },
+    "conclusion": {
+      "path": "writing/sections/conclusion.md",
+      "inputs": [
+        {
+          "key": "results-md",
+          "path": "experiment/results.md",
+          "sha256": "e494d361d310e2e67ad63b7057158fc38732a908759bedf311cea07f791aadf7"
+        }
       ]
     }
+  },
+  "figures": [
+    {
+      "key": "writing-architecture-png",
+      "path": "writing/figures/architecture.png",
+      "derivedFrom": "experiment/figures/architecture.png",
+      "sha256": "500c7863fe246217e657a1308e4b0ba162821469feae73df75e4297945276d51"
+    },
+    {
+      "key": "writing-comparison-png",
+      "path": "writing/figures/comparison.png",
+      "derivedFrom": "experiment/figures/comparison.png",
+      "sha256": "4b8e52edcb8b5c201c032319e302f5a71f2a078f2338e41fa130972807b75f22"
+    }
+  ],
+  "bibliography": {
+    "key": "writing-references-bib",
+    "path": "writing/references.bib",
+    "derivedFrom": "topic/references.bib",
+    "sha256": "2d246ea622aed36c40804b813c291ae9947733faa5d4d99191e775f08326bc7a"
   }
 }

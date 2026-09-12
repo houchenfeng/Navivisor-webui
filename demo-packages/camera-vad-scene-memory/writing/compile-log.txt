@@ -1,1 +1,11 @@
-PLACEHOLDER: PDF not compiled from LaTeX; placeholder PDF only.
+SIMULATED DEMO COMPILE LOG
+timestamp: 2026-09-12T00:00:00Z
+engine_requested: pdflatex
+engine_available: false
+cvpr.sty: missing (no legal redistributable template bundled)
+paper.tex: article-class complete source present
+result: BLOCKED — pdflatex not installed on build host
+fallback: writing/paper.pdf is a multi-page valid PDF marked
+  "SIMULATED DEMO COMPILED SUBSTITUTE" with title/abstract/method/results text
+  (not an empty placeholder). Not a real LaTeX compilation artifact.
+exit_code: null

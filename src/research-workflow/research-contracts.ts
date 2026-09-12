@@ -219,6 +219,60 @@ export interface WorkspaceProjectJson {
   createdAt: string;
 }
 
+export const DEMO_MISSING_REASON_CODES = [
+  'file_missing',
+  'generation_unavailable',
+  'needs_credentials',
+  'not_applicable',
+  'invalid_content',
+] as const;
+export type DemoMissingReasonCode = (typeof DEMO_MISSING_REASON_CODES)[number];
+
+export interface DemoManifestFile {
+  key: string;
+  path: string;
+  role: ResearchArtifactRole;
+  mediaType: string;
+  sha256: string;
+  required: boolean;
+  placeholder?: boolean;
+}
+
+export interface DemoManifestNode {
+  key: string;
+  stage: ResearchStage;
+  inputs: string[];
+  files: DemoManifestFile[];
+}
+
+export interface DemoManifestMissing {
+  path: string;
+  reason: DemoMissingReasonCode;
+  requiredBy: string[];
+  optional: boolean;
+}
+
+export interface DemoManifestV3 {
+  schemaVersion: 3;
+  demoId: string;
+  version: string;
+  simulated: boolean;
+  nodes: DemoManifestNode[];
+  missing: DemoManifestMissing[];
+}
+
+/** Persisted UI summary cards (not Codex turns). Stored in ui-events.jsonl. */
+export interface ResearchUiEvent {
+  eventId: string;
+  projectId: string;
+  kind: 'ui.demo-loaded' | 'ui.save' | 'ui.generate' | (string & {});
+  module?: ResearchModule | string;
+  summary: string;
+  artifactIds?: string[];
+  runId?: string;
+  createdAt: string;
+}
+
 export interface PortableProjectIndex {
   schemaVersion: 2;
   projectId: string;
@@ -258,7 +312,8 @@ export interface PortableProjectIndex {
     manifestSha256: string;
     loadedAt: string;
     complete: boolean;
-    missing: string[];
+    /** Relative paths and/or structured missing entries from Demo v3. */
+    missing: Array<string | DemoManifestMissing>;
   };
 }
 

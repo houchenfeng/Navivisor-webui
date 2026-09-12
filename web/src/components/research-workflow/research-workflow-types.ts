@@ -50,9 +50,22 @@ export interface ResearchWorkspace {
       ResearchModule,
       {
         status: 'empty' | 'partial' | 'ready' | 'external_modified';
-        currentFiles: Array<{ path: string; externalModified?: boolean }>;
+        currentFiles: Array<{
+          path: string;
+          role?: string;
+          sha256?: string;
+          artifactId?: string;
+          externalModified?: boolean;
+        }>;
       }
     >;
+    artifacts?: Array<{
+      artifactId: string;
+      role?: string;
+      path: string;
+      sha256?: string;
+      simulated?: boolean;
+    }>;
   };
   createdAt: number;
   updatedAt: number;
@@ -70,6 +83,23 @@ export interface LoadDemoResult {
   missing: string[];
   runIds: string[];
   warnings: string[];
+}
+
+/** UI summary cards from `.navivisor/conversations/ui-events.jsonl` (not Codex turns). */
+export interface ResearchUiEvent {
+  eventId: string;
+  projectId: string;
+  kind: 'ui.demo-loaded' | 'ui.save' | 'ui.generate' | (string & {});
+  module?: ResearchModule | string;
+  summary: string;
+  artifactIds?: string[];
+  runId?: string;
+  createdAt: string;
+}
+
+export interface ResearchUiEventsPage {
+  events: ResearchUiEvent[];
+  nextBefore?: string;
 }
 
 export interface ResearchRun {

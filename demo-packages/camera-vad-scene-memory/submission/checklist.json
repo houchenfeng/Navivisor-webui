@@ -1,9 +1,57 @@
 {
+  "schemaVersion": 1,
+  "simulated": true,
   "anonymous": true,
   "pageLimit": 8,
-  "simulated": true,
   "items": [
-    "pdf",
-    "rebuttal"
+    {
+      "id": "pdf",
+      "required": true,
+      "status": "pass_with_caveat",
+      "reason": "Multi-page simulated/substitute PDF present (not CVPR-templated pdflatex build; cvpr.sty missing).",
+      "evidenceRefs": ["writing/paper.pdf", "writing/compile-log.txt"]
+    },
+    {
+      "id": "source-tex",
+      "required": true,
+      "status": "pass",
+      "reason": "article-class paper.tex with abstract/intro/related/method/experiments/conclusion and two figures.",
+      "evidenceRefs": ["writing/paper.tex"]
+    },
+    {
+      "id": "cvpr-template",
+      "required": true,
+      "status": "fail",
+      "reason": "writing/template/cvpr.sty missing; no legal redistributable CVPR style bundled.",
+      "evidenceRefs": ["writing/template/README.md"]
+    },
+    {
+      "id": "figures",
+      "required": true,
+      "status": "pass_with_caveat",
+      "reason": "Both PNG figures were generated with the built-in GPT image tool and their provenance and hashes are recorded.",
+      "evidenceRefs": ["writing/figures/comparison.png", "writing/figures/architecture.png", "experiment/figures/generation.json"]
+    },
+    {
+      "id": "bib",
+      "required": true,
+      "status": "pass",
+      "reason": "Synthetic BibTeX keys match citations.",
+      "evidenceRefs": ["writing/references.bib"]
+    },
+    {
+      "id": "rebuttal",
+      "required": true,
+      "status": "pass",
+      "reason": "Simulated rebuttal and response-map with planned evidence statuses.",
+      "evidenceRefs": ["submission/rebuttal.md", "submission/response-map.json"]
+    },
+    {
+      "id": "package-zip",
+      "required": true,
+      "status": "pass",
+      "reason": "submission-package.zip rebuilt from writing outputs.",
+      "evidenceRefs": ["submission/submission-package.zip"]
+    }
   ]
 }

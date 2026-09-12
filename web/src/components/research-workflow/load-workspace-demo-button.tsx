@@ -18,6 +18,7 @@ export function LoadWorkspaceDemoButton({
 }: Props) {
   const project = useResearchProjectStore((s) => s.project);
   const setProject = useResearchProjectStore((s) => s.setProject);
+  const bumpDemoEpoch = useResearchProjectStore((s) => s.bumpDemoEpoch);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -43,6 +44,7 @@ export function LoadWorkspaceDemoButton({
         demoComplete: result.complete,
         missing: result.missing,
       });
+      bumpDemoEpoch();
       const summary = result.complete
         ? `完整 Demo 已载入（${result.loadedFiles} 项）${result.idempotent ? ' · 幂等复用' : ''}`
         : `部分载入：已有 ${result.loadedFiles} 项，待补 ${result.missing.length} 项`;

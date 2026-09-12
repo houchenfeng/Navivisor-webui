@@ -19,7 +19,10 @@ import type {
 } from './research-contracts';
 import { moduleForStage } from './research-contracts';
 import { ResearchPathsService } from './research-paths.service';
-import { ResearchResultValidatorService } from './research-result-validator.service';
+import {
+  ResearchResultValidatorService,
+  validateFileForRole,
+} from './research-result-validator.service';
 
 const ALLOWED_TRANSITIONS: Record<ResearchRunStatus, ResearchRunStatus[]> = {
   queued: ['running', 'cancelled', 'unavailable', 'failed'],
@@ -319,10 +322,13 @@ export class ResearchWorkflowService {
     const safeName = basename(name);
     if (!safeName || safeName !== name || name === '.' || name === '..')
       throw new Error('Invalid artifact name');
-    const artifactId = randomUUID();
     const bytes = Buffer.isBuffer(content)
       ? content
       : Buffer.from(content, 'utf8');
+    validateFileForRole(role, mediaType, bytes, {
+      placeholder: Boolean(metadata?.placeholder),
+    });
+    const artifactId = randomUUID();
     const artifactDir = this.paths.artifactDir(run.projectId, artifactId);
     await mkdir(artifactDir, { recursive: true });
     const finalPath = join(artifactDir, safeName);

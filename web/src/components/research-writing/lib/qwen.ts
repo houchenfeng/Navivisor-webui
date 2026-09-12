@@ -1,6 +1,7 @@
 import { threadsListTurnItems, threadsListTurns } from '@/generated/api/sdk.gen';
 import type { WritingData } from '@/components/research-writing/data/writingSteps';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
+import { resolveWritingRunContext } from '@/components/research-workflow/use-research-project';
 
 export type WritingSection =
   | 'title-abstract'
@@ -12,9 +13,6 @@ export type WritingSection =
 
 /** @deprecated Prefer WritingSection — kept for existing Step imports */
 export type QwenSection = WritingSection;
-
-const PROJECT_STORAGE_KEY = 'navivisor-writing-research-project-id';
-const PROJECT_NAME = 'Navivisor Writing';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,29 +31,6 @@ function errorMessage(error: unknown): string {
   } catch {
     return 'Unknown Codex error';
   }
-}
-
-async function ensureWritingProjectId(): Promise<string> {
-  const cached = localStorage.getItem(PROJECT_STORAGE_KEY)?.trim();
-  if (cached) {
-    try {
-      const projects = await researchWorkflowClient.listProjects();
-      if (projects.some((project) => project.projectId === cached)) return cached;
-    } catch {
-      // fall through and recreate
-    }
-  }
-
-  const projects = await researchWorkflowClient.listProjects();
-  const existing = projects.find((project) => project.name === PROJECT_NAME);
-  if (existing) {
-    localStorage.setItem(PROJECT_STORAGE_KEY, existing.projectId);
-    return existing.projectId;
-  }
-
-  const created = await researchWorkflowClient.createProject(PROJECT_NAME);
-  localStorage.setItem(PROJECT_STORAGE_KEY, created.projectId);
-  return created.projectId;
 }
 
 function buildSectionInstructions(section: WritingSection, data: WritingData): string {
@@ -201,12 +176,12 @@ export async function generateWritingSection(
   section: WritingSection,
   data: WritingData,
 ): Promise<string> {
-  const projectId = await ensureWritingProjectId();
+  const { projectId, inputArtifactIds } = await resolveWritingRunContext();
   const started = await researchWorkflowClient.startAgentRun({
     projectId,
     stage: 'writing.draft',
     mode: 'simulated',
-    inputArtifactIds: [],
+    inputArtifactIds,
     instructions: buildSectionInstructions(section, data),
     effort: 'medium',
   });
@@ -259,13 +234,13 @@ export async function generateWritingFigure(
   prompt: string,
   kind: 'algorithmFlowImage' | 'algorithmIllustImage',
 ): Promise<string> {
-  const projectId = await ensureWritingProjectId();
+  const { projectId, inputArtifactIds } = await resolveWritingRunContext();
   const figureKey = kind === 'algorithmFlowImage' ? 'algorithm_flow' : 'algorithm_illustration';
   const started = await researchWorkflowClient.startAgentRun({
     projectId,
     stage: 'writing.draft',
     mode: 'simulated',
-    inputArtifactIds: [],
+    inputArtifactIds,
     instructions: [
       'ACTION: generate-figure',
       `FIGURE_KEY: ${figureKey}`,

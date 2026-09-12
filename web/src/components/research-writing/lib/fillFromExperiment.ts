@@ -1,5 +1,5 @@
 /**
- * Build WritingData patch from experiment module outputs (demo-ready).
+ * Build WritingData patch from workspace artifacts or experiment module outputs.
  */
 import {
   DEMO_ARCHITECTURE_MARKDOWN,
@@ -8,32 +8,31 @@ import {
   DEMO_COMPARISON_ROWS,
   DEMO_RESULTS_MARKDOWN,
 } from '@/components/research-experiment/demo-artifacts';
+import {
+  fetchArtifactText,
+  findLatestByPathHint,
+  findLatestByRole,
+  loadArtifacts,
+} from '@/components/research-workflow/use-research-project';
 import type { WritingData } from '@/components/research-writing/data/writingSteps';
 import { useExperimentStore } from '@/stores/experiment-store';
+import { useResearchProjectStore } from '@/stores/research-project-store';
 
 export type ExperimentFillResult = {
   patch: Partial<WritingData>;
-  source: 'store' | 'demo-fallback';
+  source: 'workspace' | 'store' | 'demo-fallback';
   topic: string;
 };
 
-/** Ensure experiment store has usable demo topic, then map artifacts into writing fields. */
-export function fillWritingFromExperiment(): ExperimentFillResult {
-  const store = useExperimentStore.getState();
-  let source: ExperimentFillResult['source'] = 'store';
-
-  if (!store.researchTopic.trim()) {
-    store.loadDemo();
-    source = 'demo-fallback';
-  }
-
-  // Mark completed so later modules can treat handoff as ready.
-  const latest = useExperimentStore.getState();
-  if (!latest.completed) {
-    latest.setFields({ completed: true, planConfirmed: true, disclaimerAccepted: true });
-  }
-
+function buildStoreOrDemoPatch(source: 'store' | 'demo-fallback'): ExperimentFillResult {
   const state = useExperimentStore.getState();
+  const topic =
+    state.researchTopic.trim() ||
+    (source === 'demo-fallback'
+      ? '面向小样本道路裂缝分割的轻量化 SAM 适配方法（离线 Demo 回退）'
+      : '');
+  const projectName = state.projectName.trim() || 'RoadCrack-SAM-MVP';
+  const researchGoal = state.researchGoal.trim() || '（未填写）';
   const winners = state.ideas.filter((idea) => idea.status === '成功');
   const ideaBlock = winners
     .map(
@@ -47,22 +46,25 @@ export function fillWritingFromExperiment(): ExperimentFillResult {
     .join('\n\n');
 
   const detail = [
-    `# ${state.researchTopic}`,
+    `# ${topic || projectName}`,
     '',
     `## 研究目标`,
-    state.researchGoal || '（未填写）',
+    researchGoal,
     '',
     `## 项目`,
-    state.projectName || 'RoadCrack-SAM-MVP',
+    projectName,
     '',
     `## 成功创新点摘要`,
     ideaBlock || '（暂无成功 Idea）',
     '',
-    `## 算法架构文档`,
+    `## 算法架构文档（${source === 'demo-fallback' ? '离线 Demo 回退' : '实验模块'}）`,
     DEMO_ARCHITECTURE_MARKDOWN,
   ].join('\n');
 
   const resultDoc = [
+    source === 'demo-fallback'
+      ? '<!-- source: demo-fallback -->'
+      : '<!-- source: experiment-store -->',
     DEMO_RESULTS_MARKDOWN,
     '',
     '## 主实验结果表（Demo）',
@@ -79,25 +81,117 @@ export function fillWritingFromExperiment(): ExperimentFillResult {
     })),
   );
 
-  const patch: Partial<WritingData> = {
-    topic: state.researchTopic,
-    experimentDetail: detail,
-    experimentResult: resultDoc,
-    bibContent: DEMO_BIBTEX,
-    experimentTable: {
-      headers: [...DEMO_COMPARISON_HEADERS],
-      rows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
+  return {
+    source,
+    topic: topic || projectName,
+    patch: {
+      topic: topic || projectName,
+      experimentDetail: detail,
+      experimentResult: resultDoc,
+      bibContent: DEMO_BIBTEX,
+      experimentTable: {
+        headers: [...DEMO_COMPARISON_HEADERS],
+        rows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
+      },
+      references:
+        references.length > 0
+          ? references
+          : [
+              {
+                key: 'sam2023',
+                text: '[1] Kirillov et al. Segment Anything. arXiv:2304.02643, 2023.',
+              },
+            ],
     },
-    references:
-      references.length > 0
-        ? references
-        : [
-            {
-              key: 'sam2023',
-              text: '[1] Kirillov et al. Segment Anything. arXiv:2304.02643, 2023.',
-            },
-          ],
   };
+}
 
-  return { patch, source, topic: state.researchTopic };
+/** Prefer workspace artifacts; never force experiment store completed/disclaimer. */
+export async function fillWritingFromExperiment(): Promise<ExperimentFillResult> {
+  const projectId = useResearchProjectStore.getState().project?.projectId?.trim();
+
+  if (projectId) {
+    try {
+      const artifacts = await loadArtifacts(projectId);
+      const plan = findLatestByRole(artifacts, 'experiment-plan');
+      const results =
+        findLatestByPathHint(artifacts, 'experiment/results.md') ??
+        findLatestByPathHint(artifacts, 'results.md') ??
+        findLatestByRole(artifacts, 'experiment-results');
+      const confirmed = findLatestByRole(artifacts, 'confirmed-topic');
+      const architecture =
+        findLatestByPathHint(artifacts, 'experiment/algorithm-details.md') ??
+        findLatestByPathHint(artifacts, 'algorithm-details.md') ??
+        findLatestByRole(artifacts, 'method-architecture');
+      const bib = findLatestByRole(artifacts, 'literature-bib');
+
+      if (plan || results || confirmed) {
+        const [planText, resultsText, confirmedText, architectureText, bibText] =
+          await Promise.all([
+            plan ? fetchArtifactText(projectId, plan.artifactId) : Promise.resolve(''),
+            results
+              ? fetchArtifactText(projectId, results.artifactId)
+              : Promise.resolve(''),
+            confirmed
+              ? fetchArtifactText(projectId, confirmed.artifactId)
+              : Promise.resolve(''),
+            architecture
+              ? fetchArtifactText(projectId, architecture.artifactId)
+              : Promise.resolve(''),
+            bib ? fetchArtifactText(projectId, bib.artifactId) : Promise.resolve(''),
+          ]);
+
+        let topic = useExperimentStore.getState().researchTopic.trim();
+        try {
+          const parsed = confirmedText
+            ? (JSON.parse(confirmedText) as { title?: string; question?: string })
+            : null;
+          topic = parsed?.title?.trim() || parsed?.question?.trim() || topic;
+        } catch {
+          // keep topic
+        }
+
+        const detailParts = [
+          topic ? `# ${topic}` : '',
+          confirmedText
+            ? ['## 确认课题（workspace confirmed-topic）', confirmedText].join('\n')
+            : '',
+          planText
+            ? ['## 实验方案（workspace experiment-plan）', planText].join('\n')
+            : '',
+          architectureText
+            ? ['## 算法架构（workspace method-architecture）', architectureText].join(
+                '\n',
+              )
+            : '',
+        ].filter(Boolean);
+
+        return {
+          source: 'workspace',
+          topic: topic || '工作目录课题',
+          patch: {
+            topic: topic || '工作目录课题',
+            experimentDetail: detailParts.join('\n\n') || planText,
+            experimentResult:
+              resultsText ||
+              '（工作目录暂无 experiment-results；请先载入 Demo 或完成实验阶段）',
+            bibContent: bibText || DEMO_BIBTEX,
+            experimentTable: {
+              headers: [...DEMO_COMPARISON_HEADERS],
+              rows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
+            },
+          },
+        };
+      }
+    } catch {
+      // fall through to store / demo-fallback
+    }
+  }
+
+  const store = useExperimentStore.getState();
+  if (store.researchTopic.trim()) {
+    return buildStoreOrDemoPatch('store');
+  }
+
+  return buildStoreOrDemoPatch('demo-fallback');
 }

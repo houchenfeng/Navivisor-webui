@@ -1,5 +1,95 @@
-% SYNTHETIC DEMO
-\documentclass{article}
+% SYNTHETIC DEMO — article-class complete paper (CVPR template not bundled).
+% Not a real CVPR submission. Numbers match experiment/metrics/*.csv.
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+\title{Scene-Memory Guided Fast--Slow Video Anomaly Detection\\
+with Selective Vision--Language Verification\\
+\large (SYNTHETIC / SIMULATED DEMO)}
+\author{Navivisor Demo Authors\\
+\texttt{synthetic-demo@example.invalid}}
+\date{2026-09-11}
+
 \begin{document}
-Scene-Memory Guided Fast--Slow VAD
+\maketitle
+
+\begin{abstract}
+We study inference-cost control for fixed-camera video anomaly detection (VAD).
+A lightweight scorer proposes anomaly scores and uncertainty; uncertain clips trigger
+scene-normal memory retrieval and a vision--language model (VLM) review with structured
+evidence; scores are fused for the final event. On the synthetic teaching set
+\texttt{camera-demo}, the full system reaches 87.1\% AUROC at 12\% VLM call rate versus
+81.2\% AUROC for the lightweight baseline and 100\% calls for VLM-all.
+\textbf{All metrics are simulated teaching numbers, not real benchmark claims.}
+\end{abstract}
+
+\section{Introduction}
+Fixed cameras generate continuous video. Calling a VLM on every clip is expensive;
+lightweight detectors alone struggle on ambiguous events. We ask whether scene memory
+can improve hard-clip recognition and explanation under a fixed review budget.
+Contributions in this teaching demo: (I1) uncertainty trigger, (I2) scene-normal memory,
+(I3) evidence-bearing VLM review with calibrated fusion.
+
+\section{Related Work}
+We cite three synthetic records for the teaching pipeline only:
+fast screening~\cite{demo_fast_screening},
+memory retrieval~\cite{demo_memory_retrieval},
+and language-guided verification~\cite{demo_vlm_verify}.
+They are not real publications.
+
+\section{Method}
+Pipeline: sample $\rightarrow$ fast score $(s,u)$ $\rightarrow$ trigger
+$\rightarrow$ memory $\rightarrow$ VLM $\rightarrow$ fuse $\rightarrow$ event.
+Uncertainty $u=1-|2s-1|$. Trigger when $s\ge 0.65$ or $u\ge 0.2$.
+Memory uses top-$K{=}5$ train-normal entries only.
+Fusion weights default to $0.4/0.2/0.4$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/architecture.png}
+\caption{GPT-generated teaching architecture. Camera to sample,
+fast score, uncertainty trigger, memory, VLM, and fusion; modules I1--I3 marked.}
+\label{fig:arch}
+\end{figure}
+
+\section{Experiments}
+Dataset: synthetic \texttt{camera-demo}. Table~\ref{tab:main} matches
+\texttt{experiment/metrics/main.csv}. Ablation AUROC: 81.2 $\rightarrow$ 84.8 $\rightarrow$
+85.6 $\rightarrow$ 87.1. Seeds \{11,23,47\} for Ours only: AUROC $87.10\pm 0.30$.
+
+\begin{table}[t]
+\centering
+\caption{Main comparison (simulated).}
+\label{tab:main}
+\begin{tabular}{lrrrrr}
+\toprule
+Method & AUROC & AP & F1 & VLM\% & ms \\
+\midrule
+Lightweight & 81.2 & 57.8 & 61.4 & 0 & 18 \\
+VLM-all & 85.9 & 64.1 & 66.2 & 100 & 680 \\
+FastSlow-I1 & 84.8 & 62.5 & 65.1 & 18 & 137 \\
+Ours & 87.1 & 67.2 & 68.0 & 12 & 99 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/comparison.png}
+\caption{GPT-generated comparison figure aligned to main.csv; all values are simulated.}
+\label{fig:cmp}
+\end{figure}
+
+\section{Conclusion}
+Under simulation, selective review with memory reduces VLM calls to 12\% while improving
+AUROC over the lightweight baseline. Real measurement, fuller ablations, and cross-scene
+tests remain future work. \textbf{SIMULATED DEMO --- do not cite as empirical SOTA.}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
 \end{document}

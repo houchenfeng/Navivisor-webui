@@ -46,6 +46,8 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+.tmp-e2e-project-*/
+.tmp-e2e.sqlite*
 
 # Runtime data
 pids

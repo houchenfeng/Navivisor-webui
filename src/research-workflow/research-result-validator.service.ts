@@ -6,6 +6,7 @@ import {
   isOutputRoleAllowedForStage,
   type ResearchAgentResult,
   type ResearchAgentResultOutput,
+  type ResearchArtifactRole,
   type ResearchStage,
 } from './research-contracts';
 import { ResearchPathsService } from './research-paths.service';
@@ -17,6 +18,54 @@ const MAX_OUTPUTS = 50;
 export interface ValidatedResearchOutput extends ResearchAgentResultOutput {
   absolutePath: string;
   size: number;
+}
+
+/** Shared role/content gate for import, saveVersion, and Agent finalize. */
+export function validateFileForRole(
+  role: ResearchArtifactRole,
+  mediaType: string,
+  bytes: Buffer,
+  options?: { placeholder?: boolean; allowPlaceholder?: boolean },
+): void {
+  if (!isResearchArtifactRole(role)) {
+    throw new BadRequestException(`Unknown artifact role: ${role}`);
+  }
+  if (options?.placeholder && !options?.allowPlaceholder) {
+    throw new BadRequestException(
+      `Placeholder content cannot be finalized as usable artifact for role ${role}`,
+    );
+  }
+  if (!mediaType?.trim()) {
+    throw new BadRequestException(`Missing mediaType for role ${role}`);
+  }
+  if (bytes.byteLength === 0) {
+    throw new BadRequestException(`Empty file cannot be artifact for ${role}`);
+  }
+  if (bytes.byteLength > MAX_OUTPUT_BYTES) {
+    throw new BadRequestException(`File exceeds size limit for ${role}`);
+  }
+  if (role === 'paper-pdf' || mediaType === 'application/pdf') {
+    const head = bytes.subarray(0, 5).toString('latin1');
+    if (!head.startsWith('%PDF-')) {
+      throw new BadRequestException(
+        'paper-pdf must start with a valid PDF header',
+      );
+    }
+  }
+  if (
+    (role === 'paper-figure' || mediaType === 'image/png') &&
+    mediaType.includes('png')
+  ) {
+    if (
+      bytes.byteLength < 8 ||
+      bytes[0] !== 0x89 ||
+      bytes[1] !== 0x50 ||
+      bytes[2] !== 0x4e ||
+      bytes[3] !== 0x47
+    ) {
+      throw new BadRequestException('PNG figure has an invalid header');
+    }
+  }
 }
 
 @Injectable()

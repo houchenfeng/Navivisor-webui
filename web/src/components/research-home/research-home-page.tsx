@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
+import { ConversationEventCards } from '@/components/research-workflow/conversation-event-cards';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import { useResearchProjectStore } from '@/stores/research-project-store';
 import { useTimelineStore } from '@/stores/timeline-store';
@@ -197,6 +198,17 @@ export function ResearchHomePage() {
     if (threadId) selectThread(null);
   }, [threadId, selectThread]);
 
+  useEffect(() => {
+    if (project?.rootPath) setWorkspacePath(project.rootPath);
+    if (project?.title) setWorkspaceTitle(project.title);
+  }, [project?.rootPath, project?.title]);
+
+  useEffect(() => {
+    if (!project) return;
+    setWorkspacePath(project.rootPath);
+    setWorkspaceTitle(project.title);
+  }, [project?.projectId, project?.rootPath, project?.title]);
+
   async function registerWorkspace() {
     const absolutePath = workspacePath.trim();
     if (!absolutePath) {
@@ -283,8 +295,9 @@ export function ResearchHomePage() {
             <p className="mt-1.5 truncate text-[11px] font-medium text-[#55739f]">{registerMessage}</p>
           ) : null}
           {project ? (
-            <div className="mt-1.5">
+            <div className="mt-1.5 space-y-2">
               <CurrentPaperCard defaultOpen={false} />
+              <ConversationEventCards />
             </div>
           ) : null}
         </div>

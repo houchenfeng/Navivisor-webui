@@ -1,26 +1,29 @@
 {
+  "schemaVersion": 1,
   "comparison": {
     "prompt": "CameraVAD teaching Demo comparison figure; SIMULATED DEMO title; use main.csv values only.",
-    "tool": "placeholder",
-    "model": null,
-    "generatedAt": "2026-09-11T12:30:00Z",
+    "tool": "OpenAI built-in image_gen",
+    "model": "platform-managed model (identifier not exposed by tool)",
+    "generatedAt": "2026-09-11T16:07:48Z",
     "inputArtifactRefs": [
       "experiment/metrics/main.csv"
     ],
-    "outputSha256": "c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77",
-    "verification": "placeholder_png_not_gpt_generated",
-    "status": "placeholder"
+    "outputSha256": "4b8e52edcb8b5c201c032319e302f5a71f2a078f2338e41fa130972807b75f22",
+    "verification": "Built-in GPT image generation completed; labels and all supplied metric values were visually checked against experiment/metrics/main.csv; valid PNG and readable at paper scale.",
+    "status": "generated",
+    "dimensionsNote": "Landscape teaching comparison figure; synthetic metrics are explicitly disclosed."
   },
   "architecture": {
     "prompt": "Framework: camera->sample->fast score->uncertainty->memory->VLM->fusion; mark I1/I2/I3.",
-    "tool": "placeholder",
-    "model": null,
-    "generatedAt": "2026-09-11T12:31:00Z",
+    "tool": "OpenAI built-in image_gen",
+    "model": "platform-managed model (identifier not exposed by tool)",
+    "generatedAt": "2026-09-11T16:06:58Z",
     "inputArtifactRefs": [
       "experiment/algorithm-details.md"
     ],
-    "outputSha256": "c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77",
-    "verification": "placeholder_png_not_gpt_generated",
-    "status": "placeholder"
+    "outputSha256": "500c7863fe246217e657a1308e4b0ba162821469feae73df75e4297945276d51",
+    "verification": "Built-in GPT image generation completed; camera, sampling, fast scorer, I1 trigger, I2 memory, I3 VLM review, fusion and outputs were visually checked; valid PNG and readable labels.",
+    "status": "generated",
+    "dimensionsNote": "Landscape scientific architecture figure with explicit simulated-demo disclosure."
   }
 }
