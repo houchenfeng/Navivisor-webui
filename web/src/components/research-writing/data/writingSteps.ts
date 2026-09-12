@@ -58,9 +58,15 @@ export interface WritingData {
   algorithmIllustImage: string;
 
   experimentTable: {
+    title?: string;
     headers: string[];
     rows: string[][];
   };
+  experimentTables: Array<{
+    title: string;
+    headers: string[];
+    rows: string[][];
+  }>;
 
   references: {
     key: string;
@@ -94,12 +100,11 @@ export const initialWritingData: WritingData = {
   algorithmIllustImage: "",
 
   experimentTable: {
-    headers: ["Method", "Dataset", "Accuracy", "F1"],
-    rows: [
-      ["Baseline", "", "", ""],
-      ["Ours", "", "", ""],
-    ],
+    title: "结果表格",
+    headers: [],
+    rows: [],
   },
+  experimentTables: [],
 
   references: [],
 };

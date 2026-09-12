@@ -71,21 +71,26 @@ function paragraphs(s: string): string {
 }
 
 /** 生成实验结果的 LaTeX 表格 */
-function buildTable(data: WritingData): string {
-  const { headers, rows } = data.experimentTable;
-  if (headers.length === 0 || rows.length === 0) return "";
-
-  const colSpec = "l".repeat(headers.length);
-  const headerRow = headers.map((h) => `\\textbf{${latexText(h)}}`).join(" & ");
-  const bodyRows = rows
-    .map((r) => r.map((c) => latexText(c)).join(" & ") + " \\\\")
-    .join("\n    ");
-
-  return `
+function buildTables(data: WritingData): string {
+  const tables =
+    data.experimentTables?.length > 0
+      ? data.experimentTables
+      : data.experimentTable.headers.length > 0
+        ? [{ title: data.experimentTable.title || "Results", ...data.experimentTable }]
+        : [];
+  return tables
+    .map((table, index) => {
+      if (table.headers.length === 0 || table.rows.length === 0) return "";
+      const colSpec = "l".repeat(table.headers.length);
+      const headerRow = table.headers.map((h) => `\\textbf{${latexText(h)}}`).join(" & ");
+      const bodyRows = table.rows
+        .map((r) => r.map((c) => latexText(c)).join(" & ") + " \\\\")
+        .join("\n    ");
+      return `
 \\begin{table}[t]
   \\centering
-  \\caption{Experimental results on the evaluated benchmarks.}
-  \\label{tab:results}
+  \\caption{${latexText(table.title || "Experimental results")}.}
+  \\label{tab:results-${index + 1}}
   \\begin{tabular}{${colSpec}}
     \\toprule
     ${headerRow} \\\\
@@ -95,6 +100,8 @@ function buildTable(data: WritingData): string {
   \\end{tabular}
 \\end{table}
 `;
+    })
+    .join("\n");
 }
 
 /** 生成 main.tex（CVPR 格式，无行号版本） */
@@ -164,7 +171,7 @@ ${paragraphs(data.algorithm)}
 \\section{Experiments}
 ${paragraphs(data.experiment)}
 
-${buildTable(data)}
+${buildTables(data)}
 
 \\section{Discussion and Conclusion}
 ${paragraphs(data.discussion)}

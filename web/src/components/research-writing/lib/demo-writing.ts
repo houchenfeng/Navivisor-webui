@@ -10,6 +10,45 @@ type WritingSection =
   | 'experiment'
   | 'discussion';
 
+const METRIC_TABLES = [
+  {
+    title: '结果表格',
+    paths: ['experiment/metrics/main.csv', 'experiment/metrics/comparison.csv'],
+  },
+  {
+    title: '消融实验表格',
+    paths: ['experiment/metrics/ablation.csv'],
+  },
+  {
+    title: '鲁棒性表格',
+    paths: ['experiment/metrics/robustness.csv', 'experiment/metrics/seeds.csv'],
+  },
+] as const;
+
+function parseCsv(text: string): { headers: string[]; rows: string[][] } {
+  const lines = text
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return { headers: [], rows: [] };
+  const split = (line: string) =>
+    line.split(',').map((cell) => cell.trim().replace(/^"|"$/g, ''));
+  return { headers: split(lines[0]), rows: lines.slice(1).map(split) };
+}
+
+async function loadDemoMetricTables(rootPath: string) {
+  const tables: Array<{ title: string; headers: string[]; rows: string[][] }> = [];
+  for (const spec of METRIC_TABLES) {
+    const raw = await readFirst(rootPath, [...spec.paths]);
+    if (!raw) continue;
+    const parsed = parseCsv(raw);
+    if (parsed.headers.length === 0) continue;
+    tables.push({ title: spec.title, ...parsed });
+  }
+  return tables;
+}
+
 const SECTION_FILES: Record<Exclude<WritingSection, 'title-abstract'>, string[]> = {
   intro: [
     'writing/source/cvpr-paper/en/sec/1_intro.tex',
@@ -130,10 +169,12 @@ export async function tryLoadDemoWritingSection(
   }
 
   const raw = await readFirst(rootPath, SECTION_FILES[section]);
-  if (!raw) return null;
-  const text = unwrapSectionBody(raw);
+  if (!raw && section !== 'experiment') return null;
+  const text = raw ? unwrapSectionBody(raw) : '';
   if (section === 'experiment') {
-    return JSON.stringify({ text });
+    const tables = await loadDemoMetricTables(rootPath);
+    if (!text && tables.length === 0) return null;
+    return JSON.stringify({ text, tables });
   }
   return text;
 }

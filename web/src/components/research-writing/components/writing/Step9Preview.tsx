@@ -202,13 +202,18 @@ export default function Step9Preview({ data, onChange }: Props) {
       )}
 
       {/* 表格 */}
-      {data.experimentTable.headers.length > 0 && (
-        <Section title="实验结果表格 / Results Table">
+      {(data.experimentTables?.length > 0
+        ? data.experimentTables
+        : data.experimentTable.headers.length > 0
+          ? [{ title: data.experimentTable.title || "结果表格", ...data.experimentTable }]
+          : []
+      ).map((table, index) => (
+        <Section key={`${table.title}-${index}`} title={`${index + 1}. ${table.title || "结果表格"}`}>
           <div className="overflow-auto rounded-lg border border-blue-100 bg-white">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-[#f4f8ff]">
-                  {data.experimentTable.headers.map((h, i) => (
+                  {table.headers.map((h, i) => (
                     <th
                       key={i}
                       className="border border-blue-100 px-3 py-2 text-left font-semibold text-brand-700"
@@ -219,7 +224,7 @@ export default function Step9Preview({ data, onChange }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {data.experimentTable.rows.map((row, ri) => (
+                {table.rows.map((row, ri) => (
                   <tr key={ri}>
                     {row.map((cell, ci) => (
                       <td
@@ -235,7 +240,7 @@ export default function Step9Preview({ data, onChange }: Props) {
             </table>
           </div>
         </Section>
-      )}
+      ))}
 
       {/* 引用文献 */}
       {data.references.length > 0 && (

@@ -51,6 +51,7 @@ function buildSectionInstructions(section: WritingSection, data: WritingData): s
     experiment: data.experiment,
     discussion: data.discussion,
     experimentTable: data.experimentTable,
+    experimentTables: data.experimentTables,
   };
 
   const formatHint =

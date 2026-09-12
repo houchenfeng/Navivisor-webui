@@ -1,4 +1,5 @@
 import { initialWritingData, type WritingData } from "@/components/research-writing/data/writingSteps";
+import { DEMO_COMPARISON_HEADERS } from "@/components/research-experiment/demo-artifacts";
 
 const STORAGE_KEY_PREFIX = "writing-app:data:v2";
 
@@ -15,9 +16,28 @@ export function loadData(projectId?: string | null): WritingData {
     const raw = localStorage.getItem(storageKey(projectId));
     if (!raw) return initialWritingData;
 
-    const parsed = JSON.parse(raw);
-    // 合并默认值，防止旧版本缺字段
-    return { ...initialWritingData, ...parsed };
+    const parsed = JSON.parse(raw) as Partial<WritingData>;
+    const looksLikeSamDefault =
+      JSON.stringify(parsed.experimentTable?.headers) === JSON.stringify([...DEMO_COMPARISON_HEADERS]) ||
+      JSON.stringify(parsed.experimentTable?.headers) === JSON.stringify(["Method", "Dataset", "Accuracy", "F1"]);
+    const tables =
+      Array.isArray(parsed.experimentTables) && parsed.experimentTables.length > 0
+        ? parsed.experimentTables
+        : parsed.experimentTable?.headers?.length && !looksLikeSamDefault
+          ? [
+              {
+                title: parsed.experimentTable.title || '结果表格',
+                headers: parsed.experimentTable.headers,
+                rows: parsed.experimentTable.rows,
+              },
+            ]
+          : [];
+    return {
+      ...initialWritingData,
+      ...parsed,
+      experimentTables: tables,
+      experimentTable: tables[0] ?? initialWritingData.experimentTable,
+    };
   } catch (e) {
     console.warn("[storage] 读取失败，使用初始数据", e);
     return initialWritingData;

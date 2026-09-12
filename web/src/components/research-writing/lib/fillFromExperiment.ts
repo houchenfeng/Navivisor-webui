@@ -89,10 +89,8 @@ function buildStoreOrDemoPatch(source: 'store' | 'demo-fallback'): ExperimentFil
       experimentDetail: detail,
       experimentResult: resultDoc,
       bibContent: DEMO_BIBTEX,
-      experimentTable: {
-        headers: [...DEMO_COMPARISON_HEADERS],
-        rows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
-      },
+      experimentTables: [],
+      experimentTable: { title: '结果表格', headers: [], rows: [] },
       references:
         references.length > 0
           ? references
@@ -176,10 +174,8 @@ export async function fillWritingFromExperiment(): Promise<ExperimentFillResult>
               resultsText ||
               '（工作目录暂无 experiment-results；请先载入 Demo 或完成实验阶段）',
             bibContent: bibText || DEMO_BIBTEX,
-            experimentTable: {
-              headers: [...DEMO_COMPARISON_HEADERS],
-              rows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
-            },
+            experimentTables: [],
+            experimentTable: { title: '结果表格', headers: [], rows: [] },
           },
         };
       }
