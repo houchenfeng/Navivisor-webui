@@ -178,3 +178,30 @@ API Key 只在后端使用，不能写入前端源码、浏览器存储、提交
 - VGGT 完整 CVPR 源码已使用本地 MiKTeX 独立编译验证，但这不等于写作页面已经支持直接导入完整 `.tar.gz`/`.tex` 工程。
 - 算法流程图 Skill 的规范、脚本和前端接入已在目录中；ImageGen 的真实调用、最终图片质量和完整 artifact 闭环仍需单独运行验收。
 - 当前未执行 commit、push、PR 合并或 `main` 修改。
+
+## Skill 清单与来源
+
+以下路径均相对于仓库根目录 `C:\Navivisor-webui-main-clean`。
+
+### 项目内自研/本次对话产生或修改的 Skill
+
+| 类型 | Skill 名称 | 路径 | 作用 |
+|---|---|---|---|
+| 开题阶段 Skill | `research-topic` | `research-skills/research-topic/SKILL.md` | 根据声明的研究输入和文献证据生成可追溯的候选研究方向。 |
+| 论文写作优化 Skill | `research-writing` | `research-skills/research-writing/SKILL.md` | 负责论文草稿、改写、翻译、渲染、配图和写作产物管理；要求所有内容有来源依据，明确待核验项。 |
+| 流程图 action | `generate-algorithm-flowchart` | `research-skills/research-writing/references/algorithm-flowchart-generation.md` | `research-writing` Skill 内的算法流程图动作：从实验 Markdown 提取证据，生成流程图规格、提示词和确定性草稿，再进行 CVPR 风格成图。它是 action，不是独立的 `SKILL.md`。 |
+
+配套文件：
+
+- 流程图草稿脚本：`research-skills/research-writing/scripts/render_flowchart_draft.mjs`
+- Skill 评估样例：`research-skills/research-writing/evals/evals.json`
+- 实验阶段 Skill：`research-skills/research-experiment/SKILL.md`
+- 投稿阶段 Skill：`research-skills/research-submission/SKILL.md`
+
+其中，`research-writing` 是本项目中专门用于优化论文内容和论文配图流程的 Skill；算法流程图 action 是它的扩展能力，不应单独当作一个完整 Skill 安装。
+
+### GitHub 上找到的外部项目或 Skill
+
+本次曾检查 GitHub 上可用于论文写作和科研工作流的现有项目，但没有把外部 Skill 原样安装到本仓库，也没有在运行时依赖一个未记录来源的 GitHub Skill。当前仓库中的 `research-topic`、`research-writing` 及流程图 action 均属于项目内的工作流实现，不应标记为 GitHub 第三方 Skill。
+
+本项目的上游 WebUI 来源是 [LimLLL/codex-webui](https://github.com/LimLLL/codex-webui)，它是基础 WebUI 项目，不是本项目的论文优化 Skill。GitHub 仓库来源和二次开发关系见 [上游项目](#上游项目)。
