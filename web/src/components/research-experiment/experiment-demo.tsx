@@ -707,12 +707,8 @@ export function ExperimentDemo() {
             <div className="flex flex-wrap items-center gap-2">
               <CurrentPaperCard defaultOpen={false} className="w-full max-w-sm" />
               <LoadWorkspaceDemoButton compact />
-              {experiment.runMode === 'real' || hydration.source === 'workspace' ? (
-                <Badge className="bg-[#1F4DCB] text-white">
-                  {experiment.runMode === 'real'
-                    ? '真实目标配置 · runner 未接入'
-                    : 'Workspace · 模拟产物'}
-                </Badge>
+              {experiment.runMode === 'real' ? (
+                <Badge className="bg-[#1F4DCB] text-white">真实目标配置 · runner 未接入</Badge>
               ) : null}
             </div>
           </header>
