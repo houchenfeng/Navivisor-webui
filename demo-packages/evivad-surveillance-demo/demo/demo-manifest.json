@@ -40,7 +40,7 @@
           "role": "search-iterations",
           "mediaType": "application/x-ndjson",
           "required": true,
-          "sha256": "0351a3750fbc38b8ba807c02cda73dd9aeedf294e7f101642ed2c008d6d5a2e8"
+          "sha256": "bb05e2e8006d2df73941ce5043aacde1255556580209712df0f1cf3e79b82596"
         },
         {
           "key": "candidate-papers",
