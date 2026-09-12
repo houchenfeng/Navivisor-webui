@@ -149,6 +149,7 @@ export function TopicPage() {
       const response = await fetch(withBasePath(`/api/research/topic/tasks/${encodeURIComponent(task.runId)}/candidates`), { method: 'POST', headers: authorizationHeaders() });
       if (!response.ok) throw new Error(response.status === 400 ? '请先完成第一环节并确认有可用文献。' : '候选课题任务创建失败，请稍后重试。');
       const started = await response.json() as ResearchTaskSnapshot;
+      window.sessionStorage.setItem(activeRunKey, started.runId);
       setTask(started);
       await pollCandidates(started.runId, setTask);
     } catch (requestError) {
@@ -165,7 +166,7 @@ export function TopicPage() {
     try {
       const response = await fetch(withBasePath(`/api/research/topic/tasks/${encodeURIComponent(task.runId)}/core-literature`), { method: 'POST', headers: { 'Content-Type': 'application/json', ...authorizationHeaders() }, body: JSON.stringify({ label: selectedCandidate }) });
       if (!response.ok) throw new Error('核心文献检索任务创建失败，请稍后重试。');
-      const started = await response.json() as ResearchTaskSnapshot; setTask(started); await pollCore(started.runId, setTask);
+      const started = await response.json() as ResearchTaskSnapshot; window.sessionStorage.setItem(activeRunKey, started.runId); setTask(started); await pollCore(started.runId, setTask);
     } catch (requestError) { const message = requestError instanceof Error ? requestError.message : '核心文献检索失败，请稍后重试。'; setError(message); }
   };
 
