@@ -2,7 +2,7 @@ import { threadsListTurnItems, threadsListTurns } from '@/generated/api/sdk.gen'
 import type { WritingData } from '@/components/research-writing/data/writingSteps';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import { resolveWritingRunContext } from '@/components/research-workflow/use-research-project';
-import { tryLoadDemoWritingSection } from '@/components/research-writing/lib/demo-writing';
+import { tryLoadDemoWritingFigure, tryLoadDemoWritingSection } from '@/components/research-writing/lib/demo-writing';
 
 export type WritingSection =
   | 'title-abstract'
@@ -234,6 +234,9 @@ export async function generateWritingFigure(
   kind: 'algorithmFlowImage' | 'algorithmIllustImage',
   context: AlgorithmFlowchartContext = {},
 ): Promise<string> {
+  const fromDemo = await tryLoadDemoWritingFigure(kind);
+  if (fromDemo) return fromDemo;
+
   const { projectId, inputArtifactIds } = await resolveWritingRunContext();
   const figureKey = kind === 'algorithmFlowImage' ? 'algorithm_flow' : 'algorithm_illustration';
   const isFlowchart = kind === 'algorithmFlowImage';

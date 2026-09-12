@@ -192,7 +192,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <ImageSlot
           title="算法框架流程图"
-          description="由课题与实验细节自动生成：输入→模块→输出 的整体流程"
+          description="载入 Demo 后点击生成，会直接读取 Demo 中的算法框架流程图"
           image={data.algorithmFlowImage}
           loading={imgLoadingFlow}
           prompt={promptFlow}

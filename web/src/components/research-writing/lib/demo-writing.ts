@@ -1,5 +1,6 @@
-import { filesReadFile } from '@/generated/api/sdk.gen';
+import { filesGetMetadata, filesReadFile } from '@/generated/api/sdk.gen';
 import type { FileReadResponseDto } from '@/generated/api/types.gen';
+import { buildFileServeUrl } from '@/auth-token';
 import { useResearchProjectStore } from '@/stores/research-project-store';
 
 type WritingSection =
@@ -177,4 +178,58 @@ export async function tryLoadDemoWritingSection(
     return JSON.stringify({ text, tables });
   }
   return text;
+}
+
+const FIGURE_FILES: Record<'algorithmFlowImage' | 'algorithmIllustImage', string[]> = {
+  algorithmFlowImage: [
+    'writing/figures/architecture.png',
+    'experiment/figures/architecture.png',
+  ],
+  algorithmIllustImage: [
+    'writing/figures/comparison.png',
+    'experiment/figures/comparison.png',
+    'writing/figures/teaser.png',
+  ],
+};
+
+async function workspaceFileExists(absolutePath: string): Promise<boolean> {
+  try {
+    await filesGetMetadata({
+      query: { path: absolutePath },
+      throwOnError: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fileToDataUrl(absolutePath: string): Promise<string | null> {
+  try {
+    const response = await fetch(buildFileServeUrl(absolutePath));
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Load Demo architecture / comparison figures instead of calling image generation. */
+export async function tryLoadDemoWritingFigure(
+  kind: 'algorithmFlowImage' | 'algorithmIllustImage',
+): Promise<string | null> {
+  const rootPath = useResearchProjectStore.getState().project?.rootPath?.trim();
+  if (!rootPath) return null;
+  for (const relative of FIGURE_FILES[kind]) {
+    const absolute = joinWorkspacePath(rootPath, relative);
+    if (!(await workspaceFileExists(absolute))) continue;
+    return (await fileToDataUrl(absolute)) || buildFileServeUrl(absolute);
+  }
+  return null;
 }
