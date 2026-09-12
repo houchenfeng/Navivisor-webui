@@ -24,7 +24,9 @@ export function LoadWorkspaceDemoButton({
 }: Props) {
   const project = useResearchProjectStore((state) => state.project);
   const setProject = useResearchProjectStore((state) => state.setProject);
+  const bumpDemoEpoch = useResearchProjectStore((state) => state.bumpDemoEpoch);
   const demoLoaded = project != null && project.demoComplete != null;
+  const [open, setOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [demos, setDemos] = useState<DemoDefinition[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -174,8 +176,12 @@ export function LoadWorkspaceDemoButton({
               role="dialog"
               aria-modal="true"
               aria-label="选择 Demo"
+              onClick={() => setOpen(false)}
             >
-          <section className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-6">
+          <section
+            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black text-[#173778]">
