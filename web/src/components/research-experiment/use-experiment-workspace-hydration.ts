@@ -28,6 +28,7 @@ import {
   isResearchDemoMode,
   useResearchProjectStore,
 } from '@/stores/research-project-store';
+import type { ResearchArtifact } from '@/components/research-workflow/research-workflow-types';
 
 /** 仅实验页「课题与文献」用；不要写回 topic/intake.json。 */
 const DEMO_INTAKE_FIELDS = {
@@ -53,6 +54,8 @@ export type ExperimentHydration = {
   comparisonRows: string[][];
   ablationHeaders: string[];
   ablationRows: string[][];
+  robustnessHeaders: string[];
+  robustnessRows: string[][];
   comparisonFigureUrl: string | null;
   architectureFigureUrl: string | null;
   ideas: ExperimentIdea[];
@@ -77,6 +80,8 @@ const vacantHydration = (): ExperimentHydration => ({
   comparisonRows: [],
   ablationHeaders: [],
   ablationRows: [],
+  robustnessHeaders: [],
+  robustnessRows: [],
   comparisonFigureUrl: null,
   architectureFigureUrl: null,
   ideas: [],
@@ -100,6 +105,8 @@ const emptyHydration = (): ExperimentHydration => ({
   comparisonRows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
   ablationHeaders: [...DEFAULT_ABLATION_HEADERS],
   ablationRows: DEMO_ABLATION_ROWS.map((row) => [...row]),
+  robustnessHeaders: [],
+  robustnessRows: [],
   comparisonFigureUrl: null,
   architectureFigureUrl: null,
   ideas: [],
@@ -135,8 +142,8 @@ const HEADER_ABBR: Record<string, string> = {
   cfs_percent: 'CFS',
   hr_percent: 'HR',
   tcr_percent: 'TCR',
-  latency_ms: 'lat',
-  memory_gb: 'mem',
+  latency_ms: 'Latency ↓',
+  memory_gb: 'Memory ↓',
   trainable_params_m: 'params',
   daa: 'DAA',
   ead: 'EAD',
@@ -145,10 +152,96 @@ const HEADER_ABBR: Record<string, string> = {
 
 function abbreviateMethod(name: string): string {
   const trimmed = name.trim();
+  const paperLabels: Record<string, string> = {
+    ConvAE: '重建类（深度自编码器，2023）',
+    'WS-CT': '弱监督 CNN-ViT（2023）',
+    'CLIP-TSA': 'CLIP 系零样本（2022）',
+    LAVAD: '免训练 LLM 流程（2024）',
+    B0: 'Baseline B0（冻结 VLM + 文本打分）',
+    EviVAD: 'EviVAD（完整方法）',
+  };
+  if (paperLabels[trimmed]) return paperLabels[trimmed];
   for (const [pattern, abbr] of METHOD_ABBR) {
     if (pattern.test(trimmed)) return abbr;
   }
   return trimmed;
+}
+
+function findLatestMetricArtifact(
+  artifacts: ResearchArtifact[],
+  filename: string,
+) {
+  const expectedPaths = new Set([
+    `experiment/metrics/${filename}`,
+    `metrics/${filename}`,
+  ]);
+  return artifacts
+    .filter((artifact) => {
+      const normalizedPath = artifact.path.replace(/\\/g, '/').toLowerCase();
+      return [...expectedPaths].some(
+        (expectedPath) =>
+          normalizedPath === expectedPath ||
+          normalizedPath.endsWith(`/${expectedPath}`),
+      );
+    })
+    .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))[0];
+}
+
+function selectMetricColumns(
+  parsed: { headers: string[]; rows: string[][] },
+  columns: string[],
+) {
+  const indices = columns
+    .map((column) => parsed.headers.findIndex((header) => header.trim().toLowerCase() === column))
+    .filter((index) => index >= 0);
+  return englishMetricTable({
+    headers: indices.map((index) => parsed.headers[index]),
+    rows: parsed.rows.map((row) => indices.map((index) => row[index] ?? '')),
+  });
+}
+
+function robustnessMetricTable(parsed: { headers: string[]; rows: string[][] }) {
+  if (parsed.rows.length === 0 || !parsed.headers.includes('degradation')) {
+    return { headers: [], rows: [] };
+  }
+  const index = Object.fromEntries(
+    parsed.headers.map((header, columnIndex) => [header.trim().toLowerCase(), columnIndex]),
+  );
+  const value = (row: string[], key: string) => row[index[key]] ?? '';
+  const clean = parsed.rows.find((row) => value(row, 'degradation') === 'clean');
+  const grouped = [
+    ['低光 · 轻 / 中 / 重', 'low-light'],
+    ['雨雾 · 轻 / 中 / 重', 'rain-fog'],
+    ['压缩 · 轻 / 中 / 重', 'compression'],
+    ['抖动 · 轻 / 中 / 重', 'jitter'],
+  ].map(([label, degradation]) => {
+    const rows = parsed.rows.filter((row) => value(row, 'degradation') === degradation);
+    return [
+      label,
+      rows.map((row) => value(row, 'baseline_auc_percent')).join(' / '),
+      rows.map((row) => value(row, 'dag_auc_percent')).join(' / '),
+      rows.map((row) => value(row, 'baseline_hr_percent')).join(' / '),
+      rows.map((row) => value(row, 'dag_hr_percent')).join(' / '),
+    ];
+  });
+  const degradationRows = parsed.rows.filter((row) => value(row, 'severity') !== 'none');
+  const average = (key: string) =>
+    (degradationRows.reduce((sum, row) => sum + Number(value(row, key)), 0) / degradationRows.length).toFixed(1);
+  const baselineAverage = average('baseline_auc_percent');
+  const dagAverage = average('dag_auc_percent');
+  return {
+    headers: ['退化配置', 'Baseline AUC ↑', '+DAG AUC ↑', 'Baseline HR ↓', '+DAG HR ↓'],
+    rows: [
+      clean
+        ? ['干净（无退化）', value(clean, 'baseline_auc_percent'), value(clean, 'dag_auc_percent'), value(clean, 'baseline_hr_percent'), value(clean, 'dag_hr_percent')]
+        : [],
+      ...grouped,
+      ['退化网格平均', baselineAverage, dagAverage, average('baseline_hr_percent'), average('dag_hr_percent')],
+      clean
+        ? ['RPR（相对干净集）', (Number(baselineAverage) / Number(value(clean, 'baseline_auc_percent'))).toFixed(2), (Number(dagAverage) / Number(value(clean, 'dag_auc_percent'))).toFixed(2), '—', '—']
+        : [],
+    ].filter((row) => row.length > 0),
+  };
 }
 
 function englishMetricTable(parsed: { headers: string[]; rows: string[][] }): {
@@ -158,7 +251,7 @@ function englishMetricTable(parsed: { headers: string[]; rows: string[][] }): {
   const drop = new Set(
     parsed.headers
       .map((header, index) =>
-        /^(simulated|aggregation|dataset|experiment_id|memory_gb)$/i.test(header.trim())
+        /^(simulated|aggregation|dataset|experiment_id)$/i.test(header.trim())
           ? index
           : -1,
       )
@@ -174,8 +267,10 @@ function englishMetricTable(parsed: { headers: string[]; rows: string[][] }): {
         const header = headers[index];
         if (header === 'method') return abbreviateMethod(cell);
         if (header === 'DAA' || header === 'EAD' || header === 'DAG') {
-          return /^(true|1|yes)$/i.test(cell.trim()) ? 'Y' : 'N';
+          return /^(true|1|yes)$/i.test(cell.trim()) ? '✓' : '';
         }
+        if (header === 'Latency ↓' && cell.trim()) return `${cell} ms`;
+        if (header === 'Memory ↓' && cell.trim()) return `${cell} GB`;
         return cell;
       }),
   );
@@ -355,12 +450,9 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
       const coreReferences =
         findLatestByRole(artifacts, 'core-references') ??
         findLatestByPathHint(artifacts, 'core-references.csv');
-      const mainCsv =
-        findLatestByPathHint(artifacts, 'metrics/main.csv') ??
-        findLatestByPathHint(artifacts, 'main.csv');
-      const ablationCsv =
-        findLatestByPathHint(artifacts, 'metrics/ablation.csv') ??
-        findLatestByPathHint(artifacts, 'ablation.csv');
+      const mainCsv = findLatestMetricArtifact(artifacts, 'main.csv');
+      const ablationCsv = findLatestMetricArtifact(artifacts, 'ablation.csv');
+      const robustnessCsv = findLatestMetricArtifact(artifacts, 'robustness.csv');
       const figureArtifacts = artifacts
         .filter((artifact) => artifact.role === 'paper-figure')
         .sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
@@ -392,6 +484,7 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           coreReferencesText,
           mainText,
           ablationText,
+          robustnessText,
           innovationsText,
         ] = await Promise.all([
           plan ? fetchArtifactText(projectId, plan.artifactId) : Promise.resolve(''),
@@ -409,6 +502,9 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           mainCsv ? fetchArtifactText(projectId, mainCsv.artifactId) : Promise.resolve(''),
           ablationCsv
             ? fetchArtifactText(projectId, ablationCsv.artifactId)
+            : Promise.resolve(''),
+          robustnessCsv
+            ? fetchArtifactText(projectId, robustnessCsv.artifactId)
             : Promise.resolve(''),
           innovations
             ? fetchArtifactText(projectId, innovations.artifactId)
@@ -475,11 +571,15 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         }
         if (Object.keys(patch).length > 0) setFields(patch);
 
-        const mainCsvParsed = englishMetricTable(
+        const mainCsvParsed = selectMetricColumns(
           mainText ? splitCsv(mainText) : { headers: [], rows: [] },
+          ['method', 'auc_percent', 'ap_percent', 'map_at_0_5_percent', 'ear_percent', 'hr_percent', 'latency_ms', 'memory_gb'],
         );
         const ablationCsvParsed = englishMetricTable(
           ablationText ? splitCsv(ablationText) : { headers: [], rows: [] },
+        );
+        const robustnessCsvParsed = robustnessMetricTable(
+          robustnessText ? splitCsv(robustnessText) : { headers: [], rows: [] },
         );
 
         setHydration({
@@ -509,6 +609,8 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
             ablationCsvParsed.rows.length > 0
               ? ablationCsvParsed.rows
               : DEMO_ABLATION_ROWS.map((row) => [...row]),
+          robustnessHeaders: robustnessCsvParsed.headers,
+          robustnessRows: robustnessCsvParsed.rows,
           comparisonFigureUrl: comparisonFigure
             ? artifactContentUrl(projectId, comparisonFigure.artifactId)
             : null,
