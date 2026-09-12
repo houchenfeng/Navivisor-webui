@@ -68,7 +68,32 @@ cd web && pnpm dev      # 前端，常见 http://localhost:5173 或 5174
 | 写作 | `/research/paper` | 填入实验素材 → 任意跳步 → AI 生成走 Codex |
 | 投稿 | `/research/submit` | 走完审稿 Demo（默认本地 mock） |
 
-写作 AI 需 Codex 已登录；PDF 请下载 zip 后本地编译。页面中的模拟结果必须视为教学 Demo，不能作为真实论文证据。
+写作 AI 需 Codex 已登录。第 10 步可由后端调用本机 LaTeX 编译 PDF；也可下载包含官方模板文件的 zip 后离线编译。页面中的模拟结果必须视为教学 Demo，不能作为真实论文证据。
+
+### LaTeX / CVPR PDF 编译环境
+
+项目使用你提供的 CVPR 官方 Author Kit（当前模板为 CVPR 2026 风格），生成包会包含 `cvpr.sty`、`preamble.tex` 和 `ieeenat_fullname.bst`。一键编译依赖本机安装以下工具之一：
+
+- Windows：安装 [MiKTeX](https://miktex.org/download) 或 [TeX Live](https://www.tug.org/texlive/)，并把 `pdflatex`、`bibtex` 加入 PATH；
+- macOS：安装 MacTeX；Linux：安装 TeX Live，并确保同样的命令可在终端执行。
+
+可用下面的命令检查：
+
+```bash
+pdflatex --version
+bibtex --version
+```
+
+如果后端找不到 `pdflatex`，页面会提示安装环境，而不会伪造 PDF。需要使用其他命令时，可在 `.env` 中设置 `LATEX_COMMAND`。后端编译会在临时目录中执行，编译结束后自动清理。
+
+离线编译下载的文章包：
+
+```bash
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+bibtex main
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+```
 
 ## OpenAlex 开题检索
 
@@ -114,3 +139,42 @@ API Key 只在后端使用，不能写入前端源码、浏览器存储、提交
 ## 上游项目
 
 本项目基于 [LimLLL/codex-webui](https://github.com/LimLLL/codex-webui) 二次开发。完整安装与能力说明见 [docs/codex-webui.md](./docs/codex-webui.md)。
+
+## 两个对话的合并改动记录
+
+两个 Codex 对话使用的是同一个工作目录：`C:\Navivisor-webui-main-clean`。以下内容已经出现在当前 `topic` 工作区中；它们尚未提交到远端，也没有修改 `main`。
+
+### 对话一：开题检索、核心文献与论文 LaTeX
+
+- 完成开题阶段的 OpenAlex 自适应检索链路：生成 OQL，按 `focused`、`balanced`、`broad` 分层调整检索范围，分页获取并去重论文。
+- 支持候选课题生成、用户确认后进入核心文献检索，以及 CSV、BibTeX、检索记录和合法 OA PDF 的打包。
+- 接入 OpenAlex Content API PDF 下载逻辑。API Key 只由后端使用；没有可验证 OA 内容的论文保留元数据，不伪造 PDF。
+- 优化写作页面的检索/生成数据衔接，并保留课题、实验素材、文献和图片的来源边界。
+- 接入 CVPR 官方 Author Kit 的本地 LaTeX 编译：后端提供 `/api/research/writing/compile`，前端第 10 步可以下载包含模板的文章包或请求生成 PDF。
+- README 已补充 MiKTeX、TeX Live、`pdflatex`、`bibtex` 的安装和离线编译说明。
+
+主要涉及：
+
+`src/research-writing/`、`src/app.module.ts`、`src/main.ts`、`web/src/components/research-writing/components/writing/Step9Export.tsx`、`web/src/components/research-writing/lib/cvprTex.ts`、`web/public/cvpr-template/`。
+
+### 对话二：实验说明到 CVPR 算法流程图
+
+- 在 `research-writing` Skill 中新增 `generate-algorithm-flowchart` action。
+- 规定以实验详细说明 Markdown 和明确声明的 artifact 为唯一科学依据，先提取结构化 `flowchart-spec.json`，再生成提示词和确定性的 SVG/PNG 草稿。
+- 增加流程图结构校验要求：检查节点、边、方向、分支、融合、标签和证据；证据不足时返回 `needs_input`，不允许猜测算法结构。
+- 设计 CVPR 风格成图流程：只有草稿通过结构检查后才调用账户提供的 ImageGen；生成失败时如实记录 `unavailable` 或 `needs_credentials`。
+- 增加拓扑保持、精确标签、二次修正、图片元数据和 `paper-figure` artifact 的要求，避免把漂亮但错误的图片写入论文。
+- 新增无依赖的流程图草稿渲染脚本和 Skill 评估样例。
+- 将写作图片生成请求接入 Research Workflow 的 run/artifact 追踪边界，要求记录输入版本、提示词、模型和生成结果。
+
+主要涉及：
+
+`research-skills/research-writing/SKILL.md`、`research-skills/research-writing/references/algorithm-flowchart-generation.md`、`research-skills/research-writing/scripts/render_flowchart_draft.mjs`、`research-skills/research-writing/evals/`、`web/src/components/research-writing/components/writing/Step5Algorithm.tsx` 及相关 Workflow 客户端代码。
+
+### 当前状态与验证边界
+
+- 当前分支：`topic`；`HEAD` 与 `origin/topic` 仍为原有提交，以上新增内容主要是本地未提交改动。
+- 已验证：后端 Nest 构建、前端 Vite 生产构建、CVPR 官方模板 smoke test，以及后端 LaTeX 编译接口返回有效 PDF。
+- VGGT 完整 CVPR 源码已使用本地 MiKTeX 独立编译验证，但这不等于写作页面已经支持直接导入完整 `.tar.gz`/`.tex` 工程。
+- 算法流程图 Skill 的规范、脚本和前端接入已在目录中；ImageGen 的真实调用、最终图片质量和完整 artifact 闭环仍需单独运行验收。
+- 当前未执行 commit、push、PR 合并或 `main` 修改。

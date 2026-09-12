@@ -43,7 +43,8 @@ function replaceUnicodeSymbols(s: string): string {
 
 /** 转义 LaTeX 特殊字符 */
 function esc(s: string): string {
-  return replaceUnicodeSymbols(s)
+  // Escape user text first so generated LaTeX commands remain valid.
+  return s
     .replace(/\\/g, "\\\\")
     .replace(/&/g, "\\&")
     .replace(/%/g, "\\%")
@@ -56,11 +57,15 @@ function esc(s: string): string {
     .replace(/\^/g, "\\textasciicircum{}");
 }
 
+function latexText(s: string): string {
+  return replaceUnicodeSymbols(esc(s));
+}
+
 /** 把多段文字拆成 LaTeX 段落（空行分段） */
 function paragraphs(s: string): string {
   return s
     .split(/\n\s*\n/)
-    .map((p) => esc(p.trim()))
+    .map((p) => latexText(p.trim()))
     .filter(Boolean)
     .join("\n\n");
 }
@@ -71,9 +76,9 @@ function buildTable(data: WritingData): string {
   if (headers.length === 0 || rows.length === 0) return "";
 
   const colSpec = "l".repeat(headers.length);
-  const headerRow = headers.map((h) => `\\textbf{${esc(h)}}`).join(" & ");
+  const headerRow = headers.map((h) => `\\textbf{${latexText(h)}}`).join(" & ");
   const bodyRows = rows
-    .map((r) => r.map((c) => esc(c)).join(" & ") + " \\\\")
+    .map((r) => r.map((c) => latexText(c)).join(" & ") + " \\\\")
     .join("\n    ");
 
   return `
@@ -94,13 +99,13 @@ function buildTable(data: WritingData): string {
 
 /** 生成 main.tex（CVPR 格式，无行号版本） */
 export function buildCvprTex(data: WritingData): string {
-  const title = esc(data.title || "Untitled Paper");
+  const title = latexText(data.title || "Untitled Paper");
 
-  const flowFig = data.algorithmFlowImage
+  const flowFig = data.algorithmFlowImage.startsWith("data:")
     ? `\\includegraphics[width=\\linewidth]{figures/algorithm_flow.png}`
     : `% \\includegraphics[width=\\linewidth]{figures/algorithm_flow.png}`;
 
-  const illustFig = data.algorithmIllustImage
+  const illustFig = data.algorithmIllustImage.startsWith("data:")
     ? `\\includegraphics[width=\\linewidth]{figures/algorithm_illustration.png}`
     : `% \\includegraphics[width=\\linewidth]{figures/algorithm_illustration.png}`;
 
@@ -110,7 +115,7 @@ export function buildCvprTex(data: WritingData): string {
 
 \\documentclass[10pt,twocolumn,letterpaper]{article}
 
-\\usepackage{cvpr}
+\\usepackage[review]{cvpr}
 
 \\input{preamble}
 
@@ -164,6 +169,8 @@ ${buildTable(data)}
 \\section{Discussion and Conclusion}
 ${paragraphs(data.discussion)}
 
+${data.bibContent.trim() || data.references.length ? "\\nocite{*}" : ""}
+
 {
 \\small
 \\bibliographystyle{ieeenat_fullname}
@@ -176,6 +183,7 @@ ${paragraphs(data.discussion)}
 
 /** 生成 main.bib */
 export function buildCvprBib(data: WritingData): string {
+  if (data.bibContent.trim()) return data.bibContent.trim() + "\\n";
   if (!data.references || data.references.length === 0) {
     return "% Empty bibliography. Add your references here.\n";
   }

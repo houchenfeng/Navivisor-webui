@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
 import { clearData } from "@/components/research-writing/lib/storage";
 import { buildCvprTex, buildCvprBib } from "@/components/research-writing/lib/cvprTex";
+import { getAuthorizationHeader } from "@/auth-token";
 
 interface Props {
   data: WritingData;
@@ -33,6 +34,14 @@ async function urlToBlob(url: string): Promise<Blob> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`无法下载图片 ${url}`);
   return res.blob();
+}
+
+const TEMPLATE_FILES = ["cvpr.sty", "preamble.tex", "ieeenat_fullname.bst"] as const;
+
+async function loadTemplateFile(name: string): Promise<Blob> {
+  const response = await fetch(`/cvpr-template/${name}`);
+  if (!response.ok) throw new Error(`无法读取官方模板文件：${name}`);
+  return response.blob();
 }
 
 export default function Step9Export({ data }: Props) {
@@ -68,7 +77,10 @@ export default function Step9Export({ data }: Props) {
       // 2. main.bib
       zip.file("main.bib", buildCvprBib(data));
 
-      // 3. figures/
+      // 3. Official CVPR support files, so the archive is directly compilable.
+      for (const name of TEMPLATE_FILES) zip.file(name, await loadTemplateFile(name));
+
+      // 4. figures/
       const figFolder = zip.folder("figures")!;
       if (data.algorithmFlowImage) {
         try {
@@ -87,7 +99,15 @@ export default function Step9Export({ data }: Props) {
         }
       }
 
-      // 4. 打包
+      // 5. 打包
+      zip.file(
+        "CVPR-COMPILE-README.txt",
+        "Compile with a local TeX installation:\n\n" +
+          "pdflatex -interaction=nonstopmode -halt-on-error main.tex\n" +
+          "bibtex main\n" +
+          "pdflatex -interaction=nonstopmode -halt-on-error main.tex\n" +
+          "pdflatex -interaction=nonstopmode -halt-on-error main.tex\n",
+      );
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -102,14 +122,43 @@ export default function Step9Export({ data }: Props) {
     }
   };
 
-  // 一键编译 PDF（服务端编译尚未接入；引导用户下载 zip）
+  // 一键编译 PDF：发送源码到后端，由本机 TeX 环境编译。
   const handleCompile = async () => {
     setCompiling(true);
     setError("");
     try {
-      setError(
-        "在线 PDF 编译尚未接入 Research Workflow。请先「下载文章 zip」，再用本地 CVPR 模板编译。",
-      );
+      const response = await fetch("/api/research/writing/compile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(getAuthorizationHeader()
+            ? { Authorization: getAuthorizationHeader()! }
+            : {}),
+        },
+        body: JSON.stringify({
+          tex,
+          bib: buildCvprBib(data),
+          figures: {
+            ...(data.algorithmFlowImage.startsWith("data:")
+              ? { "algorithm_flow.png": data.algorithmFlowImage }
+              : {}),
+            ...(data.algorithmIllustImage.startsWith("data:")
+              ? { "algorithm_illustration.png": data.algorithmIllustImage }
+              : {}),
+          },
+        }),
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || `编译请求失败（${response.status}）`);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeName}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
       setCompiling(false);
     }
@@ -215,10 +264,10 @@ export default function Step9Export({ data }: Props) {
         </div>
         <ul className="ml-4 list-disc">
           <li>
-            <b>一键编译 PDF</b> — 暂未接入（请用下方 zip + 本地 CVPR 模板）
+            <b>一键编译 PDF</b> — 使用后端本机的 TeX 环境编译并下载 PDF
           </li>
           <li>
-            <b>下载文章 zip</b> — 包含 main.tex + main.bib + 图片，用于备份或自行编译（推荐）
+            <b>下载文章 zip</b> — 包含 main.tex + main.bib + 官方模板文件 + 图片，可离线编译
           </li>
         </ul>
       </section>
