@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
 import { generateWritingFigure, generateWritingSection } from "@/components/research-writing/lib/codex";
 import { tryLoadDemoResultFigures } from "@/components/research-writing/lib/demo-writing";
+import { formatUnknownError } from "@/components/research-writing/lib/errors";
 import WordCounter from "./WordCounter";
 import TranslateButton from "./TranslateButton";
 
@@ -56,9 +57,11 @@ export default function Step5Algorithm({ data, onChange }: Props) {
     setError("");
     try {
       const text = await generateWritingSection("algorithm", data);
-      onChange({ algorithm: text });
+      onChange({
+        algorithm: typeof text === "string" ? text : JSON.stringify(text),
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatUnknownError(e));
     } finally {
       setLoading(false);
     }
@@ -81,7 +84,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       });
       onChange({ [kind]: imageUrl } as Partial<WritingData>);
     } catch (e) {
-      setImgError(e instanceof Error ? e.message : String(e));
+      setImgError(formatUnknownError(e));
     } finally {
       setImgLoadingFlow(false);
     }
@@ -98,7 +101,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       }
       setResultImages(images);
     } catch (e) {
-      setImgError(e instanceof Error ? e.message : String(e));
+      setImgError(formatUnknownError(e));
     } finally {
       setResultLoading(false);
     }
@@ -176,7 +179,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (e) {
-      setImgError(`下载失败：${String(e)}`);
+      setImgError(`下载失败：${formatUnknownError(e)}`);
     }
   };
 
@@ -199,13 +202,13 @@ export default function Step5Algorithm({ data, onChange }: Props) {
         </button>
       </header>
 
-      {error && (
+      {error && error !== "[object Object]" && (
         <div className="rounded-lg bg-red-50 px-4 py-2 text-xs text-red-600">
           {error}
         </div>
       )}
 
-      {imgError && (
+      {imgError && imgError !== "[object Object]" && (
         <div className="rounded-lg bg-red-50 px-4 py-2 text-xs text-red-600">
           {imgError}
         </div>
@@ -214,7 +217,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
       <section className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-ink">方法正文</label>
         <textarea
-          value={data.algorithm}
+          value={typeof data.algorithm === "string" ? data.algorithm : ""}
           onChange={(e) => onChange({ algorithm: e.target.value })}
           placeholder="在这里描述你的算法：整体框架、各模块作用、训练目标等。"
           className="h-[220px] w-full resize-none rounded-lg border border-blue-100 bg-white p-5 font-serif text-[15px] leading-relaxed text-ink outline-none transition-all focus:border-brand-300 focus:ring-2 focus:ring-brand-100"

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { translateText, type TranslateDirection } from "@/components/research-writing/lib/translate";
+import { formatUnknownError } from "@/components/research-writing/lib/errors";
 
 interface Props {
   text: string;
@@ -19,7 +20,7 @@ export default function TranslateButton({ text, onApply }: Props) {
       const t = await translateText(text, direction);
       setResult(t);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatUnknownError(e));
     } finally {
       setLoading(null);
     }

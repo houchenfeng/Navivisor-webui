@@ -3,6 +3,7 @@ import type { WritingData } from '@/components/research-writing/data/writingStep
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import { resolveWritingRunContext } from '@/components/research-workflow/use-research-project';
 import { tryLoadDemoWritingFigure, tryLoadDemoWritingSection } from '@/components/research-writing/lib/demo-writing';
+import { formatUnknownError } from '@/components/research-writing/lib/errors';
 
 export type WritingSection =
   | 'title-abstract'
@@ -23,18 +24,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  if (error && typeof error === 'object') {
-    const record = error as Record<string, unknown>;
-    if (typeof record.message === 'string') return record.message;
-    if (typeof record.error === 'string') return record.error;
-  }
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Unknown Codex error';
-  }
+  return formatUnknownError(error);
 }
 
 function buildSectionInstructions(section: WritingSection, data: WritingData): string {
@@ -185,14 +175,19 @@ export async function generateWritingSection(
   if (fromDemo) return fromDemo;
 
   const { projectId, inputArtifactIds } = await resolveWritingRunContext();
-  const started = await researchWorkflowClient.startAgentRun({
-    projectId,
-    stage: 'writing.draft',
-    mode: 'simulated',
-    inputArtifactIds,
-    instructions: buildSectionInstructions(section, data),
-    effort: 'medium',
-  });
+  let started;
+  try {
+    started = await researchWorkflowClient.startAgentRun({
+      projectId,
+      stage: 'writing.draft',
+      mode: 'simulated',
+      inputArtifactIds,
+      instructions: buildSectionInstructions(section, data),
+      effort: 'medium',
+    });
+  } catch (error) {
+    throw new Error(formatUnknownError(error));
+  }
 
   let turnText = '';
   let turnFailure: unknown;
@@ -254,7 +249,9 @@ export async function generateWritingFigure(
         bounded(context.topic, 1_000),
       ].join('\n')
     : '';
-  const started = await researchWorkflowClient.startAgentRun({
+  let started;
+  try {
+    started = await researchWorkflowClient.startAgentRun({
     projectId,
     stage: 'writing.draft',
     mode: isFlowchart ? 'real' : 'simulated',
@@ -273,6 +270,9 @@ export async function generateWritingFigure(
     ].join('\n'),
     effort: 'medium',
   });
+  } catch (error) {
+    throw new Error(formatUnknownError(error));
+  }
 
   const timeoutMs = 5 * 60 * 1000;
   const intervalMs = 2500;

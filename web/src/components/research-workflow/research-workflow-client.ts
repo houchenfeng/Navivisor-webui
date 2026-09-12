@@ -11,6 +11,8 @@ import {
 } from '@/generated/api/sdk.gen';
 import type {
   LoadDemoResult,
+  ActivateDemoResult,
+  DemoDefinition,
   ResearchArtifact,
   ResearchProject,
   ResearchRun,
@@ -22,7 +24,26 @@ import type {
 } from './research-workflow-types';
 
 function dataOf<T>(response: { data?: unknown; error?: unknown }): T {
-  if (response.error !== undefined) throw response.error;
+  if (response.error !== undefined) {
+    const error = response.error;
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : (() => {
+              const record = error as Record<string, unknown> | null;
+              if (record && typeof record.message === 'string') return record.message;
+              if (record && Array.isArray(record.message))
+                return record.message.map(String).join('; ');
+              try {
+                return JSON.stringify(error);
+              } catch {
+                return 'Request failed';
+              }
+            })();
+    throw new Error(message || 'Request failed');
+  }
   return response.data as T;
 }
 
@@ -64,18 +85,43 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const researchWorkflowClient = {
-  async startSshExperiment(input: SshExperimentInput): Promise<SshExperimentJob> {
-    return apiJson('/api/research/ssh-experiments', { method: 'POST', body: JSON.stringify(input) });
+  async listDemos(): Promise<DemoDefinition[]> {
+    return apiJson('/api/research/demos');
+  },
+  async activateDemo(
+    demoId: string,
+    absolutePath: string,
+  ): Promise<ActivateDemoResult> {
+    return apiJson(
+      `/api/research/demos/${encodeURIComponent(demoId)}/activate`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ absolutePath }),
+      },
+    );
+  },
+  async startSshExperiment(
+    input: SshExperimentInput,
+  ): Promise<SshExperimentJob> {
+    return apiJson('/api/research/ssh-experiments', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
   },
   async getSshExperiment(jobId: string): Promise<SshExperimentJob> {
-    return apiJson(`/api/research/ssh-experiments/${encodeURIComponent(jobId)}`);
+    return apiJson(
+      `/api/research/ssh-experiments/${encodeURIComponent(jobId)}`,
+    );
   },
   async listProjects(): Promise<ResearchProject[]> {
     return dataOf(await researchWorkflowListProjects({ throwOnError: true }));
   },
   async createProject(name: string): Promise<ResearchProject> {
     return dataOf(
-      await researchWorkflowCreateProject({ body: { name }, throwOnError: true }),
+      await researchWorkflowCreateProject({
+        body: { name },
+        throwOnError: true,
+      }),
     );
   },
   async registerWorkspace(input: {
@@ -119,7 +165,10 @@ export const researchWorkflowClient = {
   },
   async listRuns(projectId: string): Promise<ResearchRun[]> {
     return dataOf(
-      await researchWorkflowListRuns({ path: { projectId }, throwOnError: true }),
+      await researchWorkflowListRuns({
+        path: { projectId },
+        throwOnError: true,
+      }),
     );
   },
   async getRun(projectId: string, runId: string): Promise<ResearchRun> {
@@ -213,14 +262,34 @@ export const researchWorkflowClient = {
 };
 
 export type SshExperimentInput = {
-  projectId: string; host: string; port: number; username: string; password: string;
-  codeDir: string; dataDir: string; resultsDir: string; documentDir: string;
-  condaEnv: string; experimentDocument: string;
+  projectId: string;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  codeDir: string;
+  dataDir: string;
+  resultsDir: string;
+  documentDir: string;
+  condaEnv: string;
+  experimentDocument: string;
 };
 
 export type SshExperimentJob = {
-  jobId: string; projectId: string;
-  status: 'queued' | 'connecting' | 'running' | 'downloading' | 'completed' | 'failed';
-  message: string; compute?: string; remoteResultsDir?: string; localRelativeDir?: string;
-  artifacts?: ResearchArtifact[]; startedAt: string; finishedAt?: string;
+  jobId: string;
+  projectId: string;
+  status:
+    | 'queued'
+    | 'connecting'
+    | 'running'
+    | 'downloading'
+    | 'completed'
+    | 'failed';
+  message: string;
+  compute?: string;
+  remoteResultsDir?: string;
+  localRelativeDir?: string;
+  artifacts?: ResearchArtifact[];
+  startedAt: string;
+  finishedAt?: string;
 };
