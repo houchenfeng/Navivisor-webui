@@ -8,7 +8,6 @@ import {
 import { researchWorkflowClient } from './research-workflow-client';
 import type { DemoDefinition, LoadDemoResult } from './research-workflow-types';
 import { useResearchProjectStore, isResearchDemoMode } from '@/stores/research-project-store';
-import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
 import { exitResearchDemo } from '@/components/research-workflow/exit-research-demo';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +30,6 @@ export function LoadWorkspaceDemoButton({
   const bumpDemoEpoch = useResearchProjectStore((state) => state.bumpDemoEpoch);
   const demoLoaded = isResearchDemoMode(project);
   const [open, setOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [demos, setDemos] = useState<DemoDefinition[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [demoRoot, setDemoRoot] = useState('');
@@ -97,7 +95,6 @@ export function LoadWorkspaceDemoButton({
       bumpDemoEpoch();
       onLoaded?.(load);
       setOpen(false);
-      setDetailsOpen(false);
       setMessage(
         load.complete
           ? `已载入 ${workspace.title}${load.idempotent ? '（幂等复用）' : ''}`
@@ -118,7 +115,6 @@ export function LoadWorkspaceDemoButton({
     )
       return;
     exitResearchDemo();
-    setDetailsOpen(false);
     setOpen(false);
     setMessage('已退出 Demo 模式');
   }
@@ -128,17 +124,14 @@ export function LoadWorkspaceDemoButton({
       <div className="flex flex-wrap items-center justify-end gap-2">
       <button
         type="button"
-        onClick={() => {
-          if (demoLoaded) setDetailsOpen(true);
-          else setOpen(true);
-        }}
+        onClick={() => setOpen(true)}
         className={cn(
           'inline-flex items-center justify-center gap-2 rounded-xl border border-[#c9dbf8] bg-white font-bold text-[#1F4DCB] transition hover:bg-[#f3f8ff]',
           compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm',
         )}
       >
         <FolderOpen className="size-4" />
-        {demoLoaded ? 'Demo 模式已开启' : '载入研究数据'}
+        {demoLoaded ? '研究数据已载入' : '载入研究数据'}
       </button>
       {allowUnload ? (
         <button
@@ -162,54 +155,6 @@ export function LoadWorkspaceDemoButton({
           {message}
         </p>
       ) : null}
-      {detailsOpen && demoLoaded
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[2147483647] isolate grid place-items-center bg-[#102c65]/35 p-4"
-              role="dialog"
-              aria-modal="true"
-              aria-label="当前研究数据"
-              onClick={() => setDetailsOpen(false)}
-            >
-              <section
-                className="w-full max-w-lg"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="mb-2 flex items-center justify-end gap-2">
-                  {allowUnload ? (
-                    <button
-                      type="button"
-                      onClick={() => void unload()}
-                      className="rounded-xl border border-[#f3c4c4] bg-white px-3 py-1.5 text-xs font-bold text-[#b42318]"
-                    >
-                      卸载研究数据
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDetailsOpen(false);
-                      setOpen(true);
-                    }}
-                    className="rounded-xl border border-[#c9dbf8] bg-white px-3 py-1.5 text-xs font-bold text-[#1F4DCB]"
-                  >
-                    更换研究数据
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="关闭"
-                    onClick={() => setDetailsOpen(false)}
-                    className="rounded-lg bg-white p-2 text-[#6781aa] hover:bg-[#f3f8ff]"
-                  >
-                    <X className="size-5" />
-                  </button>
-                </div>
-                <CurrentPaperCard defaultOpen />
-              </section>
-            </div>,
-            document.body,
-          )
-        : null}
       {open
         ? createPortal(
             <div

@@ -1,7 +1,7 @@
-method,auc_percent,ap_percent,map_at_0_5_percent,auc_delta_vs_b0,ap_delta_vs_b0,ear_percent,hr_percent,latency_ms,memory_gb,simulated
-深度自编码器重建式监控视频异常检测（2023）,74.6,65.1,18.7,-2.2,-3.1,,,46,1.9,true
-弱监督片段级卷积–Transformer 视频异常检测（Sensors 2023）,78.3,69.8,23.4,1.5,1.6,,,89,3.1,true
-CLIP-TSA 时间注意力零样本检测（2022）,75.9,66.5,20.2,-0.9,-1.7,,,74,2.8,true
-Harnessing Large Language Models for Training-Free Video Anomaly Detection（CVPR 2024）,78.9,70.3,24.6,2.1,2.1,40.2,27.8,131,3.7,true
-Baseline-B0（冻结视觉/文本塔+文本侧打分+时间平滑）,76.8,68.2,24.1,0.0,0.0,41.5,26.4,118,3.6,true
-EviVAD（B0+DAA+EAD+DAG）,82.1,74.3,31.6,5.3,6.1,68.4,9.8,147,4.1,true
+method,AUC,AP,mAP@0.5,dAUC,dAP,EAR,HR,lat
+ConvAE,74.6,65.1,18.7,-2.2,-3.1,,,46
+WS-CT,78.3,69.8,23.4,1.5,1.6,,,89
+CLIP-TSA,75.9,66.5,20.2,-0.9,-1.7,,,74
+LAVAD,78.9,70.3,24.6,2.1,2.1,40.2,27.8,131
+B0,76.8,68.2,24.1,0.0,0.0,41.5,26.4,118
+EviVAD,82.1,74.3,31.6,5.3,6.1,68.4,9.8,147

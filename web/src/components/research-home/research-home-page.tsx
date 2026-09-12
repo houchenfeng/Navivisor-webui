@@ -15,8 +15,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
-import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
-import { ConversationEventCards } from '@/components/research-workflow/conversation-event-cards';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import {
   isResearchDemoMode,
@@ -234,7 +232,7 @@ export function ResearchHomePage() {
               </h2>
               <p className="mt-0.5 text-[11px] font-medium text-[#7890b6]">
                 {isResearchDemoMode(project)
-                  ? 'Demo 模式已开启：工作目录与摘要已从研究数据载入。'
+                  ? '研究数据已载入：四模块使用当前工作目录中的数据。'
                   : '选择服务端可访问目录，四模块所有数据均储存在此目录。'}
               </p>
             </div>
@@ -279,13 +277,9 @@ export function ResearchHomePage() {
             </p>
           ) : null}
           {project ? (
-            <div className="mt-2 space-y-2">
-              <p className="break-all font-mono text-[11px] text-[#173778]">
-                {project.rootPath}
-              </p>
-              <CurrentPaperCard defaultOpen />
-              <ConversationEventCards />
-            </div>
+            <p className="mt-1.5 break-all font-mono text-[11px] text-[#173778]">
+              {project.rootPath}
+            </p>
           ) : null}
         </div>
 

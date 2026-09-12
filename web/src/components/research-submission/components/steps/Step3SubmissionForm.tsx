@@ -31,18 +31,27 @@ export default function Step3SubmissionForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadingFields, setLoadingFields] = useState<Record<AIField, boolean>>({ title: false, authors: false, keywords: false, abstract: false, tldr: false });
 
+  const [pdfBusy, setPdfBusy] = useState(false);
+
   const demoReady = isDemoLoaded;
 
   const handleChoosePdf = async () => {
-    if (demoReady) {
+    setPdfBusy(true);
+    setApiError(null);
+    try {
       const file = await pickDemoPdf();
       if (file) {
         setSelectedFile(file);
-        setApiError(null);
         return;
       }
+      if (demoReady) {
+        setApiError('未找到 Demo 论文 PDF，请重新载入研究数据。');
+        return;
+      }
+      fileInputRef.current?.click();
+    } finally {
+      setPdfBusy(false);
     }
-    fileInputRef.current?.click();
   };
 
   const handleAIAssist = async (field: AIField) => {
@@ -133,7 +142,11 @@ export default function Step3SubmissionForm() {
             <Lightbulb className="mt-0.5 size-7 shrink-0 text-[#d97706]" />
             <span>
               {t.pdfTip}
-              <span className="mt-1 block font-bold text-[#9a3412]">↓ 请向下翻到页面下方的 PDF 上传处</span>
+              {demoReady ? (
+                <span className="mt-1 block font-bold text-[#9a3412]">↓ 点击下方「选择 PDF」即可载入 Demo 论文</span>
+              ) : (
+                <span className="mt-1 block font-bold text-[#9a3412]">↓ 请向下翻到页面下方的 PDF 上传处</span>
+              )}
             </span>
             <button
               type="button"
@@ -156,7 +169,7 @@ export default function Step3SubmissionForm() {
           <div className="mb-4">{fieldHeader(t.tldr, false, 'tldr')}<p className="mb-1 text-xs text-[#666]">"Too Long; Didn't Read": a short sentence describing your paper</p><input type="text" value={form.tldr} onChange={(e) => setFormField('tldr', e.target.value)} className="w-full rounded-sm border-2 border-[#2c5f7a] bg-[#fffbf0] px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#2c5f7a]" /></div>
           <div className="mb-4">{fieldHeader(t.abstract, true, 'abstract')}<p className="mb-1 text-xs text-[#666]">Abstract of paper. Add TeX formulas using the following formats: $in-line formula$ or $$Block Formula$$.</p><div className="rounded-sm border-2 border-[#2c5f7a] bg-[#fffbf0]"><div className="flex gap-1 border-b border-[#2c5f7a] bg-[#f5f0e0] px-2 pt-1"><button type="button" onClick={() => setAbstractTab('write')} className={`rounded-t px-3 py-1 text-sm ${abstractTab === 'write' ? 'bg-[#fffbf0] font-medium text-[#333]' : 'text-[#666] hover:text-[#333]'}`}>{t.write}</button><button type="button" onClick={() => setAbstractTab('preview')} className={`rounded-t px-3 py-1 text-sm ${abstractTab === 'preview' ? 'bg-[#fffbf0] font-medium text-[#333]' : 'text-[#666] hover:text-[#333]'}`}>{t.preview}</button></div>{abstractTab === 'write' ? <textarea value={form.abstract} onChange={(e) => setFormField('abstract', e.target.value)} rows={8} className="w-full resize-y bg-transparent p-2 text-sm focus:outline-none" /> : <div className="min-h-[160px] p-3 text-sm leading-relaxed text-[#333] whitespace-pre-wrap">{form.abstract || <span className="italic text-[#999]">No content to preview.</span>}</div>}</div></div>
           <p className="mb-4 text-xs text-[#666]"><span className="font-mono text-[#888]">M</span> TeX is supported</p>
-          <div className="mb-4"><label className="mb-1 block text-sm font-bold text-[#800000]">PDF<span className="text-[#800000]">*</span></label><p className="mb-1 text-xs text-[#666]">Upload a PDF file that ends with .pdf. The paper must comply with the page limit selected above.</p><div className="mb-3 flex items-start gap-3 rounded-xl border-2 border-[#f59e0b] bg-gradient-to-br from-[#fff7ed] via-[#fef3c7] to-[#fde68a] px-4 py-3 text-base font-bold text-[#7c2d12] shadow-[0_8px_20px_rgba(245,158,11,0.28)]"><Lightbulb className="mt-0.5 size-6 shrink-0 text-[#d97706]" /><span>{t.pdfTip}</span></div><button type="button" onClick={handleChoosePdf} className="flex items-center gap-2 rounded-sm bg-[#2c5f7a] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#1a4055]"><FileUp className="size-4" />{t.choosePdf}</button><input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFile(file); }} />{selectedFile && <p className="mt-2 text-xs text-[#555]">已选择: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</p>}</div>
+          <div className="mb-4"><label className="mb-1 block text-sm font-bold text-[#800000]">PDF<span className="text-[#800000]">*</span></label><p className="mb-1 text-xs text-[#666]">Upload a PDF file that ends with .pdf. The paper must comply with the page limit selected above.</p><div className="mb-3 flex items-start gap-3 rounded-xl border-2 border-[#f59e0b] bg-gradient-to-br from-[#fff7ed] via-[#fef3c7] to-[#fde68a] px-4 py-3 text-base font-bold text-[#7c2d12] shadow-[0_8px_20px_rgba(245,158,11,0.28)]"><Lightbulb className="mt-0.5 size-6 shrink-0 text-[#d97706]" /><span>{t.pdfTip}</span></div><button type="button" onClick={handleChoosePdf} disabled={pdfBusy} className="flex items-center gap-2 rounded-sm bg-[#2c5f7a] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#1a4055] disabled:opacity-60"><FileUp className="size-4" />{pdfBusy ? '正在载入 Demo PDF…' : demoReady ? '选择 PDF（Demo）' : t.choosePdf}</button><input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFile(file); }} />{selectedFile && <p className="mt-2 text-xs text-[#555]">已选择: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</p>}</div>
           <div className="mb-4"><label className="mb-1 block text-sm font-bold text-[#800000]">{t.emailSharing}<span className="text-[#800000]">*</span></label><p className="mb-2 text-xs text-[#666]">Please confirm you are aware that all author emails will be shared with Program Chairs.</p><label className="flex items-center gap-2 text-sm text-[#333]"><input type="radio" name="emailSharing" className="size-4" />We authorize the sharing of all author emails with Program Chairs.</label></div>
           <div className="mb-4"><label className="mb-1 block text-sm font-bold text-[#800000]">{t.dataRelease}<span className="text-[#800000]">*</span></label><p className="mb-2 text-xs text-[#666]">Please confirm you are aware that accepted submissions, along with their author names, will be released to the public after the conference is over.</p><label className="flex items-center gap-2 text-sm text-[#333]"><input type="radio" name="dataRelease" className="size-4" />We authorize the release of our submission and author names to the public in the event of acceptance.</label></div>
           <div className="mb-4"><label className="mb-1 block text-sm font-bold text-[#800000]">{t.license}<span className="text-[#800000]">*</span></label><select disabled className="w-full max-w-md cursor-not-allowed rounded-sm border-2 border-[#2c5f7a] bg-[#f5f0e0] px-2 py-1 text-sm text-[#333] focus:outline-none"><option>CC BY 4.0</option></select><p className="mt-1 text-xs text-[#888]">知识共享协议，允许他人在署名前提下自由分享和修改，学术投稿默认选择此项即可</p></div>

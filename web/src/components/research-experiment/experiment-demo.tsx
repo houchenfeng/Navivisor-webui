@@ -244,6 +244,11 @@ function PlanPage({ go }: { go: (step: ExperimentStep) => void }) {
         <div className="rounded-xl bg-blue-50 p-4 text-sm leading-6">
           <strong>基线算法</strong>
           <p className="mt-2 whitespace-pre-wrap">{baselineText}</p>
+          <p className="mt-3 text-sm leading-6 text-[#315a98]">
+            <strong>主要指标：</strong>
+            AUC（Area Under the ROC Curve，ROC 曲线下面积）以帧为样本、异常分数为判据，表示随机抽取一正一负帧时正样本分数更高的概率，衡量检测精度，越高越好。
+            EAR（Evidence Attribution Recall，证据归因召回）定义为预测证据集合与人工标注的最小充分证据集的交集占比，衡量解释是否对准了真正支撑异常判定的时空片段，越高越好。
+          </p>
         </div>
         <div className="rounded-xl border border-blue-200 bg-white p-4 text-sm leading-6">
           <strong>对比算法</strong>
@@ -782,7 +787,7 @@ function ResultsPage({ go }: { go: (step: ExperimentStep) => void }) {
   const activeDocument = document === 'architecture' ? architectureDocument : resultsDocument;
   const fromWorkspace = hydration.source === 'workspace';
   return <div className="flex flex-col gap-5">
-    <section className="rounded-2xl bg-white/90 p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-semibold text-[#10204A]">{isUnexecutedRealRun ? '成果模板（未执行）' : '成果交付'}</h2><p className="mt-1 text-sm text-muted-foreground">{isUnexecutedRealRun ? '正在整理交付结构与实验结果。' : fromWorkspace ? '已优先展示工作目录 experiment-results / 指标表 / 图。' : '算法、协议、主实验、消融、资源和效果图。'}</p></div></div><div className="mt-5 grid gap-3 lg:grid-cols-3">{winners.map((idea, index) => <article key={idea.id} className="rounded-xl border-l-4 border-[#1F4DCB] bg-blue-50 p-4"><span className="text-xs text-muted-foreground">创新点 {index + 1}</span><h3 className="mt-1 font-semibold">{idea.name}</h3><p className="mt-2 text-sm">{idea.hypothesis}</p><p className="mt-3 text-sm font-semibold text-[#16A36A]">贡献 {idea.gain}</p></article>)}</div></section>
+    <section className="rounded-2xl bg-white/90 p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-semibold text-[#10204A]">{isUnexecutedRealRun ? '成果模板' : '成果交付'}</h2><p className="mt-1 text-sm text-muted-foreground">{isUnexecutedRealRun ? '正在整理交付结构与实验结果。' : fromWorkspace ? '已优先展示工作目录 experiment-results / 指标表 / 图。' : '算法、协议、主实验、消融、资源和效果图。'}</p></div></div><div className="mt-5 grid gap-3 lg:grid-cols-3">{winners.map((idea, index) => <article key={idea.id} className="rounded-xl border-l-4 border-[#1F4DCB] bg-blue-50 p-4"><span className="text-xs text-muted-foreground">创新点 {index + 1}</span><h3 className="mt-1 font-semibold">{idea.name}</h3><p className="mt-2 text-sm">{idea.hypothesis}</p><p className="mt-3 text-sm font-semibold text-[#16A36A]">贡献 {idea.gain}</p></article>)}</div></section>
     <section className="grid gap-4 lg:grid-cols-2"><article className="rounded-2xl border-2 border-[#1F4DCB] bg-white p-5"><Code2 className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">算法完整详细架构</h3><p className="mt-2 text-sm text-muted-foreground">含数学定义、张量尺寸、DAA / EAD / DAG、损失函数、训练推理逻辑与失败处理。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('architecture')}><ExternalLink data-icon="inline-start"/>打开架构 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(architectureDocument, '算法架构.md')}><Download data-icon="inline-start"/>下载</Button></div></article><article className="rounded-2xl border bg-white p-5"><FileText className="text-[#1F4DCB]"/><h3 className="mt-3 text-lg font-semibold">完整实验结果文件</h3><p className="mt-2 text-sm text-muted-foreground">含数据划分、三个随机种子、超参数、GPU/CPU 环境、主实验、跨数据集、消融、敏感性和效率分析。</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => setDocument('results')}><ExternalLink data-icon="inline-start"/>打开结果 Markdown</Button><Button variant="outline" onClick={() => downloadMarkdown(resultsDocument, '实验结果.md')}><Download data-icon="inline-start"/>下载</Button></div></article></section>
     {hydration.architectureFigureUrl ? (
       <figure className="rounded-2xl bg-white/90 p-5">

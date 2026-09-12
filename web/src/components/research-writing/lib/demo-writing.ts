@@ -1,6 +1,7 @@
 import { filesGetMetadata, filesReadFile } from '@/generated/api/sdk.gen';
 import type { FileReadResponseDto } from '@/generated/api/types.gen';
 import { buildFileServeUrl } from '@/auth-token';
+import { withBasePath } from '@/base-path';
 import { useResearchProjectStore } from '@/stores/research-project-store';
 
 type WritingSection =
@@ -327,14 +328,29 @@ export async function tryLoadDemoRebuttalEn(): Promise<string | null> {
 
 /** Demo `writing/paper.pdf` as a File, for the submission upload field. */
 export async function tryLoadDemoPaperPdfAsFile(): Promise<File | null> {
-  const absolute = await tryResolveDemoPaperPdf();
-  if (!absolute) return null;
-  try {
-    const response = await fetch(buildFileServeUrl(absolute));
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    return new File([blob], 'paper.pdf', { type: blob.type || 'application/pdf' });
-  } catch {
-    return null;
+  const rootPath = useResearchProjectStore.getState().project?.rootPath?.trim();
+  const candidates = [
+    ...(rootPath ? ['writing/paper.pdf', 'writing/paper-en.pdf'].map((rel) => joinWorkspacePath(rootPath, rel)) : []),
+  ];
+  const resolved = await tryResolveDemoPaperPdf();
+  if (resolved && !candidates.includes(resolved)) candidates.unshift(resolved);
+
+  for (const absolute of candidates) {
+    const urls = [
+      `${withBasePath('/api/files/download')}?${new URLSearchParams({ path: absolute }).toString()}`,
+      buildFileServeUrl(absolute),
+    ];
+    for (const url of urls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        const blob = await response.blob();
+        if (blob.size < 100) continue;
+        return new File([blob], 'paper.pdf', { type: 'application/pdf' });
+      } catch {
+        continue;
+      }
+    }
   }
+  return null;
 }

@@ -3,7 +3,10 @@ import type { IReviewer } from '../data/reviewersRound1';
 import type { IRound2Reviewer } from '../data/mockData';
 import { loadSubmissionWorkspaceSeed } from '../lib/workspace-submission-seed';
 import { useWorkspaceArtifacts } from '@/components/research-workflow/use-research-project';
-import { useResearchProjectStore } from '@/stores/research-project-store';
+import {
+  isResearchDemoMode,
+  useResearchProjectStore,
+} from '@/stores/research-project-store';
 import {
   tryLoadDemoPaperInfo,
   tryLoadDemoPaperPdfAsFile,
@@ -64,8 +67,8 @@ const INITIAL_FORM: ISubmissionForm = {
 
 export function SimulationProvider({ children }: { children: ReactNode }) {
   const { projectId, artifacts, loading: artifactsLoading } = useWorkspaceArtifacts();
-  const demoLoaded = useResearchProjectStore(
-    (state) => state.project != null && state.project.demoComplete != null,
+  const demoLoaded = useResearchProjectStore((state) =>
+    isResearchDemoMode(state.project),
   );
   const demoEpoch = useResearchProjectStore((state) => state.demoEpoch);
   const [step, setStep] = useState<StepId>(1);
@@ -130,16 +133,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
           tldr: seed.tldr,
           rebuttal: seed.rebuttal,
         });
-        if (demoLoaded) {
-          setForm({
-            title: seed.title,
-            authors: seed.authors,
-            keywords: seed.keywords,
-            abstract: seed.abstract,
-            tldr: seed.tldr,
-            rebuttal: seed.rebuttal,
-          });
-        }
+        setForm(INITIAL_FORM);
         setPaperPdfFile(seed.paperPdfFile);
         setDemoRound1(seed.round1Reviewers);
         setDemoRound1Avg(seed.round1AvgScore);
@@ -178,7 +172,6 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   demoFormRef.current = demoForm;
 
   const pickDemoPdf = async () => {
-    if (!demoLoaded) return null;
     if (paperPdfRef.current) return paperPdfRef.current;
     const file = await tryLoadDemoPaperPdfAsFile();
     if (file) {

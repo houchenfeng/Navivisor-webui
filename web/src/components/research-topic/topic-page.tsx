@@ -10,6 +10,7 @@ import {
 } from '@/stores/research-project-store';
 import { getApiToken } from '@/auth-token';
 import { withBasePath } from '@/base-path';
+import { DEMO_TOPIC_INTAKE } from './demo-intake';
 import { TopicPrimerDialog } from './topic-primer-dialog';
 import { buildOpenAlexQueryPlan } from './openalex-query';
 import type { ResearchTaskSnapshot } from './topic-workflow-contract';
@@ -64,12 +65,20 @@ export function TopicPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const intake = findLatestByRole(artifacts, 'project-intake');
-        if (intake) {
-          const value = JSON.parse(await fetchArtifactText(projectId, intake.artifactId)) as { researchDirection?: string; researchGoal?: string };
+        const demoMode = isResearchDemoMode(useResearchProjectStore.getState().project);
+        if (demoMode) {
           if (!cancelled) {
-            if (value.researchDirection?.trim()) setInterest(value.researchDirection.trim());
-            if (value.researchGoal?.trim()) setContext(value.researchGoal.trim());
+            setInterest(DEMO_TOPIC_INTAKE.researchDirection);
+            setContext(DEMO_TOPIC_INTAKE.researchGoal);
+          }
+        } else {
+          const intake = findLatestByRole(artifacts, 'project-intake');
+          if (intake) {
+            const value = JSON.parse(await fetchArtifactText(projectId, intake.artifactId)) as { researchDirection?: string; researchGoal?: string };
+            if (!cancelled) {
+              if (value.researchDirection?.trim()) setInterest(value.researchDirection.trim());
+              if (value.researchGoal?.trim()) setContext(value.researchGoal.trim());
+            }
           }
         }
         const candidates = findLatestByRole(artifacts, 'candidate-papers');

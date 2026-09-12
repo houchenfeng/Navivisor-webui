@@ -73,7 +73,7 @@
           "role": "candidate-topics",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "6b32fc9fef154d39ca2889b2709c4dfc36685a56d35cd448490d1a54138fcedb"
+          "sha256": "37e0f5a88448e59e84b689dd20a1d0b56cd4b840bc9eb40a6700582cab00015e"
         },
         {
           "key": "candidate-topics-md",
@@ -98,7 +98,7 @@
           "role": "confirmed-topic",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "406ea01effc0139ba150dce5a57a94038a3610542217ebcec6508dedcfe21bef"
+          "sha256": "916d45dd2a973733afded41ca814d799cf27e7bffc0a9ce8c765402334af90f2"
         }
       ]
     },
@@ -437,7 +437,7 @@
           "role": "experiment-plan",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "d1de1206ceea67d5408fe6b7113fc2792499f964cff316cba53ff04f3a0bd3d4"
+          "sha256": "d204bec053b7c7ac4b2fd8f04772811d66922ecd3a2028acfa78cee0603bdaf3"
         },
         {
           "key": "experiment-suite-plan-00",
@@ -560,7 +560,7 @@
           "role": "experiment-results",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "414377834cf52bdd678a256cbfc0d3aa255089bb4140539d46cefc66b263cca5"
+          "sha256": "352516327508365602772a59bce870df0ee01670d7a0b3c1d24bb72b814c4811"
         },
         {
           "key": "metrics-ablation",

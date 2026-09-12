@@ -24,6 +24,19 @@ import {
   useExperimentStore,
   type ExperimentIdea,
 } from '@/stores/experiment-store';
+import {
+  isResearchDemoMode,
+  useResearchProjectStore,
+} from '@/stores/research-project-store';
+
+/** 仅实验页「课题与文献」用；不要写回 topic/intake.json。 */
+const DEMO_INTAKE_FIELDS = {
+  projectName: 'EviVAD 监控视频异常检测',
+  researchTopic:
+    '基于低秩领域适配与证据对齐解码的退化感知监控视频异常检测',
+  researchGoal:
+    '用低秩适配把源域视觉语言模型迁到目标监控场景；解码时强制异常判定对齐到可检索的时空证据片段；估计低光、雨雾、压缩与抖动等退化强度，必要时降低置信度或弃权；在公开犯罪监控数据上同时报告检测指标、解释一致性和退化子集表现。',
+};
 
 export type ExperimentHydration = {
   source: 'workspace' | 'offline-fallback';
@@ -97,6 +110,73 @@ const emptyHydration = (): ExperimentHydration => ({
   ],
   error: null,
 });
+
+const METHOD_ABBR: Array<[RegExp, string]> = [
+  [/深度自编码/, 'ConvAE'],
+  [/弱监督/, 'WS-CT'],
+  [/CLIP-TSA/i, 'CLIP-TSA'],
+  [/Harnessing Large Language|Training-Free Video Anomaly|LAVAD/i, 'LAVAD'],
+  [/Baseline-B0|基线 B0|^B0\b/i, 'B0'],
+  [/EviVAD/, 'EviVAD'],
+];
+
+const HEADER_ABBR: Record<string, string> = {
+  method: 'method',
+  auc_percent: 'AUC',
+  ap_percent: 'AP',
+  map_at_0_5_percent: 'mAP@0.5',
+  auc_delta_vs_b0: 'dAUC',
+  ap_delta_vs_b0: 'dAP',
+  ear_percent: 'EAR',
+  cfs_percent: 'CFS',
+  hr_percent: 'HR',
+  tcr_percent: 'TCR',
+  latency_ms: 'lat',
+  memory_gb: 'mem',
+  trainable_params_m: 'params',
+  daa: 'DAA',
+  ead: 'EAD',
+  dag: 'DAG',
+};
+
+function abbreviateMethod(name: string): string {
+  const trimmed = name.trim();
+  for (const [pattern, abbr] of METHOD_ABBR) {
+    if (pattern.test(trimmed)) return abbr;
+  }
+  return trimmed;
+}
+
+function englishMetricTable(parsed: { headers: string[]; rows: string[][] }): {
+  headers: string[];
+  rows: string[][];
+} {
+  const drop = new Set(
+    parsed.headers
+      .map((header, index) =>
+        /^(simulated|aggregation|dataset|experiment_id|memory_gb)$/i.test(header.trim())
+          ? index
+          : -1,
+      )
+      .filter((index) => index >= 0),
+  );
+  const headers = parsed.headers
+    .filter((_, index) => !drop.has(index))
+    .map((header) => HEADER_ABBR[header.trim().toLowerCase()] ?? header);
+  const rows = parsed.rows.map((row) =>
+    row
+      .filter((_, index) => !drop.has(index))
+      .map((cell, index) => {
+        const header = headers[index];
+        if (header === 'method') return abbreviateMethod(cell);
+        if (header === 'DAA' || header === 'EAD' || header === 'DAG') {
+          return /^(true|1|yes)$/i.test(cell.trim()) ? 'Y' : 'N';
+        }
+        return cell;
+      }),
+  );
+  return { headers, rows };
+}
 
 function splitCsv(text: string): { headers: string[]; rows: string[][] } {
   const all = parseCsvRows(text);
@@ -220,6 +300,8 @@ function countCsvPdfHints(rows: string[][]): number {
 export function useExperimentWorkspaceHydration(): ExperimentHydration {
   const { projectId, artifacts, loading, error } = useWorkspaceArtifacts();
   const setFields = useExperimentStore((s) => s.setFields);
+  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
+  const demoMode = useResearchProjectStore((s) => isResearchDemoMode(s.project));
   const [hydration, setHydration] = useState<ExperimentHydration>(vacantHydration);
 
   useEffect(() => {
@@ -331,18 +413,31 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           try {
             const parsed = JSON.parse(confirmedText) as {
               title?: string;
+              projectName?: string;
               question?: string;
+              researchDesign?: string;
+              methodSteps?: string[];
               selectionReason?: string;
             };
-            if (parsed.title) patch.researchTopic = parsed.title;
-            if (parsed.question || parsed.selectionReason) {
-              patch.researchGoal = parsed.question || parsed.selectionReason;
-            }
-            if (parsed.title) patch.projectName = parsed.title.slice(0, 48);
+            const academicTitle =
+              parsed.title?.trim() ||
+              '基于低秩领域适配与证据对齐解码的退化感知监控视频异常检测';
+            const design =
+              parsed.researchDesign?.trim() ||
+              (Array.isArray(parsed.methodSteps)
+                ? parsed.methodSteps.map(String).join('；')
+                : '') ||
+              parsed.question ||
+              parsed.selectionReason;
+            patch.researchTopic = academicTitle;
+            patch.projectName =
+              parsed.projectName?.trim() || 'EviVAD 监控视频异常检测';
+            if (design) patch.researchGoal = design;
           } catch {
             // ignore
           }
         }
+        if (demoMode) Object.assign(patch, DEMO_INTAKE_FIELDS);
         if (configText) {
           try {
             const parsed = JSON.parse(configText) as {
@@ -370,10 +465,12 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         }
         if (Object.keys(patch).length > 0) setFields(patch);
 
-        const mainCsvParsed = mainText ? splitCsv(mainText) : { headers: [], rows: [] };
-        const ablationCsvParsed = ablationText
-          ? splitCsv(ablationText)
-          : { headers: [], rows: [] };
+        const mainCsvParsed = englishMetricTable(
+          mainText ? splitCsv(mainText) : { headers: [], rows: [] },
+        );
+        const ablationCsvParsed = englishMetricTable(
+          ablationText ? splitCsv(ablationText) : { headers: [], rows: [] },
+        );
 
         setHydration({
           source: 'workspace',
@@ -428,7 +525,7 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
     return () => {
       cancelled = true;
     };
-  }, [projectId, artifacts, loading, error, setFields]);
+  }, [projectId, artifacts, loading, error, setFields, demoEpoch, demoMode]);
 
   return hydration;
 }
