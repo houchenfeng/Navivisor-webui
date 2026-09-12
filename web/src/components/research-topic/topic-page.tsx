@@ -7,6 +7,7 @@ import { fetchArtifactText, findLatestByRole, parseCsvRows, useWorkspaceArtifact
 import { getApiToken } from '@/auth-token';
 import { withBasePath } from '@/base-path';
 import { demoTaskSnapshot } from './data';
+import { TopicPrimerDialog } from './topic-primer-dialog';
 import { buildOpenAlexQueryPlan } from './openalex-query';
 import type { ResearchTaskSnapshot } from './topic-workflow-contract';
 
@@ -161,7 +162,7 @@ export function TopicPage() {
         {steps.map((label, index) => { const number = index + 1; const active = page === number; const available = number === 1 || (number === 2 && isComplete) || (number === 3 && (task?.isDemo || task?.candidateStatus === 'completed' || task?.coreStatus === 'running' || task?.coreStatus === 'completed' || task?.coreStatus === 'partial')); return <button key={label} type="button" disabled={!available} onClick={() => setPage(number)} aria-current={active ? 'step' : undefined} className={`flex min-w-0 items-center gap-3 rounded-xl px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-45 sm:justify-center ${active ? 'bg-[#1f4dcb] text-white shadow-[0_7px_15px_rgba(31,77,203,0.2)]' : 'text-[#7890b6] hover:bg-[#f3f8ff]'}`}><span className={`grid size-8 shrink-0 place-items-center rounded-full text-sm font-black ${active ? 'bg-white/20' : 'bg-[#eef4fc] text-[#7187aa]'}`}>{number < page ? <Check className="size-4" /> : number}</span><span className="min-w-0"><span className="block truncate text-sm font-black">{label}</span><span className={`block text-[11px] font-bold ${active ? 'text-blue-100' : 'text-[#9aafd0]'}`}>{number === 1 ? '当前可操作' : available ? '可继续' : '完成前一步后可继续'}</span></span></button>; })}
       </nav>
 
-      {page === 1 && <><div className="mt-5 flex justify-end"><LoadWorkspaceDemoButton compact /></div><DirectionPage interest={interest} setInterest={setInterest} context={context} setContext={setContext} task={task} error={error} isRunning={isRunning} isComplete={isComplete} onRun={runSearch} onCancel={cancelSearch} onRetry={runSearch} onNext={() => setPage(2)} /></>}
+      {page === 1 && <><div className="mt-5 flex flex-wrap items-start justify-end gap-2"><LoadWorkspaceDemoButton compact /><TopicPrimerDialog /></div><DirectionPage interest={interest} setInterest={setInterest} context={context} setContext={setContext} task={task} error={error} isRunning={isRunning} isComplete={isComplete} onRun={runSearch} onCancel={cancelSearch} onRetry={runSearch} onNext={() => setPage(2)} /></>}
       {page === 2 && <CandidatesPage task={task} selectedCandidate={selectedCandidate} setSelectedCandidate={setSelectedCandidate} error={error} onGenerate={generateCandidates} onBack={() => setPage(1)} onNext={startCoreLiterature} />}
       {page === 3 && (task?.isDemo ? <DemoCoreLiteraturePage onBack={() => setPage(2)} /> : <CoreLiteraturePage task={task} error={error} onStart={startCoreLiterature} onBack={() => setPage(2)} />)}
     </div>
