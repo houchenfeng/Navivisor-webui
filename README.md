@@ -162,3 +162,28 @@ JSON 保存结构化信息，CSV 保存文献及指标，Markdown 保存可读�
 ## 上游与许可
 
 基于 [LimLLL/codex-webui](https://github.com/LimLLL/codex-webui) 二次开发，使用 AGPL-3.0-or-later，见 [LICENSE](./LICENSE)。完整安装与能力说明见 [docs/codex-webui.md](./docs/codex-webui.md)，更多资料见 [文档索引](./docs/README.md)。
+
+## Skill 清单与来源
+
+路径均相对于仓库根目录。
+
+### 项目内自研 Skill
+
+| 类型 | Skill 名称 | 路径 | 作用 |
+|---|---|---|---|
+| 开题阶段 Skill | `research-topic` | `research-skills/research-topic/SKILL.md` | 根据声明的研究输入和文献证据生成可追溯的候选研究方向。 |
+| 论文写作优化 Skill | `research-writing` | `research-skills/research-writing/SKILL.md` | 负责论文草稿、改写、翻译、渲染、配图和写作产物管理；要求所有内容有来源依据，明确待核验项。 |
+| 流程图 action | `generate-algorithm-flowchart` | `research-skills/research-writing/references/algorithm-flowchart-generation.md` | `research-writing` Skill 内的算法流程图动作：从实验 Markdown 提取证据，生成流程图规格、提示词和确定性草稿，再进行 CVPR 风格成图。它是 action，不是独立的 `SKILL.md`。 |
+
+配套文件：
+
+- 流程图草稿脚本：`research-skills/research-writing/scripts/render_flowchart_draft.mjs`
+- Skill 评估样例：`research-skills/research-writing/evals/evals.json`
+- 实验阶段 Skill：`research-skills/research-experiment/SKILL.md`
+- 投稿阶段 Skill：`research-skills/research-submission/SKILL.md`
+
+`research-writing` 用于优化论文内容和配图流程；算法流程图 action 是它的扩展，不应单独当作完整 Skill 安装。
+
+### 外部来源
+
+没有把外部 Skill 原样安装到本仓库，也没有在运行时依赖未记录来源的 GitHub Skill。`research-topic`、`research-writing` 及流程图 action 均属于项目内工作流实现。上游 WebUI 是 [LimLLL/codex-webui](https://github.com/LimLLL/codex-webui)，不是论文优化 Skill，关系见 [上游与许可](#上游与许可)。
