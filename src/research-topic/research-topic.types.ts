@@ -17,8 +17,9 @@ export type ResearchTopicPaper = {
   doi: string;
   landingUrl: string;
   sourceStatus: 'openalex_public_api';
+  isOpenAccess?: boolean;
+  pdfUrl?: string;
 };
-
 export type ResearchTopicFile = {
   name: string;
   path: string;
@@ -55,6 +56,7 @@ export type ResearchTopicCounts = {
 
 export type ResearchTopicTask = {
   runId: string;
+  researchInterest?: string;
   status: ResearchTopicTaskStatus;
   files: ResearchTopicFile[];
   errors: Array<{ code?: string; message: string }>;
@@ -63,4 +65,20 @@ export type ResearchTopicTask = {
   createdAt: string;
   updatedAt: string;
   cancelRequested: boolean;
+  candidateStatus: 'idle' | 'queued' | 'running' | 'completed' | 'failed';
+  candidates?: ResearchTopicCandidate[];
+  candidateError?: string;
+  coreStatus?: 'idle' | 'queued' | 'running' | 'completed' | 'partial' | 'failed';
+  coreRunId?: string;
+  coreManifest?: Record<string, unknown>;
+  coreError?: string;
+};
+
+export type ResearchTopicCandidate = {
+  label: '偏可行' | '偏创新' | '较平衡';
+  title: string;
+  oneSentenceDefinition: string;
+  researchDesign: string;
+  expectedInnovation: string;
+  rationale: string;
 };

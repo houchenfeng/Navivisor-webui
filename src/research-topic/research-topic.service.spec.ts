@@ -32,10 +32,10 @@ describe('ResearchTopicService', () => {
 
     const service = new ResearchTopicService();
     const started = service.start(validateFirstSearchInput({ researchInterest: 'computer vision' }));
-    let task = service.get(started.runId);
+    let task = await service.get(started.runId);
     for (let attempt = 0; attempt < 100 && (task?.status === 'running' || task?.status === 'queued'); attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 0));
-      task = service.get(started.runId);
+      task = await service.get(started.runId);
     }
 
     expect(task?.status).toBe('completed');

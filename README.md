@@ -46,12 +46,14 @@ pnpm --dir web dev
 | 模块 | 路径 | 当前用途 |
 |---|---|---|
 | 首页 | /research/home | 注册论文工作目录、载入目录 Demo、查看项目摘要 |
-| 开题 | /research/topic | 研究输入与 OpenAlex 试检索，后续选题页面尚待接入 |
+| 开题 | /research/topic | 自适应 OpenAlex 检索、三个候选课题及核心文献交接 |
 | 实验 | /research/experiment | 实验方案和结果的模拟演示 |
 | 写作 | /research/paper | 章节编辑、Codex 生成/翻译、TeX/ZIP 导出 |
 | 投稿 | /research/submit | 本地模拟审稿、Rebuttal 与决定 |
 
 Demo 位于 [camera-vad-scene-memory](./demo-packages/camera-vad-scene-memory/)。先复制到独立论文目录，再注册并点击“从工作目录载入 Demo”。载入操作读取文件，不运行模型。
+
+真实开题检索需在后端 `.env` 配置 `OPENALEX_API_KEY`。密钥仅由后端调用 OpenAlex 时使用；不得写入前端、浏览器存储或检索产物。检索会从 focused 自适应放宽到 balanced/broad，并记录每次查询、去重结果和切换原因。详细接入说明见 [OpenAlex 本地接入交接文档](./outputs/OpenAlex本地接入_AI协作者交接文档.md)。
 
 当前目录注册和基础导入已实现，但四模块内容恢复、项目统一及对话产物卡片仍未完全贯通。Demo 文献与指标为合成数据，图片/PDF 仍有占位；真实训练、在线 LaTeX 编译和真实投稿尚未完成。进度和验收统一记录在 [剩余任务 TODO](./docs/four-module-workflow-migration-todo.md)。
 
