@@ -14,7 +14,7 @@ type ImageKind = "algorithmFlowImage" | "algorithmIllustImage";
 function buildDefaultPrompt(kind: ImageKind, topic: string): string {
   const t = topic || "machine learning method";
   if (kind === "algorithmFlowImage") {
-    return `A clean academic-style algorithm flowchart for the research topic "${t}". Show the overall pipeline: input data → processing modules → output, with clear directional arrows and English labels. Minimal design, white background, paper-ready figure, monochrome with subtle blue accents.`;
+    return `Create a wide, white-background, CVPR-style computer vision method pipeline for "${t}". Preserve the supplied experiment topology exactly: keep every declared node, order, branch, fusion, arrow direction, and output; do not invent modules, datasets, metrics, formulas, numbers, citations, or claims. Use 5–9 compact modules arranged left-to-right, optional lower detail panels only when specified, restrained blue/teal/green/orange accents, thin gray borders, consistent arrows, readable English labels, and generous paper-ready whitespace. No paragraphs, random small text, neon, 3D cards, decorative circuit lines, robots, AI brains, logos, or watermark.`;
   }
   return `A clean academic-style schematic illustration of the key module for the research topic "${t}". Highlight the main innovation, with English labels and clear structure. Minimal design, white background, paper-ready figure, monochrome with subtle blue accents.`;
 }
@@ -63,7 +63,13 @@ export default function Step5Algorithm({ data, onChange }: Props) {
         (kind === "algorithmFlowImage" ? promptFlow : promptIllust).trim() ||
         buildDefaultPrompt(kind, data.topic);
 
-      const imageUrl = await generateWritingFigure(prompt, kind);
+      const imageUrl = await generateWritingFigure(prompt, kind, {
+        topic: data.topic,
+        algorithm: data.algorithm,
+        experimentMarkdown: [data.experimentDetail, data.experimentResult, data.experiment]
+          .filter(Boolean)
+          .join("\n\n"),
+      });
       onChange({ [kind]: imageUrl } as Partial<WritingData>);
     } catch (e) {
       setImgError(e instanceof Error ? e.message : String(e));

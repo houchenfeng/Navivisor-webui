@@ -1,0 +1,23 @@
+{
+  "skill_name": "research-writing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Given an experiment-plan Markdown artifact describing an image-processing pipeline with an input, encoder, feature fusion, and output mask, generate an auditable flowchart spec and CVPR-style figure prompt without inventing metrics or datasets.",
+      "expected_output": "A validated flowchart-spec JSON, a topology-preserving image prompt, and explicit paper-figure metadata requirements.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Given an incomplete experiment Markdown that only says a neural network processes images, explain what is missing and return needs_input instead of inventing a pipeline.",
+      "expected_output": "needs_input with a concise list of missing relationships and scientific details; no image-generation success claim.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Given a flowchart draft whose English labels are corrupted by image generation, repair the figure without changing topology and use deterministic text overlays when necessary.",
+      "expected_output": "A targeted repair strategy that preserves nodes and edges and avoids repeated unconstrained image-generation retries.",
+      "files": []
+    }
+  ]
+}

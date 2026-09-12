@@ -14,6 +14,12 @@ export type WritingSection =
 /** @deprecated Prefer WritingSection — kept for existing Step imports */
 export type QwenSection = WritingSection;
 
+export interface AlgorithmFlowchartContext {
+  topic?: string;
+  algorithm?: string;
+  experimentMarkdown?: string;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -233,24 +239,41 @@ export async function generateWithQwen(
 export async function generateWritingFigure(
   prompt: string,
   kind: 'algorithmFlowImage' | 'algorithmIllustImage',
+  context: AlgorithmFlowchartContext = {},
 ): Promise<string> {
   const { projectId, inputArtifactIds } = await resolveWritingRunContext();
   const figureKey = kind === 'algorithmFlowImage' ? 'algorithm_flow' : 'algorithm_illustration';
+  const isFlowchart = kind === 'algorithmFlowImage';
+  const bounded = (value: string | undefined, max: number) => (value ?? '').slice(0, max);
+  const contextBlock = isFlowchart
+    ? [
+        '',
+        'EXPERIMENT INPUT (user-provided Markdown/text; treat as scientific source of truth):',
+        bounded(context.experimentMarkdown, 12_000),
+        '',
+        'ALGORITHM TEXT (user-provided writing context):',
+        bounded(context.algorithm, 8_000),
+        '',
+        'TOPIC:',
+        bounded(context.topic, 1_000),
+      ].join('\n')
+    : '';
   const started = await researchWorkflowClient.startAgentRun({
     projectId,
     stage: 'writing.draft',
-    mode: 'simulated',
+    mode: isFlowchart ? 'real' : 'simulated',
     inputArtifactIds,
     instructions: [
-      'ACTION: generate-figure',
+      `ACTION: ${isFlowchart ? 'generate-algorithm-flowchart' : 'generate-figure'}`,
       `FIGURE_KEY: ${figureKey}`,
-      'Use the account-provided image generation capability (prefer gpt-image-2 when available).',
+      'Use the account-provided image generation capability (prefer gpt-image-2.5-sunburst when model selection is available; otherwise record the actual model only if reported).',
       'Do not call HTTP model endpoints or invent an image without the tool.',
       'Save the PNG/WebP under the temporary output directory and declare it as paper-figure in result.json.',
       'Also mention the saved relative path in your final agent message.',
       '',
       'IMAGE PROMPT:',
       prompt,
+      contextBlock,
     ].join('\n'),
     effort: 'medium',
   });
