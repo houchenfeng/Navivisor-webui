@@ -25,13 +25,13 @@
 .research-home__slogan {
   position: absolute;
   z-index: 2;
-  top: 5.6rem;
+  top: 2.5rem;
   right: max(3rem, calc((100vw - 92rem) / 2));
   transform: rotate(-7deg);
   color: #1768e8;
-  font-family: 'KaiTi', 'STKaiti', serif;
+  font-family: 'STXingkai', 'FZXingKai-S04S', 'KaiTi', 'STKaiti', cursive;
   text-align: center;
-  text-shadow: 0 4px 18px rgba(51, 126, 235, 0.18);
+  text-shadow: 0 3px 12px rgba(51, 126, 235, 0.24);
 }
 
 .research-home__slogan span,
@@ -40,21 +40,26 @@
 }
 
 .research-home__slogan span {
-  font-size: 1.65rem;
+  background: linear-gradient(135deg, #0f5fd5 10%, #3389ef 58%, #164fb8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 1.8rem;
   line-height: 1.1;
+  letter-spacing: 0.08em;
 }
 
 .research-home__slogan small {
   margin-top: 0.35rem;
-  font-size: 1rem;
-  letter-spacing: 0.08em;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
 }
 
 .research-home__hero {
   position: relative;
   z-index: 2;
   max-width: 47rem;
-  padding-top: clamp(0.5rem, 2vw, 1.75rem);
+  padding-top: 0;
 }
 
 .research-home__workspace {
@@ -66,8 +71,8 @@
 
 .research-journey {
   position: relative;
-  min-height: 19rem;
-  margin-top: 1.35rem;
+  min-height: 15.5rem;
+  margin-top: 0.75rem;
 }
 
 .research-journey__curve {
@@ -85,7 +90,7 @@
 .research-journey__grid {
   position: relative;
   z-index: 1;
-  height: 17rem;
+  height: 15.5rem;
 }
 
 .research-module-card {
