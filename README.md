@@ -77,6 +77,8 @@ bibtex --version
 
 完整配置见 [.env.example](./.env.example)，容器部署见 [Docker 说明](./docs/docker.md)。
 
+共同输入输出格式见 `research-tools/contract.md`。演示用数据包在 `demo-packages/evivad-surveillance-demo/`（监控视频异常检测 EviVAD 全链路样例，随仓库提交）。
+
 ---
 
 ## 科研模块使用说明
@@ -84,6 +86,10 @@ bibtex --version
 四个模块按顺序构成一条完整链路：**开题探索 → 实验验证 → 论文写作 → 投稿启航**。它们读写同一份工作目录，不要为同一篇论文建两套路径。
 
 ### 开始之前：注册论文工作目录
+
+想一次看完四个模块时，先在科研首页点 **「载入研究数据」**。系统会把 `demo-packages/evivad-surveillance-demo/` 整包拷进工作目录（开题、实验、写作、投稿），之后按模块走一遍即可演示全部流程。
+
+也可以从空白目录自己做：
 
 1. 打开 [科研首页](http://localhost:5173/research/home)（`/research/home`）。
 2. 在「新论文工作目录」中选择**服务端可访问**的文件夹并注册。
@@ -200,8 +206,6 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 
 左侧栏下半部分 可新建或打开 Codex 对话，选择模型与工作目录后发送任务。主要包括：多会话与流式回复、分叉与归档、文件浏览与差异、终端与审批、Skills / MCP / 插件、用量与诊断。协议见 [REST API](./docs/rest-api.md)、[终端](./docs/terminal.md)、[审批](./docs/approval.md)。
 
-科研模块的文本生成、翻译和配图通过 Research Workflow 调用当前登录的 Codex。OpenAlex 检索、文件解析、校验和、LaTeX 编译属于确定性工具，由后端执行。
-
 ## 质量检查
 
 ```bash
@@ -214,18 +218,29 @@ pnpm --dir web lint
 
 ## Skill 清单
 
-路径相对于仓库根目录。
+路径均相对于仓库根目录。Codex 科研工作流按模块注册四个主 Skill（`research-skills/`）。开题另外还有文献来源适配规范（`research-tools/` 下的 `SKILL.md`），以及首次检索 / 核心文献打包脚本。它们不是四个并列的「页面 Skill」，但开题实际会用到不止 `research-topic` 一个。
+
+### 工作流主 Skill（Codex 按阶段调用）
 
 
-| 阶段  | Skill                 | 路径                                             |
-| --- | --------------------- | ---------------------------------------------- |
-| 开题  | `research-topic`      | `research-skills/research-topic/SKILL.md`      |
-| 实验  | `research-experiment` | `research-skills/research-experiment/SKILL.md` |
-| 写作  | `research-writing`    | `research-skills/research-writing/SKILL.md`    |
-| 投稿  | `research-submission` | `research-skills/research-submission/SKILL.md` |
+| 阶段  | 名称                    | 路径                                             | 做什么                                                        |
+| --- | --------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| 开题  | `research-topic`      | `research-skills/research-topic/SKILL.md`      | 把研究方向与已有文献证据收成可追溯课题：检索策略、候选课题、确认课题、核心文献交接。不编造论文、DOI 或检索结果。 |
+| 实验  | `research-experiment` | `research-skills/research-experiment/SKILL.md` | 基于已确认课题做方案、运行解读与写作交接。区分真实 runner 输出与事后解读，不编造日志、指标或硬件。      |
+| 写作  | `research-writing`    | `research-skills/research-writing/SKILL.md`    | 按已定稿的实验与文献写大纲、正文、翻译、元数据和配图；经验与引用必须能对上输入文件。                 |
+| 投稿  | `research-submission` | `research-skills/research-submission/SKILL.md` | 对照会议要求做投稿检查、打包与材料准备。不声称已经交到真实投稿系统，除非有独立适配器给出凭证。            |
 
 
-算法流程图是 `research-writing` 内的动作，见 `research-skills/research-writing/references/algorithm-flowchart-generation.md`，不是单独安装的 Skill。
+
+| 名称            | 路径                                 | 做什么                                                  |
+| ------------- | ---------------------------------- | ---------------------------------------------------- |
+| OpenAlex 来源适配 | `research-tools/openalex/SKILL.md` | 开题默认文献源：公开 API 查元数据与摘要、分页去重、写出可复现查询计划。不负责保证每篇都有 PDF。 |
+| Scopus 来源适配   | `research-tools/scopus/SKILL.md`   | 同样契约下的机构数据库来源。当前待授权，无合法 API 权限时不可运行。                 |
+| 首次检索          | `research-tools/first-search/`     | 研究方向 → 大批量元数据/摘要 → 最多三个待核验候选课题。不下载 PDF、不生成 BibTeX。   |
+| 核心文献包         | `research-tools/core-literature/`  | 课题确认之后：筛核心文献、写 CSV/BibTeX、尝试合法 OA PDF，交给实验模块。        |
+
+
+实验远程执行还会用到 `research-tools/ssh-experiment/run_navivisor_experiment.py`（SSH 侧运行脚本），它不是 Codex Skill。算法流程图是 `research-writing` 内的动作，见 `research-skills/research-writing/references/algorithm-flowchart-generation.md`。
 
 ## 上游与许可
 
