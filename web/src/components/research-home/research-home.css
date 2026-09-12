@@ -1,0 +1,208 @@
+.research-home {
+  --home-ink: #102c65;
+  --home-blue: #1768e8;
+  --home-muted: #607ca7;
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 80% 3%, rgba(178, 213, 255, 0.66), transparent 31rem),
+    linear-gradient(180deg, #f7fbff 0%, #eaf4ff 48%, #f8fbff 100%);
+}
+
+.research-home__mountains {
+  position: absolute;
+  z-index: -1;
+  top: 5.5rem;
+  left: 0;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.98;
+  pointer-events: none;
+  filter: saturate(0.92) contrast(0.98);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 77%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 77%, transparent 100%);
+}
+
+.research-home__slogan {
+  position: absolute;
+  z-index: 2;
+  top: 5.6rem;
+  right: max(3rem, calc((100vw - 92rem) / 2));
+  transform: rotate(-7deg);
+  color: #1768e8;
+  font-family: 'KaiTi', 'STKaiti', serif;
+  text-align: center;
+  text-shadow: 0 4px 18px rgba(51, 126, 235, 0.18);
+}
+
+.research-home__slogan span,
+.research-home__slogan small {
+  display: block;
+}
+
+.research-home__slogan span {
+  font-size: 1.65rem;
+  line-height: 1.1;
+}
+
+.research-home__slogan small {
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+}
+
+.research-home__hero {
+  position: relative;
+  z-index: 2;
+  max-width: 47rem;
+  padding-top: clamp(0.5rem, 2vw, 1.75rem);
+}
+
+.research-home__workspace {
+  border: 1px solid rgba(192, 215, 247, 0.92);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 14px 40px rgba(38, 91, 172, 0.09), inset 0 1px 0 #fff;
+  backdrop-filter: blur(18px);
+}
+
+.research-journey {
+  position: relative;
+  min-height: 19rem;
+  margin-top: 1.35rem;
+}
+
+.research-journey__curve {
+  position: absolute;
+  z-index: 0;
+  inset: 0.5rem -3% auto -3%;
+  width: 106%;
+  height: 11.75rem;
+  object-fit: fill;
+  pointer-events: none;
+  opacity: 0.88;
+  filter: drop-shadow(0 7px 16px rgba(34, 113, 224, 0.13));
+}
+
+.research-journey__road {
+  position: absolute;
+  z-index: 0;
+  right: -0.7rem;
+  top: -12.5rem;
+  width: min(28vw, 23rem);
+  height: 22rem;
+  object-fit: contain;
+  transform: rotate(12deg);
+  transform-origin: 80% 20%;
+  pointer-events: none;
+  opacity: 0.72;
+  mix-blend-mode: screen;
+}
+
+.research-journey__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+  padding-top: 2rem;
+}
+
+.research-module-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: var(--home-ink);
+}
+
+.research-module-card:nth-child(even) {
+  padding-top: 3.85rem;
+}
+
+.research-module-card__icon {
+  position: relative;
+  display: grid;
+  width: clamp(5.7rem, 7.5vw, 7rem);
+  aspect-ratio: 1;
+  place-items: center;
+  transition: transform 260ms ease, filter 260ms ease;
+  filter: drop-shadow(0 14px 24px rgba(31, 99, 211, 0.18));
+}
+
+.research-module-card__icon::after {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  z-index: -1;
+  border-radius: 50%;
+  background: rgba(89, 157, 255, 0.2);
+  filter: blur(18px);
+}
+
+.research-module-card__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.research-module-card:hover .research-module-card__icon,
+.research-module-card:focus-visible .research-module-card__icon {
+  transform: translateY(-0.45rem) scale(1.045);
+  filter: drop-shadow(0 19px 30px rgba(31, 99, 211, 0.27));
+}
+
+.research-module-card:focus-visible {
+  border-radius: 1.5rem;
+  outline: 3px solid rgba(31, 77, 203, 0.38);
+  outline-offset: 0.35rem;
+}
+
+.research-module-card__number {
+  margin-right: 0.35rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.15em;
+  font-weight: 700;
+  color: #6f9eef;
+}
+
+@media (max-width: 767px) {
+  .research-home__mountains {
+    top: 12rem;
+    width: 150%;
+    max-width: none;
+    transform: translateX(-32%);
+    opacity: 0.72;
+  }
+
+  .research-journey {
+    min-height: auto;
+    margin-top: 2rem;
+  }
+
+  .research-journey__curve,
+  .research-journey__road {
+    display: none;
+  }
+
+  .research-journey__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem 0.75rem;
+    padding-top: 0;
+  }
+
+  .research-module-card:nth-child(even) {
+    padding-top: 0;
+  }
+
+  .research-module-card__icon {
+    width: min(7rem, 34vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .research-module-card__icon {
+    transition: none;
+  }
+}

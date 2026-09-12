@@ -11,7 +11,6 @@ import {
   FolderInput,
   Newspaper,
   PenLine,
-  Rocket,
   Sparkles,
 } from 'lucide-react';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
@@ -20,36 +19,32 @@ import { ConversationEventCards } from '@/components/research-workflow/conversat
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import { useResearchProjectStore } from '@/stores/research-project-store';
 import { useTimelineStore } from '@/stores/timeline-store';
-import { cn } from '@/lib/utils';
+import './research-home.css';
 
 const modules = [
   {
     title: '开题探索',
     copy: '从兴趣出发，发现值得研究的问题',
-    icon: Compass,
+    image: 'research-home/topic.png',
     to: '/research/topic',
-    tint: 'from-[#5b8def] to-[#1f4dcb]',
   },
   {
     title: '实验验证',
     copy: '规划实验路径，沉淀可信研究证据',
-    icon: FlaskConical,
+    image: 'research-home/experiment.png',
     to: '/research/experiment',
-    tint: 'from-[#4f9be8] to-[#2563c7]',
   },
   {
     title: '论文写作',
     copy: '组织成果，协同完成学术表达',
-    icon: PenLine,
+    image: 'research-home/writing.png',
     to: '/research/paper',
-    tint: 'from-[#6a9ef0] to-[#1f4dcb]',
   },
   {
     title: '投稿启航',
     copy: '模拟投稿流程，做好提交准备',
-    icon: Rocket,
+    image: 'research-home/submission.png',
     to: '/research/submit',
-    tint: 'from-[#3f82eb] to-[#173778]',
   },
 ] as const;
 
@@ -104,56 +99,6 @@ const journeyStats = [
   { label: '写作草稿', value: 3, icon: PenLine },
   { label: '里程碑', value: 2, icon: Sparkles },
 ] as const;
-
-function JourneyCurve() {
-  const path =
-    'M8 28 C 130 8, 220 42, 255 24 S 380 4, 505 28 630 46, 752 20';
-
-  return (
-    <div className="pointer-events-none absolute inset-x-[10%] top-2 z-0 hidden md:block">
-      <p className="mb-1 text-center text-xs font-extrabold tracking-[0.18em] text-[#1F4DCB]/80">
-        点击开始尝试
-      </p>
-      <svg className="mx-auto h-12 w-[88%] overflow-visible" viewBox="0 0 760 48" fill="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="home-journey-stroke" x1="0" y1="0" x2="760" y2="0" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#a9c7f5" />
-            <stop offset="0.5" stopColor="#1F4DCB" />
-            <stop offset="1" stopColor="#7aa6ef" />
-          </linearGradient>
-        </defs>
-        <path
-          id="home-journey-rail"
-          d={path}
-          stroke="url(#home-journey-stroke)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          opacity="0.35"
-        />
-        {[0, 0.8, 1.6].map((delay) => (
-          <polygon
-            key={delay}
-            points="0,-5 12,0 0,5 2.5,0"
-            fill="#1F4DCB"
-            className="home-journey-arrow"
-          >
-            <animateMotion
-              dur="2.4s"
-              repeatCount="indefinite"
-              begin={`${delay}s`}
-              rotate="auto"
-              keyPoints="0;1"
-              keyTimes="0;1"
-              calcMode="linear"
-            >
-              <mpath href="#home-journey-rail" />
-            </animateMotion>
-          </polygon>
-        ))}
-      </svg>
-    </div>
-  );
-}
 
 function ProgressRing({ value }: { value: number }) {
   const radius = 26;
@@ -244,9 +189,14 @@ export function ResearchHomePage() {
   }
 
   return (
-    <main className="navivisor-module scrollbar-hide flex min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-7 lg:p-10">
+    <main className="research-home scrollbar-hide flex min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-7 lg:p-10">
+      <img className="research-home__mountains" src="research-home/mountains.png" alt="" aria-hidden="true" />
       <section className="brand-enter mx-auto flex w-full max-w-6xl flex-col py-4 lg:py-8">
-        <div className="mt-2 max-w-3xl">
+        <div className="research-home__slogan hidden lg:block" aria-hidden="true">
+          <span>研途有光</span>
+          <small>始于好奇，终于远方</small>
+        </div>
+        <div className="research-home__hero mt-2">
           <p className="text-sm font-bold tracking-[0.2em] text-[#1F4DCB]">你好，研究者</p>
           <h1 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#102c65] sm:text-5xl lg:text-[3.4rem]">
             欢迎来到Navivisor研途启航
@@ -256,7 +206,7 @@ export function ResearchHomePage() {
           </p>
         </div>
 
-        <div className="mt-6 rounded-xl border border-[#d7e6fb] bg-white/80 px-3 py-2.5 shadow-[0_8px_20px_rgba(31,77,203,0.06)] backdrop-blur">
+        <div className="research-home__workspace mt-6 rounded-2xl px-3.5 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-0 flex-1">
               <h2 className="text-xs font-extrabold text-[#173778]">论文工作目录</h2>
@@ -303,28 +253,26 @@ export function ResearchHomePage() {
         </div>
 
         {/* Four module icon buttons + curved path */}
-        <div className="relative mt-10 pt-8">
-          <JourneyCurve />
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-6">
-            {modules.map(({ title, copy, icon: Icon, to, tint }, index) => (
+        <div className="research-journey">
+          <img className="research-journey__curve hidden md:block" src="research-home/journey-curve.png" alt="" aria-hidden="true" />
+          <img className="research-journey__road hidden md:block" src="research-home/mountain-road.png" alt="" aria-hidden="true" />
+          <div className="research-journey__grid">
+            {modules.map(({ title, copy, image, to }, index) => (
               <button
                 key={title}
                 type="button"
                 onClick={() => void navigate({ to })}
-                className="group relative z-10 flex flex-col items-center text-center"
+                className="research-module-card group"
                 style={{ animationDelay: `${index * 90 + 80}ms` }}
               >
-                <span
-                  className={cn(
-                    'grid size-[72px] place-items-center rounded-[22px] bg-gradient-to-br text-white shadow-[0_14px_30px_rgba(31,77,203,0.28)] transition-all duration-300',
-                    'group-hover:-translate-y-1.5 group-hover:scale-105 group-hover:shadow-[0_18px_36px_rgba(31,77,203,0.36)]',
-                    tint,
-                  )}
-                >
-                  <Icon className="size-8" strokeWidth={2.1} />
+                <span className="research-module-card__icon">
+                  <img src={image} alt="" aria-hidden="true" />
                 </span>
-                <span className="mt-4 text-base font-extrabold text-[#173778]">{title}</span>
-                <span className="mt-1.5 max-w-[11rem] text-sm font-medium leading-5 text-[#6781aa]">
+                <span className="mt-2 text-[1.05rem] font-black tracking-[-0.02em] text-[#173778]">
+                  <span className="research-module-card__number">{String(index + 1).padStart(2, '0')}</span>
+                  {title}
+                </span>
+                <span className="mt-1.5 max-w-[13rem] text-[0.82rem] font-semibold leading-5 text-[#607ca7]">
                   {copy}
                 </span>
               </button>
