@@ -74,9 +74,9 @@ export function TopicPage() {
             abstract: row[index('abstract')] || '', doi: row[index('doi')] || '',
             landingUrl: row[index('source_url')] || '', sourceStatus: 'openalex_public_api' as const,
           }));
-          const topicsArtifact = findLatestByRole(artifacts, 'candidate-topics');
-          const confirmedArtifact = findLatestByRole(artifacts, 'confirmed-topic');
-          const coreArtifact = findLatestByRole(artifacts, 'core-references');
+          const topicsArtifact = findArtifactFile(artifacts, 'candidate-topics', '.json');
+          const confirmedArtifact = findArtifactFile(artifacts, 'confirmed-topic', '.json');
+          const coreArtifact = findArtifactFile(artifacts, 'core-references', '.csv');
           const topicsValue = topicsArtifact ? JSON.parse(await fetchArtifactText(projectId, topicsArtifact.artifactId)) as { simulated?: boolean; candidates?: unknown[] } : undefined;
           const topics = topicsValue ? parseCandidateTopics(topicsValue) : [];
           const confirmed = confirmedArtifact ? JSON.parse(await fetchArtifactText(projectId, confirmedArtifact.artifactId)) as { title?: string } : undefined;
@@ -271,6 +271,10 @@ function parseCoreLiterature(rows: string[][]): NonNullable<ResearchTaskSnapshot
   const headers = rows[0]?.map((value) => value.trim().toLowerCase()) ?? [];
   const index = (name: string) => headers.indexOf(name);
   return rows.slice(1).map((row, offset) => ({ title: row[index('title')] || '无标题', openalexId: row[index('source_url')] || row[index('doi')] || `demo-core-${offset + 1}`, whyRelevant: row[index('relevance_reason')] || row[index('method_relation')] || 'Demo 核心文献条目，需打开来源进一步核验。' })).filter((paper) => paper.title !== '无标题');
+}
+
+function findArtifactFile(artifacts: Parameters<typeof findLatestByRole>[0], stem: string, extension: string) {
+  return artifacts.filter((artifact) => artifact.role === stem && artifact.path.toLowerCase().endsWith(extension)).sort((a, b) => Number(b.createdAt) - Number(a.createdAt))[0];
 }
 
 function DemoCoreLiteraturePage({ onBack, papers = demoTaskSnapshot.demoCoreLiterature ?? [] }: { onBack: () => void; papers?: Array<{ title: string; openalexId: string; whyRelevant: string }> }) { return <section className="mt-7 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-10"><div className="flex items-start gap-4"><div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><FlaskConical className="size-6" /></div><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">Step 03</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">核心参考文献</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#617da9]">确定课题后，AI 会查找最相关的参考文献及可获取的全文。</p></div></div><div className="mt-7 rounded-2xl border border-[#f0d6a5] bg-[#fff8e9] p-4 text-xs font-bold leading-5 text-[#8b641e]">Demo 已加载 · 以下内容来自当前工作区的 core-references.csv。</div><div className="mt-6 space-y-3">{papers.map((paper) => <article key={paper.openalexId} className="rounded-2xl border border-[#d8e5f6] bg-[#fbfdff] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 flex-1 text-sm font-black leading-6 text-[#244a7d]">{paper.title}</h3><a href={paper.openalexId} target="_blank" rel="noreferrer" className="text-xs font-black text-[#1f4dcb] underline">来源</a></div><p className="mt-2 text-xs font-semibold leading-5 text-[#526e98]">{paper.whyRelevant}</p></article>)}</div><div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#e3ecf8] pt-5"><Button variant="outline" onClick={onBack} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><ArrowLeft />返回候选课题</Button><GoToExperimentButton /></div></section>; }
