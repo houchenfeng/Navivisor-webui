@@ -25,13 +25,13 @@ import './research-home.css';
 const modules = [
   {
     title: '开题探索',
-    copy: '从兴趣出发，发现值得研究的问题',
+    copy: '从研究领域出发，发现值得研究的课题。',
     image: 'research-home/topic.png',
     to: '/research/topic',
   },
   {
     title: '实验验证',
-    copy: '规划实验路径，沉淀可信研究证据',
+    copy: '从文献到实验方案，多智能体帮助进行可信研究',
     image: 'research-home/experiment.png',
     to: '/research/experiment',
   },
@@ -43,7 +43,7 @@ const modules = [
   },
   {
     title: '投稿启航',
-    copy: '模拟投稿流程，做好提交准备',
+    copy: '模拟顶会投稿全流程，体验提交、审稿与回复',
     image: 'research-home/submission.png',
     to: '/research/submit',
   },
