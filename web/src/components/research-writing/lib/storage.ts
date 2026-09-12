@@ -32,11 +32,19 @@ export function loadData(projectId?: string | null): WritingData {
               },
             ]
           : [];
+    const resultImages =
+      Array.isArray(parsed.resultImages) && parsed.resultImages.length > 0
+        ? parsed.resultImages
+        : parsed.algorithmIllustImage
+          ? [parsed.algorithmIllustImage]
+          : [];
     return {
       ...initialWritingData,
       ...parsed,
       experimentTables: tables,
       experimentTable: tables[0] ?? initialWritingData.experimentTable,
+      resultImages,
+      algorithmIllustImage: resultImages[0] ?? '',
     };
   } catch (e) {
     console.warn("[storage] 读取失败，使用初始数据", e);

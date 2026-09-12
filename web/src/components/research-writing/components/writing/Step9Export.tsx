@@ -90,12 +90,18 @@ export default function Step9Export({ data }: Props) {
           console.warn("flow image failed:", e);
         }
       }
-      if (data.algorithmIllustImage) {
+      const resultImages =
+        data.resultImages?.length > 0
+          ? data.resultImages
+          : data.algorithmIllustImage
+            ? [data.algorithmIllustImage]
+            : [];
+      for (const [index, image] of resultImages.entries()) {
         try {
-          const blob = await urlToBlob(data.algorithmIllustImage);
-          figFolder.file("algorithm_illustration.png", blob);
+          const blob = await urlToBlob(image);
+          figFolder.file(`result_${index + 1}.png`, blob);
         } catch (e) {
-          console.warn("illust image failed:", e);
+          console.warn("result image failed:", e);
         }
       }
 
@@ -142,9 +148,16 @@ export default function Step9Export({ data }: Props) {
             ...(data.algorithmFlowImage.startsWith("data:")
               ? { "algorithm_flow.png": data.algorithmFlowImage }
               : {}),
-            ...(data.algorithmIllustImage.startsWith("data:")
-              ? { "algorithm_illustration.png": data.algorithmIllustImage }
-              : {}),
+            ...Object.fromEntries(
+              (data.resultImages?.length
+                ? data.resultImages
+                : data.algorithmIllustImage
+                  ? [data.algorithmIllustImage]
+                  : []
+              )
+                .filter((image) => image.startsWith("data:"))
+                .map((image, index) => [`result_${index + 1}.png`, image]),
+            ),
           },
         }),
       });
@@ -202,8 +215,8 @@ export default function Step9Export({ data }: Props) {
           label="配图"
           value={`${
             (data.algorithmFlowImage ? 1 : 0) +
-            (data.algorithmIllustImage ? 1 : 0)
-          }/2`}
+            (data.resultImages?.length || (data.algorithmIllustImage ? 1 : 0))
+          }`}
         />
       </section>
 

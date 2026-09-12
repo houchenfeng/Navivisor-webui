@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { WritingData } from "@/components/research-writing/data/writingSteps";
 import { generateWritingFigure, generateWritingSection } from "@/components/research-writing/lib/codex";
+import { tryLoadDemoResultFigures } from "@/components/research-writing/lib/demo-writing";
 import WordCounter from "./WordCounter";
 import TranslateButton from "./TranslateButton";
 
@@ -9,14 +10,14 @@ interface Props {
   onChange: (patch: Partial<WritingData>) => void;
 }
 
-type ImageKind = "algorithmFlowImage" | "algorithmIllustImage";
+type ImageKind = "algorithmFlowImage";
 
 function buildDefaultPrompt(kind: ImageKind, topic: string): string {
   const t = topic || "machine learning method";
   if (kind === "algorithmFlowImage") {
     return `Create a wide, white-background, CVPR-style computer vision method pipeline for "${t}". Preserve the supplied experiment topology exactly: keep every declared node, order, branch, fusion, arrow direction, and output; do not invent modules, datasets, metrics, formulas, numbers, citations, or claims. Use 5–9 compact modules arranged left-to-right, optional lower detail panels only when specified, restrained blue/teal/green/orange accents, thin gray borders, consistent arrows, readable English labels, and generous paper-ready whitespace. No paragraphs, random small text, neon, 3D cards, decorative circuit lines, robots, AI brains, logos, or watermark.`;
   }
-  return `A clean academic-style schematic illustration of the key module for the research topic "${t}". Highlight the main innovation, with English labels and clear structure. Minimal design, white background, paper-ready figure, monochrome with subtle blue accents.`;
+  return "";
 }
 
 export default function Step5Algorithm({ data, onChange }: Props) {
@@ -24,20 +25,31 @@ export default function Step5Algorithm({ data, onChange }: Props) {
   const [error, setError] = useState("");
 
   const [imgLoadingFlow, setImgLoadingFlow] = useState(false);
-  const [imgLoadingIllust, setImgLoadingIllust] = useState(false);
+  const [resultLoading, setResultLoading] = useState(false);
   const [imgError, setImgError] = useState("");
 
   const [promptFlow, setPromptFlow] = useState(() =>
     buildDefaultPrompt("algorithmFlowImage", data.topic)
   );
-  const [promptIllust, setPromptIllust] = useState(() =>
-    buildDefaultPrompt("algorithmIllustImage", data.topic)
-  );
 
   const [preview, setPreview] = useState<string | null>(null);
 
   const flowUploadRef = useRef<HTMLInputElement>(null);
-  const illustUploadRef = useRef<HTMLInputElement>(null);
+  const resultUploadRef = useRef<HTMLInputElement>(null);
+
+  const resultImages =
+    data.resultImages?.length > 0
+      ? data.resultImages
+      : data.algorithmIllustImage
+        ? [data.algorithmIllustImage]
+        : [];
+
+  const setResultImages = (images: string[]) => {
+    onChange({
+      resultImages: images,
+      algorithmIllustImage: images[0] ?? "",
+    });
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -53,15 +65,12 @@ export default function Step5Algorithm({ data, onChange }: Props) {
   };
 
   const handleGenerateImage = async (kind: ImageKind) => {
-    const setLoadingState =
-      kind === "algorithmFlowImage" ? setImgLoadingFlow : setImgLoadingIllust;
-    setLoadingState(true);
+    setImgLoadingFlow(true);
     setImgError("");
 
     try {
       const prompt =
-        (kind === "algorithmFlowImage" ? promptFlow : promptIllust).trim() ||
-        buildDefaultPrompt(kind, data.topic);
+        promptFlow.trim() || buildDefaultPrompt(kind, data.topic);
 
       const imageUrl = await generateWritingFigure(prompt, kind, {
         topic: data.topic,
@@ -74,7 +83,24 @@ export default function Step5Algorithm({ data, onChange }: Props) {
     } catch (e) {
       setImgError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoadingState(false);
+      setImgLoadingFlow(false);
+    }
+  };
+
+  const handleLoadResultFigures = async () => {
+    setResultLoading(true);
+    setImgError("");
+    try {
+      const images = await tryLoadDemoResultFigures();
+      if (images.length === 0) {
+        setImgError("当前 Demo 中没有找到结果效果图，请手动上传。");
+        return;
+      }
+      setResultImages(images);
+    } catch (e) {
+      setImgError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setResultLoading(false);
     }
   };
 
@@ -83,11 +109,8 @@ export default function Step5Algorithm({ data, onChange }: Props) {
   };
 
   const resetPrompt = (kind: ImageKind) => {
-    if (kind === "algorithmFlowImage") {
-      setPromptFlow(buildDefaultPrompt("algorithmFlowImage", data.topic));
-    } else {
-      setPromptIllust(buildDefaultPrompt("algorithmIllustImage", data.topic));
-    }
+    setPromptFlow(buildDefaultPrompt("algorithmFlowImage", data.topic));
+    void kind;
   };
 
   const handleUpload = (kind: ImageKind, file: File) => {
@@ -102,6 +125,22 @@ export default function Step5Algorithm({ data, onChange }: Props) {
     const reader = new FileReader();
     reader.onload = () => {
       onChange({ [kind]: String(reader.result) } as Partial<WritingData>);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadResult = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setImgError("请选择图片文件");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setImgError("图片不能超过 3MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setResultImages([...resultImages, String(reader.result)]);
     };
     reader.readAsDataURL(file);
   };
@@ -147,7 +186,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
         <div>
           <h2 className="text-xl font-bold text-brand-700">算法介绍</h2>
           <p className="mt-1 text-sm text-ink-sub">
-            描述你的方法框架、模块组成和核心公式，并可生成两张配图：算法框架流程图 + 方法示意图。
+            描述方法框架，并配算法框架流程图；结果展示图只支持从 Demo 载入或手动上传。
           </p>
         </div>
         <button
@@ -208,28 +247,80 @@ export default function Step5Algorithm({ data, onChange }: Props) {
           onPreview={() => setPreview(data.algorithmFlowImage)}
           uploadRef={flowUploadRef}
         />
-        <ImageSlot
-          title="方法示意图"
-          description="关键模块的结构示意图，突出创新点"
-          image={data.algorithmIllustImage}
-          loading={imgLoadingIllust}
-          prompt={promptIllust}
-          onPromptChange={setPromptIllust}
-          onResetPrompt={() => resetPrompt("algorithmIllustImage")}
-          onGenerate={() => handleGenerateImage("algorithmIllustImage")}
-          onClear={() => clearImage("algorithmIllustImage")}
-          onUpload={(file) => handleUpload("algorithmIllustImage", file)}
-          onUrl={() => handleUrlInput("algorithmIllustImage")}
-          onDownload={() =>
-            handleDownload("algorithmIllustImage", data.algorithmIllustImage)
-          }
-          onPreview={() => setPreview(data.algorithmIllustImage)}
-          uploadRef={illustUploadRef}
-        />
+        <div className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-white/70 p-4">
+          <div>
+            <div className="text-sm font-semibold text-ink">结果展示图</div>
+            <div className="mt-0.5 text-xs text-ink-sub">
+              不支持 AI 生成。点击载入会读取 Demo 中的对比/曲线/定性效果图，也可手动上传。
+            </div>
+          </div>
+          <input
+            ref={resultUploadRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleUploadResult(file);
+              if (resultUploadRef.current) resultUploadRef.current.value = "";
+            }}
+          />
+          {resultLoading ? (
+            <div className="flex min-h-[180px] items-center justify-center rounded-lg border border-dashed border-blue-200 bg-[#f7faff] text-xs text-ink-sub">
+              正在载入 Demo 结果图…
+            </div>
+          ) : resultImages.length > 0 ? (
+            <div className="grid min-h-[180px] grid-cols-2 gap-2 rounded-lg border border-dashed border-blue-200 bg-[#f7faff] p-2">
+              {resultImages.map((image, index) => (
+                <img
+                  key={`${index}-${image.slice(0, 24)}`}
+                  src={image}
+                  alt={`结果图 ${index + 1}`}
+                  className="h-28 w-full cursor-zoom-in rounded bg-white object-contain"
+                  onClick={() => setPreview(image)}
+                />
+              ))}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleLoadResultFigures()}
+              className="flex min-h-[180px] w-full flex-col items-center justify-center rounded-lg border border-dashed border-blue-200 bg-[#f7faff] p-2 text-center text-xs text-ink-sub"
+            >
+              点击此处从 Demo 载入结果效果图
+            </button>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void handleLoadResultFigures()}
+              disabled={resultLoading}
+              className="flex-1 rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-brand-700 disabled:opacity-50"
+            >
+              {resultLoading ? "载入中..." : resultImages.length ? "重新载入 Demo 图" : "载入 Demo 图"}
+            </button>
+            <button
+              type="button"
+              onClick={() => resultUploadRef.current?.click()}
+              className="rounded-lg bg-brand-100 px-3 py-2 text-xs font-semibold text-brand-500 transition-all hover:bg-brand-500 hover:text-white"
+            >
+              上传
+            </button>
+            {resultImages.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setResultImages([])}
+                className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-ink-sub transition-all hover:bg-red-100 hover:text-red-600"
+              >
+                清空
+              </button>
+            ) : null}
+          </div>
+        </div>
       </section>
 
       <p className="text-xs text-ink-sub">
-        ⓘ 可编辑提示词后再生成；也支持上传替换、输入 URL、点击图片放大查看。
+        ⓘ 算法框架图可生成或上传；结果展示图仅从 Demo 载入或上传，不调用 AI 生图。
       </p>
 
       {preview && <Lightbox src={preview} onClose={() => setPreview(null)} />}

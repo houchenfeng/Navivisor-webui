@@ -104,6 +104,11 @@ function buildTables(data: WritingData): string {
     .join("\n");
 }
 
+function resultImagesOf(data: WritingData): string[] {
+  if (data.resultImages?.length) return data.resultImages;
+  return data.algorithmIllustImage ? [data.algorithmIllustImage] : [];
+}
+
 /** 生成 main.tex（CVPR 格式，无行号版本） */
 export function buildCvprTex(data: WritingData): string {
   const title = latexText(data.title || "Untitled Paper");
@@ -112,9 +117,20 @@ export function buildCvprTex(data: WritingData): string {
     ? `\\includegraphics[width=\\linewidth]{figures/algorithm_flow.png}`
     : `% \\includegraphics[width=\\linewidth]{figures/algorithm_flow.png}`;
 
-  const illustFig = data.algorithmIllustImage.startsWith("data:")
-    ? `\\includegraphics[width=\\linewidth]{figures/algorithm_illustration.png}`
-    : `% \\includegraphics[width=\\linewidth]{figures/algorithm_illustration.png}`;
+  const resultFigs = resultImagesOf(data)
+    .map((image, index) =>
+      image.startsWith("data:")
+        ? `
+\\begin{figure}[t]
+  \\centering
+  \\includegraphics[width=\\linewidth]{figures/result_${index + 1}.png}
+  \\caption{Qualitative or quantitative result visualization.}
+  \\label{fig:result-${index + 1}}
+\\end{figure}
+`
+        : "",
+    )
+    .join("\n");
 
   return `% CVPR 2026 Paper Template
 % Based on the CVPR Author Kit: https://github.com/cvpr-org/author-kit
@@ -161,12 +177,7 @@ ${paragraphs(data.algorithm)}
   \\label{fig:flow}
 \\end{figure}
 
-\\begin{figure}[t]
-  \\centering
-  ${illustFig}
-  \\caption{Illustration of the key module of our method.}
-  \\label{fig:illust}
-\\end{figure}
+${resultFigs}
 
 \\section{Experiments}
 ${paragraphs(data.experiment)}

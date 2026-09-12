@@ -170,7 +170,9 @@ export default function Step9Preview({ data, onChange }: Props) {
       })}
 
       {/* 图片 */}
-      {(data.algorithmFlowImage || data.algorithmIllustImage) && (
+      {(data.algorithmFlowImage ||
+        (data.resultImages?.length ?? 0) > 0 ||
+        data.algorithmIllustImage) && (
         <Section title="算法配图 / Figures">
           <div className="grid grid-cols-2 gap-3">
             {data.algorithmFlowImage && (
@@ -185,18 +187,23 @@ export default function Step9Preview({ data, onChange }: Props) {
                 />
               </div>
             )}
-            {data.algorithmIllustImage && (
-              <div>
+            {(data.resultImages?.length
+              ? data.resultImages
+              : data.algorithmIllustImage
+                ? [data.algorithmIllustImage]
+                : []
+            ).map((image, index) => (
+              <div key={`result-${index}`}>
                 <div className="mb-1 text-[11px] font-semibold text-ink-sub">
-                  方法示意图
+                  结果展示图 {index + 1}
                 </div>
                 <img
-                  src={data.algorithmIllustImage}
-                  alt="illust"
+                  src={image}
+                  alt={`result-${index + 1}`}
                   className="max-h-[260px] w-full rounded-lg border border-blue-100 bg-white object-contain p-2"
                 />
               </div>
-            )}
+            ))}
           </div>
         </Section>
       )}
@@ -265,7 +272,7 @@ export default function Step9Preview({ data, onChange }: Props) {
         引言 {data.intro.length} 字符 · 相关工作 {data.related.length} 字符 ·
         算法 {data.algorithm.length} 字符 · 实验 {data.experiment.length} 字符 ·
         讨论 {data.discussion.length} 字符 · 引用 {data.references.length} 条 ·
-        配图 {(data.algorithmFlowImage ? 1 : 0) + (data.algorithmIllustImage ? 1 : 0)}/2
+        配图 {(data.algorithmFlowImage ? 1 : 0) + (data.resultImages?.length || (data.algorithmIllustImage ? 1 : 0))}
       </div>
     </div>
   );

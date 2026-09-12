@@ -188,9 +188,18 @@ const FIGURE_FILES: Record<'algorithmFlowImage' | 'algorithmIllustImage', string
   algorithmIllustImage: [
     'writing/figures/comparison.png',
     'experiment/figures/comparison.png',
-    'writing/figures/teaser.png',
   ],
 };
+
+const RESULT_FIGURE_GROUPS = [
+  ['writing/figures/comparison.png', 'experiment/figures/comparison.png'],
+  ['writing/figures/curves.png', 'experiment/figures/curves.png'],
+  [
+    'experiment/figures/qualitative-generated-v2.png',
+    'writing/figures/qualitative.png',
+    'experiment/figures/qualitative.png',
+  ],
+];
 
 async function workspaceFileExists(absolutePath: string): Promise<boolean> {
   try {
@@ -232,4 +241,23 @@ export async function tryLoadDemoWritingFigure(
     return (await fileToDataUrl(absolute)) || buildFileServeUrl(absolute);
   }
   return null;
+}
+
+/** Load Demo qualitative / comparison / curve figures for the results gallery. */
+export async function tryLoadDemoResultFigures(): Promise<string[]> {
+  const rootPath = useResearchProjectStore.getState().project?.rootPath?.trim();
+  if (!rootPath) return [];
+  const images: string[] = [];
+  for (const group of RESULT_FIGURE_GROUPS) {
+    for (const relative of group) {
+      const absolute = joinWorkspacePath(rootPath, relative);
+      if (!(await workspaceFileExists(absolute))) continue;
+      const url = (await fileToDataUrl(absolute)) || buildFileServeUrl(absolute);
+      if (url) {
+        images.push(url);
+        break;
+      }
+    }
+  }
+  return images;
 }

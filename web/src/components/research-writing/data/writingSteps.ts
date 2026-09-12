@@ -56,6 +56,7 @@ export interface WritingData {
 
   algorithmFlowImage: string;
   algorithmIllustImage: string;
+  resultImages: string[];
 
   experimentTable: {
     title?: string;
@@ -98,6 +99,7 @@ export const initialWritingData: WritingData = {
 
   algorithmFlowImage: "",
   algorithmIllustImage: "",
+  resultImages: [],
 
   experimentTable: {
     title: "结果表格",
