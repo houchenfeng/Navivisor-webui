@@ -437,7 +437,7 @@
           "role": "experiment-plan",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "d204bec053b7c7ac4b2fd8f04772811d66922ecd3a2028acfa78cee0603bdaf3"
+          "sha256": "e45b8ad8ad791f34018bbb8a4fd6c3054933b860568e042b04ff34bcee7f856d"
         },
         {
           "key": "experiment-suite-plan-00",

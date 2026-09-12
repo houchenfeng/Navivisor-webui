@@ -45,6 +45,7 @@ export type ExperimentHydration = {
   planHeadline: string;
   shortestPath: string;
   protocolNote: string;
+  datasetNote: string;
   resultsMarkdown: string;
   architectureMarkdown: string;
   configJson: string | null;
@@ -68,6 +69,7 @@ const vacantHydration = (): ExperimentHydration => ({
   planHeadline: '',
   shortestPath: '',
   protocolNote: '',
+  datasetNote: '',
   resultsMarkdown: '',
   architectureMarkdown: '',
   configJson: null,
@@ -86,9 +88,11 @@ const emptyHydration = (): ExperimentHydration => ({
   source: 'offline-fallback',
   loading: false,
   planMarkdown: DEMO_PLAN_MARKDOWN,
-  planHeadline: '完整方法 EviVAD = B0 + DAA + EAD + DAG。\n基线 B0（免训练）：OpenAI CLIP，视觉编码器 ViT-B/16，文本编码器 CLIP Transformer，权重全部冻结；帧级图像–文本余弦相似度加一维时间平滑。',
+  planHeadline: '基线 B0（免训练）：OpenAI CLIP，视觉编码器 ViT-B/16，文本编码器 CLIP Transformer，权重全部冻结。\n打分流程：帧级图像–文本余弦相似度加一维时间平滑。',
   shortestPath: '先复现冻结 VLM Baseline B0，再按 DAA → EAD → DAG 单变量接入。',
   protocolNote: 'UCF-Crime 主评测；XD-Violence / UBnormal / MSAD 跨域；指标 AUC / AP / EAR / HR。',
+  datasetNote:
+    '主数据集为 UCF-Crime：官方划分 1610 个训练视频 / 290 个测试视频，带帧级异常标注，覆盖打架、抢劫、爆炸等 13 类犯罪监控场景。训练只使用训练集更新 DAA 与打分头，主结果在测试集报告。\n跨域验证使用 XD-Violence（多类暴力/异常）、UBnormal（合成异常，检验对非真实数据的迁移）和 MSAD（多场景多类别），三者均为零微调外测。\n退化验证在测试集上注入低光/低对比、雨雾、视频压缩、相机抖动与遮挡，4 类 × 3 强度共 12 种配置。输入为每片段 32 帧、8 fps，帧 resize 至 224×224；解释类指标在测试集抽样的 800 个片段上评测。',
   resultsMarkdown: DEMO_RESULTS_MARKDOWN,
   architectureMarkdown: DEMO_ARCHITECTURE_MARKDOWN,
   configJson: null,
@@ -219,6 +223,7 @@ function mapWorkspaceIdeas(raw: string): {
   planHeadline: string;
   shortestPath: string;
   protocolNote: string;
+  datasetNote: string;
   comparisonMethods: string[];
 } | null {
   try {
@@ -226,6 +231,7 @@ function mapWorkspaceIdeas(raw: string): {
       baseline?: string;
       method?: string;
       protocol?: string;
+      datasets?: string;
       shortestPath?: string;
       comparisons?: unknown;
       items?: Array<Record<string, unknown>>;
@@ -273,9 +279,13 @@ function mapWorkspaceIdeas(raw: string): {
     });
     return {
       ideas,
-      planHeadline: String(parsed.baseline ?? [parsed.method, parsed.baseline].filter(Boolean).join(' · ')),
+      planHeadline: String(parsed.baseline ?? '')
+        .replace(/^完整方法[^\n]*\n?/, '')
+        .replace(/\n主要指标：[\s\S]*$/, '')
+        .trim(),
       shortestPath: parsed.shortestPath ?? '',
       protocolNote: parsed.protocol ?? '',
+      datasetNote: parsed.datasets ?? '',
       comparisonMethods: asStringList(parsed.comparisons),
     };
   } catch {
@@ -479,6 +489,7 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
           planHeadline: mappedIdeas?.planHeadline ?? '',
           shortestPath: mappedIdeas?.shortestPath ?? '',
           protocolNote: mappedIdeas?.protocolNote ?? '',
+          datasetNote: mappedIdeas?.datasetNote ?? '',
           resultsMarkdown: resultsText || DEMO_RESULTS_MARKDOWN,
           architectureMarkdown: architectureText || DEMO_ARCHITECTURE_MARKDOWN,
           configJson: configText || null,

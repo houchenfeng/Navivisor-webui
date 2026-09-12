@@ -41,6 +41,7 @@ function useHydration(): ExperimentHydration {
       planHeadline: '',
       shortestPath: '',
       protocolNote: '',
+      datasetNote: '',
       resultsMarkdown: DEMO_RESULTS_MARKDOWN,
       architectureMarkdown: DEMO_ARCHITECTURE_MARKDOWN,
       configJson: null,
@@ -215,9 +216,24 @@ function PlanPage({ go }: { go: (step: ExperimentStep) => void }) {
   const hydration = useHydration();
   const [selectedIdea, setSelectedIdea] = useState<(typeof state.ideas)[number] | null>(null);
   const fromWorkspace = hydration.source === 'workspace';
-  const baselineText =
+  const rawBaseline = (
     hydration.planHeadline ||
-    '完整方法 EviVAD = B0 + DAA + EAD + DAG。\n基线 B0（免训练）：OpenAI CLIP，视觉编码器 ViT-B/16（输入 224×224），文本编码器 CLIP Transformer；视觉/文本塔全部冻结。帧级图像嵌入与固定英文异常/正常提示做余弦相似度，再经一维时间平滑得到帧级分数。';
+    '基线 B0（免训练）：OpenAI CLIP，视觉编码器 ViT-B/16（输入 224×224），文本编码器 CLIP Transformer；视觉/文本塔全部冻结。\n打分流程：帧级图像嵌入与固定英文异常/正常提示做余弦相似度，再经一维时间平滑得到帧级分数。'
+  )
+    .replace(/^完整方法[^\n]*\n?/, '')
+    .replace(/\n主要指标：[\s\S]*$/, '')
+    .trim();
+  const scoringMarker = '打分流程：';
+  const scoringIndex = rawBaseline.indexOf(scoringMarker);
+  const baselineBody = (scoringIndex >= 0 ? rawBaseline.slice(0, scoringIndex) : rawBaseline)
+    .replace(/^基线\s*/, '')
+    .trim();
+  const scoringBody = scoringIndex >= 0 ? rawBaseline.slice(scoringIndex + scoringMarker.length).trim() : '';
+  const datasetNote =
+    hydration.datasetNote ||
+    (fromWorkspace
+      ? '主数据集为 UCF-Crime：官方划分 1610 个训练视频 / 290 个测试视频，带帧级异常标注，覆盖打架、抢劫、爆炸等 13 类犯罪监控场景。训练只使用训练集更新 DAA 与打分头，主结果在测试集报告。\n跨域验证使用 XD-Violence（多类暴力/异常）、UBnormal（合成异常，检验对非真实数据的迁移）和 MSAD（多场景多类别），三者均为零微调外测。\n退化验证在测试集上注入低光/低对比、雨雾、视频压缩、相机抖动与遮挡，4 类 × 3 强度共 12 种配置。输入为每片段 32 帧、8 fps，帧 resize 至 224×224；解释类指标在测试集抽样的 800 个片段上评测。'
+      : '');
   const comparisonMethods = hydration.comparisonMethods.length
     ? hydration.comparisonMethods
     : [
@@ -243,12 +259,27 @@ function PlanPage({ go }: { go: (step: ExperimentStep) => void }) {
       <div className="mt-4 grid gap-3">
         <div className="rounded-xl bg-blue-50 p-4 text-sm leading-6">
           <strong>基线算法</strong>
-          <p className="mt-2 whitespace-pre-wrap">{baselineText}</p>
-          <p className="mt-3 text-sm leading-6 text-[#315a98]">
+          <p className="mt-2 leading-6">
+            <strong>基线 Baseline：</strong>
+            {baselineBody}
+          </p>
+          {scoringBody ? (
+            <p className="mt-3 leading-6">
+              <strong>打分流程：</strong>
+              {scoringBody}
+            </p>
+          ) : null}
+          <p className="mt-3 leading-6">
             <strong>主要指标：</strong>
             AUC（Area Under the ROC Curve，ROC 曲线下面积）以帧为样本、异常分数为判据，表示随机抽取一正一负帧时正样本分数更高的概率，衡量检测精度，越高越好。
             EAR（Evidence Attribution Recall，证据归因召回）定义为预测证据集合与人工标注的最小充分证据集的交集占比，衡量解释是否对准了真正支撑异常判定的时空片段，越高越好。
           </p>
+          {datasetNote ? (
+            <p className="mt-3 whitespace-pre-wrap leading-6">
+              <strong>数据集：</strong>
+              {datasetNote}
+            </p>
+          ) : null}
         </div>
         <div className="rounded-xl border border-blue-200 bg-white p-4 text-sm leading-6">
           <strong>对比算法</strong>
