@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, FileSearch, FlaskConical, LoaderCircle, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { fetchArtifactText, findLatestByRole, parseCsvRows, useWorkspaceArtifacts } from '@/components/research-workflow/use-research-project';
 import { getApiToken } from '@/auth-token';
@@ -156,7 +155,6 @@ export function TopicPage() {
         <div><div className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#315a98]"><span className="grid size-8 place-items-center rounded-xl bg-white/80 text-[#1f4dcb]"><Sparkles className="size-4" /></span>启航 · 开题阶段</div><h1 className="text-3xl font-black tracking-[-0.04em] text-[#102f72] sm:text-4xl">开题智能体</h1><p className="mt-2 text-sm font-semibold leading-6 text-[#617da9]">输入感兴趣的模糊的研究领域，先用公开文献确认现有研究态势，寻找最可行课题。</p></div>
         <span className="inline-flex items-center gap-2 rounded-full bg-[#ddecff] px-3.5 py-2 text-xs font-black text-[#2670d1] shadow-sm"><span className={`size-2 rounded-full ${isRunning ? 'animate-pulse bg-[#1f4dcb]' : 'bg-[#4c83d0]'}`} />{isRunning ? '检索中' : 'OpenAlex · 公开试检索'}</span>
       </header>
-      <CurrentPaperCard className="mt-5" defaultOpen={false} slim />
 
       <nav aria-label="开题三步进度" className="mt-8 grid grid-cols-1 gap-2 rounded-2xl bg-white p-2 shadow-[0_12px_32px_rgba(38,90,167,0.12)] sm:grid-cols-3">
         {steps.map((label, index) => {

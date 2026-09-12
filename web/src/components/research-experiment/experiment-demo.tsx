@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
-import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
 import { ArtifactPreviewDialog } from '@/components/research-workflow/artifact-preview-dialog';
 import { researchWorkflowClient, type SshExperimentJob } from '@/components/research-workflow/research-workflow-client';
 import type { ResearchArtifact } from '@/components/research-workflow/research-workflow-types';
@@ -723,7 +722,6 @@ export function ExperimentDemo() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <CurrentPaperCard defaultOpen={false} className="w-full max-w-sm" />
               <LoadWorkspaceDemoButton compact />
               {experiment.runMode === 'real' ? (
                 <Badge className="bg-[#1F4DCB] text-white">真实目标配置 · runner 未接入</Badge>

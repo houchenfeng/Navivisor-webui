@@ -15,7 +15,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
-import { CurrentPaperCard } from '@/components/research-workflow/current-paper-card';
 import { ConversationEventCards } from '@/components/research-workflow/conversation-event-cards';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import { useResearchProjectStore } from '@/stores/research-project-store';
@@ -109,7 +108,14 @@ function ProgressRing({ value }: { value: number }) {
   return (
     <div className="relative grid size-[68px] shrink-0 place-items-center">
       <svg viewBox="0 0 80 80" className="size-[68px] -rotate-90">
-        <circle cx="40" cy="40" r={radius} fill="none" stroke="#e8f0ff" strokeWidth="7" />
+        <circle
+          cx="40"
+          cy="40"
+          r={radius}
+          fill="none"
+          stroke="#e8f0ff"
+          strokeWidth="7"
+        />
         <circle
           cx="40"
           cy="40"
@@ -173,7 +179,9 @@ export function ResearchHomePage() {
         rootPath: workspace.rootPath,
         description: workspace.description,
         demoComplete: workspace.index.demo?.complete ?? null,
-        missing: workspace.index.demo?.missing ?? [],
+        missing: (workspace.index.demo?.missing ?? []).map((item) =>
+          typeof item === 'string' ? item : item.path,
+        ),
       });
       setRegisterMessage(
         workspace.reused
@@ -181,7 +189,9 @@ export function ResearchHomePage() {
           : `已注册项目 ${workspace.projectId}`,
       );
     } catch (error) {
-      setRegisterMessage(error instanceof Error ? error.message : String(error));
+      setRegisterMessage(
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setRegisterBusy(false);
     }
@@ -189,14 +199,24 @@ export function ResearchHomePage() {
 
   return (
     <main className="research-home scrollbar-hide flex min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-4 pt-0 sm:px-7 sm:pb-6 lg:px-10 lg:pb-6">
-      <img className="research-home__mountains" src="research-home/mountains.png" alt="" aria-hidden="true" />
+      <img
+        className="research-home__mountains"
+        src="research-home/mountains.png"
+        alt=""
+        aria-hidden="true"
+      />
       <section className="brand-enter mx-auto flex w-full max-w-6xl flex-col pb-4 pt-5 sm:pt-6">
-        <div className="research-home__slogan hidden lg:block" aria-hidden="true">
+        <div
+          className="research-home__slogan hidden lg:block"
+          aria-hidden="true"
+        >
           <span>研途有光</span>
           <small>始于好奇，终于远方</small>
         </div>
         <div className="research-home__hero">
-          <p className="text-sm font-bold tracking-[0.2em] text-[#1F4DCB]">你好，研究者</p>
+          <p className="text-sm font-bold tracking-[0.2em] text-[#1F4DCB]">
+            你好，研究者
+          </p>
           <h1 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#102c65] sm:text-5xl lg:text-[3.4rem]">
             欢迎来到Navivisor研途启航
           </h1>
@@ -208,7 +228,9 @@ export function ResearchHomePage() {
         <div className="research-home__workspace mt-6 rounded-2xl px-3.5 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-0 flex-1">
-              <h2 className="text-xs font-extrabold text-[#173778]">新论文工作目录</h2>
+              <h2 className="text-xs font-extrabold text-[#173778]">
+                新论文工作目录
+              </h2>
               <p className="mt-0.5 text-[11px] font-medium text-[#7890b6]">
                 选择服务端可访问目录，四模块所有数据均储存在此目录。
               </p>
@@ -241,11 +263,12 @@ export function ResearchHomePage() {
             </button>
           </div>
           {registerMessage ? (
-            <p className="mt-1.5 truncate text-[11px] font-medium text-[#55739f]">{registerMessage}</p>
+            <p className="mt-1.5 truncate text-[11px] font-medium text-[#55739f]">
+              {registerMessage}
+            </p>
           ) : null}
           {project ? (
             <div className="mt-1.5 space-y-2">
-              <CurrentPaperCard defaultOpen={false} />
               <ConversationEventCards />
             </div>
           ) : null}
@@ -253,7 +276,12 @@ export function ResearchHomePage() {
 
         {/* Four module icon buttons + curved path */}
         <div className="research-journey">
-          <img className="research-journey__curve hidden md:block" src="research-home/journey-curve.png" alt="" aria-hidden="true" />
+          <img
+            className="research-journey__curve hidden md:block"
+            src="research-home/journey-curve.png"
+            alt=""
+            aria-hidden="true"
+          />
           <div className="research-journey__grid">
             {modules.map(({ title, copy, image, to }, index) => (
               <button
@@ -267,7 +295,9 @@ export function ResearchHomePage() {
                   <img src={image} alt="" aria-hidden="true" />
                 </span>
                 <span className="mt-2 text-[1.05rem] font-black tracking-[-0.02em] text-[#173778]">
-                  <span className="research-module-card__number">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="research-module-card__number">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
                   {title}
                 </span>
                 <span className="mt-1.5 max-w-[13rem] text-[0.82rem] font-semibold leading-5 text-[#607ca7]">
@@ -282,8 +312,14 @@ export function ResearchHomePage() {
         <div className="mt-2 grid max-h-[min(220px,26vh)] gap-3 lg:grid-cols-3">
           <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-extrabold text-[#173778]">最近项目</h2>
-              <button type="button" onClick={() => void navigate({ to: '/files' })} className="inline-flex items-center gap-1 text-[11px] font-bold text-[#5275a8] transition-colors hover:text-[#1F4DCB]">
+              <h2 className="text-sm font-extrabold text-[#173778]">
+                最近项目
+              </h2>
+              <button
+                type="button"
+                onClick={() => void navigate({ to: '/files' })}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#5275a8] transition-colors hover:text-[#1F4DCB]"
+              >
                 点击查看 <ArrowRight className="size-3.5" />
               </button>
             </div>
@@ -299,9 +335,13 @@ export function ResearchHomePage() {
                       <Icon className="size-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-bold text-[#173778]">{item.title}</div>
+                      <div className="truncate text-xs font-bold text-[#173778]">
+                        {item.title}
+                      </div>
                       <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold text-[#7890b6]">
-                        <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[#1F4DCB]">{item.stage}</span>
+                        <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[#1F4DCB]">
+                          {item.stage}
+                        </span>
                         <span>{item.updated}</span>
                       </div>
                     </div>
@@ -313,8 +353,14 @@ export function ResearchHomePage() {
 
           <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-extrabold text-[#173778]">arXiv 速递</h2>
-              <button type="button" onClick={() => void navigate({ to: '/research/topic' })} className="inline-flex items-center gap-1 text-[11px] font-bold text-[#5275a8] transition-colors hover:text-[#1F4DCB]">
+              <h2 className="text-sm font-extrabold text-[#173778]">
+                arXiv 速递
+              </h2>
+              <button
+                type="button"
+                onClick={() => void navigate({ to: '/research/topic' })}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#5275a8] transition-colors hover:text-[#1F4DCB]"
+              >
                 点击查看 <ArrowRight className="size-3.5" />
               </button>
             </div>
@@ -325,12 +371,16 @@ export function ResearchHomePage() {
                   className="rounded-xl border border-[#e4eefc] bg-[#f7faff] px-2.5 py-2"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-[#7890b6]">{paper.venue}</span>
+                    <span className="text-[10px] font-bold text-[#7890b6]">
+                      {paper.venue}
+                    </span>
                     <span className="rounded-full bg-[#e8f0ff] px-1.5 py-px text-[9px] font-bold text-[#1F4DCB]">
                       {paper.tag}
                     </span>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs font-bold leading-4 text-[#173778]">{paper.title}</p>
+                  <p className="mt-1 line-clamp-2 text-xs font-bold leading-4 text-[#173778]">
+                    {paper.title}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -338,8 +388,14 @@ export function ResearchHomePage() {
 
           <article className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-[0_12px_28px_rgba(31,77,203,0.08)] backdrop-blur-xl">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-extrabold text-[#173778]">我的研究旅程</h2>
-              <button type="button" onClick={() => void navigate({ to: '/research/experiment' })} className="inline-flex items-center gap-1 text-[11px] font-bold text-[#5275a8] transition-colors hover:text-[#1F4DCB]">
+              <h2 className="text-sm font-extrabold text-[#173778]">
+                我的研究旅程
+              </h2>
+              <button
+                type="button"
+                onClick={() => void navigate({ to: '/research/experiment' })}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#5275a8] transition-colors hover:text-[#1F4DCB]"
+              >
                 点击查看 <ArrowRight className="size-3.5" />
               </button>
             </div>
