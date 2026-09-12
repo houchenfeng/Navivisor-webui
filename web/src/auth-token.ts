@@ -1,16 +1,18 @@
-/** Manages the WebUI JWT for REST and WebSocket authentication. */
+/** Compatibility helpers retained for callers while deployment auth is disabled. */
 import { withBasePath } from './base-path';
 
 const STORAGE_KEY = 'codex.webui.jwt';
 
 /** Returns the stored JWT, or null if not yet set. */
 export function getApiToken(): string | null {
-  return sessionStorage.getItem(STORAGE_KEY);
+  sessionStorage.removeItem(STORAGE_KEY);
+  return null;
 }
 
 /** Stores the JWT in session storage. */
 export function setApiToken(token: string): void {
-  sessionStorage.setItem(STORAGE_KEY, token);
+  void token;
+  sessionStorage.removeItem(STORAGE_KEY);
 }
 
 /** Clears the stored JWT. */

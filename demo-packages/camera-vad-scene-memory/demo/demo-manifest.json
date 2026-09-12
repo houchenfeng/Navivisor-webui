@@ -40,7 +40,7 @@
           "role": "search-iterations",
           "mediaType": "application/x-ndjson",
           "required": true,
-          "sha256": "8e91c20254cf21c8573497f043f3206300d7080ccbcafbd3b9b1fcbaaa400703"
+          "sha256": "2e727a45361549d2ca44682df122895801b61d77e0081124b731305bebd4f180"
         },
         {
           "key": "papers-csv",
@@ -48,7 +48,7 @@
           "role": "candidate-papers",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "fe5c480785e7e061770dc7c1b04189b1e8d38446a09d93f353699800ad725d8e"
+          "sha256": "f93540b0b63117a0254d7170c2522773c44e00efe320f50db2ad755cec12e719"
         },
         {
           "key": "screening-csv",
@@ -56,7 +56,7 @@
           "role": "screening-log",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "ccbd9067aab18de70e54d4dc8034796243340cc608e2776f182ccc02f02357ce"
+          "sha256": "e9aef4910e98f9901a6bf30ae0e3b8903ca9a827039cc155fa991a624e3a1e9b"
         }
       ]
     },
@@ -124,7 +124,7 @@
           "role": "core-references",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "c56d5ee0758c6283597e212d9ffef26daf0496a814d34435efcc333083248ecc"
+          "sha256": "832c149694ed5daa97515b3c3b97ddc4fb6f460543f709fddb3276a8dc8389f2"
         },
         {
           "key": "literature-bib",
@@ -132,7 +132,7 @@
           "role": "literature-bib",
           "mediaType": "application/x-bibtex",
           "required": true,
-          "sha256": "2d246ea622aed36c40804b813c291ae9947733faa5d4d99191e775f08326bc7a"
+          "sha256": "c265a5c355c8a4947a4b46e050139cf29d7ffa3bc5767fb550197c8755000d34"
         },
         {
           "key": "paper-manifest",
@@ -257,7 +257,7 @@
           "role": "experiment-results",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "1c20eb3ced5956eda75ae01fb66d0f91639b9b07401bcff6c716ff9b09724666"
+          "sha256": "9791742dc05c335506127134982571e692dcc60d163b00e0cd18b899515cac9f"
         },
         {
           "key": "metrics-ablation",
@@ -265,7 +265,7 @@
           "role": "experiment-results",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "3346c2ba0077f62deef180f7e5b3ebb44bccf63d7f96aa59be6115d2d5d2feaa"
+          "sha256": "248fab9da3a7a99705e97d16f208d98d41810e02ca635c72cb238cc4f3cf447a"
         },
         {
           "key": "metrics-seeds",
@@ -273,7 +273,7 @@
           "role": "experiment-results",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "aee8b23fb319fa1297da35eb387b261080a070d31111531f8e6064615270bcc7"
+          "sha256": "2e041415a5671693d8fbe7028decbac2e24f2b3b9a30e1c81eca65a81523a7e2"
         },
         {
           "key": "comparison-png",
@@ -341,7 +341,7 @@
           "role": "paper-source",
           "mediaType": "application/x-tex",
           "required": true,
-          "sha256": "f424a50718194c9bf8dd6d657a4faf38c4db6ca3e84f9ec545f8f43ddb8845f3"
+          "sha256": "c6ed216293a8e83411a1bb9341618baddb7eaec4dfd28424552510dda5cdeec9"
         },
         {
           "key": "paper-metadata",
@@ -357,7 +357,7 @@
           "role": "paper-source",
           "mediaType": "application/x-bibtex",
           "required": true,
-          "sha256": "2d246ea622aed36c40804b813c291ae9947733faa5d4d99191e775f08326bc7a"
+          "sha256": "c265a5c355c8a4947a4b46e050139cf29d7ffa3bc5767fb550197c8755000d34"
         },
         {
           "key": "section-abstract",
@@ -373,7 +373,7 @@
           "role": "paper-source",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "840d716a259f2b3cc19ed612814d0402112730cfa013755840cbfdf1a5de8e3b"
+          "sha256": "aa23e68763435612bc3cb810cee88c3e14b1b1a96a67e2fbcc7a16aa82cfcd2a"
         },
         {
           "key": "section-related",
@@ -381,7 +381,7 @@
           "role": "paper-source",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "90caa7e54e4c780b80cd295a5212e1f2c9f2a89c3e7b5dbf81eb306a93f12b75"
+          "sha256": "14758afb79d170fcb33afd7589e468a143318e31be3859c06a1dc368aa862f9c"
         },
         {
           "key": "section-method",
@@ -389,7 +389,7 @@
           "role": "paper-source",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "f04b4c9af3d16799f1dead6ed3ecf52f7438051918f6fb8fb3495fa779bf4955"
+          "sha256": "43305cf5fd68597e78ab7c6f01a10b71215d6b62499e220769653179aa096337"
         },
         {
           "key": "section-experiments",
@@ -397,7 +397,7 @@
           "role": "paper-source",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "ba4e43dfd00892ec213104aba98d9c8791e91b6e4a23bf91661a5c046e48d4fe"
+          "sha256": "753aa89dc2cf04083ad528c50f321a4a513081a6a0841052c5bcb654798eeb8d"
         },
         {
           "key": "section-conclusion",
@@ -405,7 +405,7 @@
           "role": "paper-source",
           "mediaType": "text/markdown",
           "required": true,
-          "sha256": "b470478833a0cf3438ef387e634cee6f486031d5599c9621e97cd383f80a1ded"
+          "sha256": "7d925e8d6907c8763abb2539032c81e03805a5caad4f3c7249e7cd27b763819d"
         },
         {
           "key": "writing-architecture-png",
@@ -429,7 +429,7 @@
           "role": "paper-metadata",
           "mediaType": "application/json",
           "required": true,
-          "sha256": "f22e6315cee784d0db70f10a6f9f9b486dd790bdb8530085657da8aab53343cf"
+          "sha256": "78af4f7e488249f34e98114b3d0b63ee6a86149118d5d33f273039758c4c552a"
         }
       ]
     },
@@ -457,7 +457,7 @@
           "role": "diagnostics",
           "mediaType": "text/plain",
           "required": true,
-          "sha256": "2ac77d46fbf491f3b636811c94e20d46462a9c7d4e4bfacfda185da74f745edc"
+          "sha256": "0fd7deb4f3f0363e54c9a8f69e4f1719463597adfe487fb95450c9036c626cc9"
         }
       ]
     },
@@ -492,7 +492,7 @@
           "role": "submission-package",
           "mediaType": "application/zip",
           "required": true,
-          "sha256": "41dd3fe61f8726393764585773fc9c0d71a93c1501808e6ab47cf260103a0a48"
+          "sha256": "568fa4c5b28b2d5f184247a9634525d188aab76d655e5f01efdc565dac57632f"
         }
       ]
     },

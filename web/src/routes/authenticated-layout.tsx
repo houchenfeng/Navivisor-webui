@@ -23,7 +23,6 @@ import { useLayoutStore } from '@/stores/layout-store';
 import { useTimelineStore } from '@/stores/timeline-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { cn } from '@/lib/utils';
-import { clearApiToken } from '@/auth-token';
 import { getSocket, resetSocket } from '@/socket';
 import { filesGetRoots, filesAddRoot } from '@/generated/api';
 import {
@@ -210,17 +209,6 @@ export function AuthenticatedLayout() {
     window.addEventListener('codex-webui:jump-thread', handleJump);
     return () => window.removeEventListener('codex-webui:jump-thread', handleJump);
   }, [navigate, setActiveThread]);
-
-  // Handle auth expiry → redirect to /login
-  useEffect(() => {
-    const handleAuthExpired = () => {
-      clearApiToken();
-      resetSocket();
-      void navigate({ to: '/login', search: { redirect: '/' } });
-    };
-    window.addEventListener('codex-webui:auth-expired', handleAuthExpired);
-    return () => window.removeEventListener('codex-webui:auth-expired', handleAuthExpired);
-  }, [navigate]);
 
   // Sync file tree root based on current route context
   useEffect(() => {

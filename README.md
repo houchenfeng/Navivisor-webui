@@ -14,7 +14,7 @@ pnpm --dir web install
 pnpm ensure:env
 ```
 
-首次初始化会创建根目录 .env，生成并打印 WEBUI_API_KEY，用它登录 WebUI；这不是 ChatGPT 密码。请保留自己的配置，不提交 .env。
+首次初始化会创建根目录 `.env`。WebUI 不再要求部署登录密钥，打开页面即可进入；ChatGPT/Codex 账户授权仍在“设置 → 账户”中单独完成。请保留自己的配置，不提交 `.env`。
 
 打开两个终端，在仓库根目录分别运行：
 

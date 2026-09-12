@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { LoggerModule } from 'nestjs-pino';
 import { join } from 'node:path';
@@ -8,9 +7,7 @@ import { AccountModule } from './account/account.module';
 import { AppsModule } from './apps/apps.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ApiKeyGuard } from './auth/api-key.guard';
 import { ArchiveModule } from './archive/archive.module';
-import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
 import { CodexModule } from './codex/codex.module';
 import { ConversationBranchesModule } from './conversation-branches/conversation-branches.module';
@@ -112,7 +109,6 @@ const PINO_REDACT = {
         fallthrough: true,
       },
     }),
-    AuthModule,
     ArchiveModule,
     ChatModule,
     DatabaseModule,
@@ -138,12 +134,6 @@ const PINO_REDACT = {
     ResearchTopicModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ApiKeyGuard,
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

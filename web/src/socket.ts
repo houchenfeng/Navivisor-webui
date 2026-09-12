@@ -2,7 +2,6 @@
  * Socket.io client singleton for real-time Codex events.
  */
 import { io, Socket } from 'socket.io-client';
-import { getApiToken } from './auth-token';
 import { withBasePath } from './base-path';
 
 let socket: Socket | null = null;
@@ -13,9 +12,6 @@ export function getSocket(): Socket {
       path: withBasePath('/socket.io'),
       transports: ['websocket'],
       autoConnect: true,
-      auth: (callback) => {
-        callback({ token: getApiToken() ?? '' });
-      },
     });
   }
   return socket;

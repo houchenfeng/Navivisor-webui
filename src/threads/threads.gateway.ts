@@ -16,7 +16,6 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { AuthService } from '../auth/auth.service';
 import { CodexProcessManager } from '../codex/codex-process-manager.service';
 import type { ServerNotification, ServerRequest } from '../codex/codex-schema';
 import { PendingApprovalsService } from '../pending-approvals/pending-approvals.service';
@@ -59,7 +58,6 @@ export class ThreadsGateway
 
   constructor(
     private readonly codexManager: CodexProcessManager,
-    private readonly authService: AuthService,
     private readonly activeThreads: ActiveThreadRegistryService,
     private readonly pendingApprovals: PendingApprovalsService,
     private readonly deletionRegistry: ThreadDeletionRegistryService,
@@ -84,16 +82,8 @@ export class ThreadsGateway
     this.logger.log('ThreadsGateway initialized');
   }
 
-  /** Validates auth token on connection; disconnects unauthorized clients. */
-  async handleConnection(client: Socket): Promise<void> {
-    const token = this.extractSocketToken(client);
-
-    if (!(await this.authService.authenticateToken(token, client.id)).ok) {
-      this.logger.warn(`Rejected unauthenticated socket: ${client.id}`);
-      client.disconnect(true);
-      return;
-    }
-
+  /** Accepts local WebUI clients without a deployment-key handshake. */
+  handleConnection(client: Socket): void {
     this.logger.debug(`Client connected: ${client.id}`);
   }
 
@@ -260,22 +250,4 @@ export class ThreadsGateway
     return threadId;
   }
 
-  /** Extracts auth token from socket handshake (mirrors ApiKeyGuard logic). */
-  private extractSocketToken(client: Socket): string | null {
-    const authToken = (client.handshake.auth as Record<string, unknown>)?.[
-      'token'
-    ];
-    if (typeof authToken === 'string' && authToken.trim()) {
-      return authToken.startsWith('Bearer ')
-        ? authToken.slice(7).trim()
-        : authToken;
-    }
-
-    const header = client.handshake.headers.authorization;
-    if (typeof header === 'string' && header.startsWith('Bearer ')) {
-      return header.slice(7).trim();
-    }
-
-    return null;
-  }
 }

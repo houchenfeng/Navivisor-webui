@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
 import { ChatModule } from '../chat/chat.module';
 import { CodexModule } from '../codex/codex.module';
 import { ConversationBranchesModule } from '../conversation-branches/conversation-branches.module';
@@ -26,7 +25,6 @@ import { ThreadsService } from './threads.service';
 
 @Module({
   imports: [
-    AuthModule,
     ChatModule,
     CodexModule,
     ConversationBranchesModule,

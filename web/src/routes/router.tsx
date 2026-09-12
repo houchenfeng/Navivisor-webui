@@ -9,7 +9,6 @@ import {
   redirect,
   Outlet,
 } from '@tanstack/react-router';
-import { getApiToken } from '@/auth-token';
 import { BASE_PATH } from '@/base-path';
 import { IntegrationsPage } from '@/components/integrations/integrations-page';
 import { ExperimentDemo } from '@/components/research-experiment/experiment-demo';
@@ -52,33 +51,21 @@ const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-/** Login route — redirects to / if already authenticated. */
+/** Legacy login URL — authentication is disabled for this local-first app. */
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
     redirect: sanitizeRedirect(search.redirect),
   }),
-  beforeLoad: ({ search }) => {
-    if (getApiToken()) {
-      throw redirect({ to: search.redirect });
-    }
-  },
+  beforeLoad: ({ search }) => { throw redirect({ to: search.redirect }); },
   component: LoginRoute,
 });
 
-/** Authenticated layout — sidebar + header + outlet. */
+/** Main application layout. */
 const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authenticated',
-  beforeLoad: ({ location }) => {
-    if (!getApiToken()) {
-      throw redirect({
-        to: '/login',
-        search: { redirect: location.href },
-      });
-    }
-  },
   component: AuthenticatedLayout,
 });
 

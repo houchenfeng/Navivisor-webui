@@ -39,12 +39,12 @@
         {
           "key": "core-references",
           "path": "topic/core-references.csv",
-          "sha256": "c56d5ee0758c6283597e212d9ffef26daf0496a814d34435efcc333083248ecc"
+          "sha256": "832c149694ed5daa97515b3c3b97ddc4fb6f460543f709fddb3276a8dc8389f2"
         },
         {
           "key": "literature-bib",
           "path": "topic/references.bib",
-          "sha256": "2d246ea622aed36c40804b813c291ae9947733faa5d4d99191e775f08326bc7a"
+          "sha256": "c265a5c355c8a4947a4b46e050139cf29d7ffa3bc5767fb550197c8755000d34"
         }
       ]
     },
@@ -69,7 +69,7 @@
         {
           "key": "metrics-main",
           "path": "experiment/metrics/main.csv",
-          "sha256": "1c20eb3ced5956eda75ae01fb66d0f91639b9b07401bcff6c716ff9b09724666"
+          "sha256": "9791742dc05c335506127134982571e692dcc60d163b00e0cd18b899515cac9f"
         },
         {
           "key": "results-md",
@@ -107,6 +107,6 @@
     "key": "writing-references-bib",
     "path": "writing/references.bib",
     "derivedFrom": "topic/references.bib",
-    "sha256": "2d246ea622aed36c40804b813c291ae9947733faa5d4d99191e775f08326bc7a"
+    "sha256": "c265a5c355c8a4947a4b46e050139cf29d7ffa3bc5767fb550197c8755000d34"
   }
 }

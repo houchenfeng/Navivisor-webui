@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useThemeStore } from '@/stores/theme-store';
 import { useTimelineStore } from '@/stores/timeline-store';
-import { clearApiToken } from '@/auth-token';
 import { resetSocket } from '@/socket';
 import { sectionLabel } from './setting-helpers';
 import { GeneralSettings } from './general-settings';
@@ -47,9 +46,8 @@ export function SettingsPage() {
   };
 
   const handleLogout = () => {
-    clearApiToken();
     resetSocket();
-    void navigate({ to: '/login', search: { redirect: '/' } });
+    void navigate({ to: '/' });
   };
 
   return (

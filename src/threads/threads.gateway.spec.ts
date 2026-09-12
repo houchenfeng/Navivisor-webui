@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ThreadsGateway } from './threads.gateway';
 import { CodexProcessManager } from '../codex/codex-process-manager.service';
-import { AuthService } from '../auth/auth.service';
 import { ActiveThreadRegistryService } from './active-thread-registry.service';
 import { PendingApprovalsService } from '../pending-approvals/pending-approvals.service';
 import { ThreadDeletionRegistryService } from '../thread-deletion/thread-deletion-registry.service';
@@ -17,10 +16,6 @@ describe('ThreadsGateway', () => {
       },
     ),
     getClient: vi.fn(),
-  };
-
-  const mockAuthService = {
-    authenticateToken: vi.fn(),
   };
 
   const mockActiveThreads = {
@@ -57,7 +52,6 @@ describe('ThreadsGateway', () => {
       providers: [
         ThreadsGateway,
         { provide: CodexProcessManager, useValue: mockManager },
-        { provide: AuthService, useValue: mockAuthService },
         { provide: ActiveThreadRegistryService, useValue: mockActiveThreads },
         { provide: PendingApprovalsService, useValue: mockPendingApprovals },
         {
@@ -213,11 +207,7 @@ describe('ThreadsGateway', () => {
     expect(mockServer.emit).not.toHaveBeenCalled();
   });
 
-  it('should accept connection with valid token', async () => {
-    mockAuthService.authenticateToken.mockResolvedValue({
-      ok: true,
-      authType: 'apiKey',
-    });
+  it('should accept connection with a legacy token', async () => {
     const client = {
       id: 'c1',
       handshake: { auth: { token: 'test-api-key' }, headers: {} },
@@ -227,39 +217,27 @@ describe('ThreadsGateway', () => {
     expect(client.disconnect).not.toHaveBeenCalled();
   });
 
-  it('should reject connection with invalid token', async () => {
-    mockAuthService.authenticateToken.mockResolvedValue({
-      ok: false,
-      reason: 'invalidToken',
-    });
+  it('should accept connection without validating an obsolete token', async () => {
     const client = {
       id: 'c2',
       handshake: { auth: { token: 'wrong-key' }, headers: {} },
       disconnect: vi.fn(),
     };
     await gateway.handleConnection(client as never);
-    expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect(client.disconnect).not.toHaveBeenCalled();
   });
 
-  it('should reject connection with no token', async () => {
-    mockAuthService.authenticateToken.mockResolvedValue({
-      ok: false,
-      reason: 'missingToken',
-    });
+  it('should accept connection with no token', async () => {
     const client = {
       id: 'c3',
       handshake: { auth: {}, headers: {} },
       disconnect: vi.fn(),
     };
     await gateway.handleConnection(client as never);
-    expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect(client.disconnect).not.toHaveBeenCalled();
   });
 
   it('should accept connection with Bearer authorization header', async () => {
-    mockAuthService.authenticateToken.mockResolvedValue({
-      ok: true,
-      authType: 'jwt',
-    });
     const client = {
       id: 'c4',
       handshake: {
@@ -273,10 +251,6 @@ describe('ThreadsGateway', () => {
   });
 
   it('should accept connection with Bearer-prefixed auth token', async () => {
-    mockAuthService.authenticateToken.mockResolvedValue({
-      ok: true,
-      authType: 'jwt',
-    });
     const client = {
       id: 'c5',
       handshake: { auth: { token: 'Bearer some-jwt-token' }, headers: {} },
