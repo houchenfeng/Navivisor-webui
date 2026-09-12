@@ -189,7 +189,7 @@ export default function Step5Algorithm({ data, onChange }: Props) {
         <div>
           <h2 className="text-xl font-bold text-brand-700">算法介绍</h2>
           <p className="mt-1 text-sm text-ink-sub">
-            描述方法框架，并配算法框架流程图；结果展示图只支持从 Demo 载入或手动上传。
+            描述你的方法框架、模块组成和核心公式，并可生成配图：算法框架流图，并自动上传算法效果图。
           </p>
         </div>
         <button
