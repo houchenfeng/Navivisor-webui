@@ -800,7 +800,7 @@
           "role": "paper-pdf",
           "mediaType": "application/pdf",
           "required": true,
-          "sha256": "c27168b1bb0329a997404a638ff0e58f96a45e16ee85b1bc24933a226362f6ec"
+          "sha256": "c7fec3611fe0514881ea3d87370cd987c8e573dee10ddecc5de6c4de5b362867"
         },
         {
           "key": "paper-pdf-zh",
