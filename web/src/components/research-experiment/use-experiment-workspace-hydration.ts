@@ -91,7 +91,9 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
       const architecture = findLatestByRole(artifacts, 'method-architecture');
       const config = findLatestByRole(artifacts, 'experiment-config');
       const confirmed = findLatestByRole(artifacts, 'confirmed-topic');
-      const coreReferences = findLatestByRole(artifacts, 'core-references');
+      const coreReferences =
+        findLatestByRole(artifacts, 'core-references') ??
+        findLatestByPathHint(artifacts, 'core-references.csv');
       const mainCsv =
         findLatestByPathHint(artifacts, 'metrics/main.csv') ??
         findLatestByPathHint(artifacts, 'main.csv');
@@ -186,6 +188,8 @@ export function useExperimentWorkspaceHydration(): ExperimentHydration {
         if (coreReferencesText) {
           const referenceRows = parseCsvRows(coreReferencesText);
           if (referenceRows.length > 1) patch.paperCount = referenceRows.length - 1;
+          const fromPath = coreReferences?.path.split(/[/\\]/).pop();
+          patch.csvFileName = coreReferences?.name || fromPath || 'core-references.csv';
         }
         if (Object.keys(patch).length > 0) setFields(patch);
 

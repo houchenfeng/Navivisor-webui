@@ -67,8 +67,8 @@ function RealBadge() {
 
 function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
   const state = useExperimentStore();
-  const [csvName, setCsvName] = useState('');
   const [error, setError] = useState('');
+  const csvName = state.csvFileName;
   const readCsv = async (file: File) => {
     const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
@@ -77,7 +77,8 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
     if (missing.length) { setError(`缺少必填列：${missing.join('、')}`); return; }
     const ids = rows.map((row) => String(row.paper_id));
     if (new Set(ids).size !== ids.length) { setError('paper_id 必须唯一'); return; }
-    setError(''); setCsvName(file.name); state.setFields({ paperCount: rows.length });
+    setError('');
+    state.setFields({ paperCount: rows.length, csvFileName: file.name });
   };
   const canContinue = state.projectName.trim() && state.researchTopic.trim() && state.paperCount > 0;
   return (
@@ -94,10 +95,23 @@ function IntakePage({ go }: { go: (step: ExperimentStep) => void }) {
       <section className="flex flex-col gap-4 rounded-2xl border border-white/70 bg-white/90 p-6 shadow-sm">
         <h3 className="font-semibold text-[#10204A]">核心文献 CSV</h3>
         <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[#1F4DCB]/30 bg-[#1F4DCB]/5 text-center">
-          <Upload className="size-8 text-[#1F4DCB]" /><span className="font-medium">点击选择 CSV 文件</span><span className="text-xs text-muted-foreground">必填：paper_id、title、abstract、pdf_path</span>
+          {csvName ? (
+            <>
+              <Check className="size-8 text-[#16A36A]" />
+              <span className="font-medium text-[#16A36A]">{csvName}</span>
+              <span className="text-xs text-muted-foreground">
+                已使用 Demo / 工作目录核心文献 · {state.paperCount} 篇论文 · 点击可更换
+              </span>
+            </>
+          ) : (
+            <>
+              <Upload className="size-8 text-[#1F4DCB]" />
+              <span className="font-medium">点击选择 CSV 文件</span>
+              <span className="text-xs text-muted-foreground">必填：paper_id、title、abstract、pdf_path</span>
+            </>
+          )}
           <input type="file" accept=".csv" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readCsv(file); }} />
         </label>
-        {csvName ? <p className="text-sm text-[#16A36A]"><Check className="mr-1 inline size-4" />{csvName} · {state.paperCount} 篇论文</p> : null}
         {error ? <p className="text-sm text-[#DC3C4A]">{error}</p> : null}
         <div className="rounded-xl bg-muted/50 p-3 text-center"><strong>{state.paperCount}</strong><small className="ml-2 text-muted-foreground">篇论文；PDF 可用性以 CSV 的 pdf_path 和工作目录 manifest 为准</small></div>
         <div className="mt-auto flex flex-col gap-2">
