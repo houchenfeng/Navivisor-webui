@@ -57,7 +57,7 @@ export function TopicPrimerDialog() {
       </button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto border border-[#c9dbf8] bg-[#f7fbff] sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto border border-[#c9dbf8] bg-[#f7fbff] sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-[#102f72]">开题怎么走</DialogTitle>
             <DialogDescription className="text-base font-medium leading-7 text-[#315a98]">
