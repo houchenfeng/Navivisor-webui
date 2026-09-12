@@ -1,7 +1,7 @@
-method,AUC,AP,mAP@0.5,dAUC,dAP,EAR,HR,lat
-ConvAE,74.6,65.1,18.7,-2.2,-3.1,,,46
-WS-CT,78.3,69.8,23.4,1.5,1.6,,,89
-CLIP-TSA,75.9,66.5,20.2,-0.9,-1.7,,,74
-LAVAD,78.9,70.3,24.6,2.1,2.1,40.2,27.8,131
-B0,76.8,68.2,24.1,0.0,0.0,41.5,26.4,118
-EviVAD,82.1,74.3,31.6,5.3,6.1,68.4,9.8,147
+method,auc_percent,ap_percent,map_at_0_5_percent,auc_delta_vs_b0,ap_delta_vs_b0,ear_percent,hr_percent,latency_ms,memory_gb,simulated
+ConvAE,74.6,65.1,18.7,-2.2,-3.1,,,46,,true
+WS-CT,78.3,69.8,23.4,1.5,1.6,,,89,,true
+CLIP-TSA,75.9,66.5,20.2,-0.9,-1.7,,,74,,true
+LAVAD,78.9,70.3,24.6,2.1,2.1,40.2,27.8,131,,true
+B0,76.8,68.2,24.1,0.0,0.0,41.5,26.4,118,,true
+EviVAD,82.1,74.3,31.6,5.3,6.1,68.4,9.8,147,,true

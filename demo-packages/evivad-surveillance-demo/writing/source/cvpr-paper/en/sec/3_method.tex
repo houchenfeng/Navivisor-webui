@@ -14,7 +14,7 @@ The data flow of \evivad{} is shown in Fig.~\ref{fig:framework}. A raw clip firs
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{framework-generated-v2.png}
-\caption{Algorithmic framework of \evivad{} (illustrative). The input is a surveillance stream ($32$ frames per clip, $8$~fps); a degradation grid can optionally be injected. The backbone is a fully frozen vision encoder, on top of which DAA injects Q/V low-rank increments. DAG uses the quality probe to re-weight a regular path against a retrieval/prior-driven path and to emit an abstention flag; EAD decodes the score into a structured explanation with temporal intervals and visual cues. Four outputs are produced: a frame-level score curve, temporal intervals, an evidence-cited explanation, and confidence/abstention flags.}
+\caption{Algorithmic framework of \evivad{}. A surveillance clip is sampled and assessed by the quality probe before entering a frozen CLIP ViT-B/16 encoder equipped with DAA. Vision--text scoring and normality-memory retrieval provide complementary evidence to EAD, while DAG controls degradation-aware routing. The model returns an anomaly score, temporal interval, evidence citation, and confidence or abstention decision.}
 \label{fig:framework}
 \end{figure*}
 
@@ -23,6 +23,7 @@ The data flow of \evivad{} is shown in Fig.~\ref{fig:framework}. A raw clip firs
 \small
 \caption{Tensor shapes of \evivad{} ($T{=}32$, $D{=}768$; $K$ is the number of prompts and $N$ the memory size).}
 \label{tab:tensor}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lll}
 \toprule
 Stage & Input & Output \\
@@ -40,7 +41,8 @@ DAG gating & $q$ & $g \in \mathbb{R}$ \\
 Fusion + smoothing & $S_{vl}, S_{ret}, S_{pri}, g$ & $\hat{S} \in [T]$ \\
 Evidence decoding (EAD) & $F, Z$ & $E$, explanation \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \subsection{DAA: Low-Rank Domain Adaptation}
@@ -74,9 +76,10 @@ L_{EA} = -\log \frac{\exp\!\big(\mathrm{sim}(h_{exp}, h_{z^{*}})/\tau_c\big)}{\s
 This loss updates only a two-layer MLP evidence-alignment head ($\approx 0.6$\,M parameters); the LLM backbone remains frozen throughout.
 
 \paragraph{Abstention.} When the maximum alignment score over slots falls below a threshold $\theta_{ev}$, the model refuses to answer:
-\begin{equation}
-\max_k \mathrm{sim}(h_{exp}, h_{z_k}) < \theta_{ev} \;\Longrightarrow\; \text{explanation} \leftarrow \text{``insufficient evidence''}.
-\end{equation}
+\begin{align}
+\max_k \mathrm{sim}(h_{exp}, h_{z_k}) &< \theta_{ev} \nonumber\\
+\Longrightarrow\quad E &\leftarrow \varnothing.
+\end{align}
 
 \subsection{DAG: Degradation-Aware Gating and Confidence Abstention}
 
@@ -120,7 +123,8 @@ $L_{BCE}$ is the frame-level binary cross-entropy and $L_{rank}$ a margin rankin
 
 Training proceeds in four stages so that each part is first calibrated with the simplest one-dimensional signal, and only then jointly fine-tuned; this avoids multi-variable changes that would break attribution. (i) Q-Net is trained alone for $10$ epochs at a learning rate of $1\times10^{-3}$ with batch size $8$. (ii) DAA and the scoring layer are trained for $20$ epochs with learning rates $1\times10^{-4}$ (LoRA) and $5\times10^{-4}$ (scoring layer), batch size $2$ with $8$ gradient-accumulation steps. (iii) The EAD evidence head is trained for $15$ epochs at $5\times10^{-4}$ with batch size $4$. (iv) All four parameter groups are jointly fine-tuned for $20$ epochs using the same grouped learning rates. Every stage uses AdamW, weight decay $1\times10^{-2}$, AMP FP16 and a warm-up plus cosine schedule. The full forward and training procedure is given in Alg.~\ref{alg:evivad}.
 
-\begin{algorithm}[t]
+\begin{algorithm*}[t]
+\small
 \caption{Training and forward procedure of \evivad{}}
 \label{alg:evivad}
 \begin{algorithmic}[1]
@@ -153,4 +157,4 @@ Training proceeds in four stages so that each part is first calibrated with the 
 \ENDIF
 \RETURN $\hat{S}, I, E, \sigma(s), a$
 \end{algorithmic}
-\end{algorithm}
+\end{algorithm*}

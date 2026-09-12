@@ -560,7 +560,7 @@
           "role": "experiment-results",
           "mediaType": "text/csv",
           "required": true,
-          "sha256": "352516327508365602772a59bce870df0ee01670d7a0b3c1d24bb72b814c4811"
+          "sha256": "220d6a79d1f56d39efa2ec76b39e1bd39be140de4e1532e49e5d3e549ead20ad"
         },
         {
           "key": "metrics-ablation",
@@ -584,7 +584,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": true,
-          "sha256": "f456792a023b98e32c50f8102e36f4e1f05c4d6a11e2113174d73fc8d01e0df8"
+          "sha256": "bccbf7d199b912c8d5cbebc4779e1991a6f9421c1adab4bc3425380f56ce8121"
         },
         {
           "key": "comparison",
@@ -592,7 +592,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": true,
-          "sha256": "59212347977ddbc1fb76818abe2414b5b8c85cfe393de8b22c6c30631f12730c"
+          "sha256": "9cd4263bdc7c8899ae24424ccbd7ec568d79ca5736e1cda2ffc0b10a8bd59e97"
         },
         {
           "key": "curves",
@@ -600,7 +600,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": false,
-          "sha256": "4eb09cae4f0cb584fe048c10228f5002da5316ee53fedacea2ee278218f00ff2"
+          "sha256": "14a912bf42f087649bb6ef693674afb6b671ec7af4ff15c24045b0d036d7e4a3"
         },
         {
           "key": "teaser",
@@ -608,7 +608,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": false,
-          "sha256": "108fdc3670d140e4df86cf530a23957e37babf947b6a4ef740dd5d132a4b7199"
+          "sha256": "29ff73da2abae7298e4dbcdfe1bbef789e09e7c16936e6228902750f6e60706a"
         },
         {
           "key": "figure-generation",
@@ -688,7 +688,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": false,
-          "sha256": "f456792a023b98e32c50f8102e36f4e1f05c4d6a11e2113174d73fc8d01e0df8"
+          "sha256": "bccbf7d199b912c8d5cbebc4779e1991a6f9421c1adab4bc3425380f56ce8121"
         },
         {
           "key": "experiment-suite-figure-02",
@@ -696,7 +696,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": false,
-          "sha256": "59212347977ddbc1fb76818abe2414b5b8c85cfe393de8b22c6c30631f12730c"
+          "sha256": "9cd4263bdc7c8899ae24424ccbd7ec568d79ca5736e1cda2ffc0b10a8bd59e97"
         }
       ]
     },
@@ -800,7 +800,7 @@
           "role": "paper-pdf",
           "mediaType": "application/pdf",
           "required": true,
-          "sha256": "c7fec3611fe0514881ea3d87370cd987c8e573dee10ddecc5de6c4de5b362867"
+          "sha256": "8d697d7ba713e17b74daf98a282172569ce70355ded3b462c8cb823786747ecb"
         },
         {
           "key": "paper-pdf-zh",
@@ -816,7 +816,7 @@
           "role": "paper-source",
           "mediaType": "application/zip",
           "required": true,
-          "sha256": "d236b8ff5a691ebedaee494b85d43c355a630b70bde0d37688910c276bdbbdb7"
+          "sha256": "002e6e9284636817ca64fa9f5c25a2e84a1365c57326e668c71c3164c3414a32"
         },
         {
           "key": "writing-architecture",
@@ -824,7 +824,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": true,
-          "sha256": "f456792a023b98e32c50f8102e36f4e1f05c4d6a11e2113174d73fc8d01e0df8"
+          "sha256": "bccbf7d199b912c8d5cbebc4779e1991a6f9421c1adab4bc3425380f56ce8121"
         },
         {
           "key": "writing-comparison",
@@ -832,7 +832,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": true,
-          "sha256": "59212347977ddbc1fb76818abe2414b5b8c85cfe393de8b22c6c30631f12730c"
+          "sha256": "9cd4263bdc7c8899ae24424ccbd7ec568d79ca5736e1cda2ffc0b10a8bd59e97"
         },
         {
           "key": "writing-curves",
@@ -840,7 +840,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": false,
-          "sha256": "4eb09cae4f0cb584fe048c10228f5002da5316ee53fedacea2ee278218f00ff2"
+          "sha256": "14a912bf42f087649bb6ef693674afb6b671ec7af4ff15c24045b0d036d7e4a3"
         },
         {
           "key": "writing-teaser",
@@ -848,7 +848,7 @@
           "role": "paper-figure",
           "mediaType": "image/png",
           "required": false,
-          "sha256": "108fdc3670d140e4df86cf530a23957e37babf947b6a4ef740dd5d132a4b7199"
+          "sha256": "29ff73da2abae7298e4dbcdfe1bbef789e09e7c16936e6228902750f6e60706a"
         }
       ]
     },

@@ -18,6 +18,7 @@ Table~\ref{tab:main} reports the main comparison. \evivad{} leads the strongest 
 \small
 \caption{Main comparison on UCF-Crime. ``--'' indicates that the method does not produce natural-language explanations, so EAR / HR are not applicable. $\uparrow$ means higher is better and $\downarrow$ lower is better.}
 \label{tab:main}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lccccccc}
 \toprule
 Method & AUC $\uparrow$ & AP $\uparrow$ & mAP@0.5 $\uparrow$ & EAR $\uparrow$ & HR $\downarrow$ & Latency $\downarrow$ & Memory $\downarrow$ \\
@@ -30,13 +31,14 @@ Training-free LLM pipeline~\cite{zanella2024trainingfree} & 78.9 & 70.3 & 24.6 &
 Baseline B0 (frozen VLM + text scoring) & 76.8 & 68.2 & 24.1 & 41.5 & 26.4 & 118\,ms & 3.6\,GB \\
 \textbf{\evivad{} (full method)} & \textbf{82.1} & \textbf{74.3} & \textbf{31.6} & \textbf{68.4} & \textbf{9.8} & 147\,ms & 4.1\,GB \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table*}
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{qualitative-generated-v2.png}
-\caption{Qualitative comparison with the baseline on the same test sample (\textbf{illustrative only}). Top row, left to right: the input frame; Ground Truth (the red box marks ``person falling'', GT interval $5.4$--$9.1$\,s); the baseline prediction (it misses the falling person and raises a false alarm on an ordinary pedestrian); and the \evivad{} prediction (a hit, together with an evidence citation). Bottom row: the anomaly score curves for the same clip, with the GT interval shaded and the decision threshold $0.5$ drawn as a dashed line. All frames and curves are illustrative placeholders, not real footage or real inference outputs.}
+\caption{Qualitative comparison with the baseline on the same test sample. From left to right, the top row shows the input, ground-truth fall interval, baseline output, and \evivad{} output with an evidence citation. The bottom row shows frame-level anomaly scores; the shaded region marks the $5.4$--$9.1$\,s event interval and the dashed line marks the $0.5$ decision threshold.}
 \label{fig:comparison}
 \end{figure*}
 
@@ -49,6 +51,7 @@ Table~\ref{tab:ablation} reports single-module, two-module and full combinations
 \small
 \caption{Ablation study on UCF-Crime. $\checkmark$ marks an enabled module; lower HR is better.}
 \label{tab:ablation}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{ccccccccccc}
 \toprule
 DAA & EAD & DAG & AUC $\uparrow$ & AP $\uparrow$ & mAP@0.5 $\uparrow$ & EAR $\uparrow$ & CFS $\uparrow$ & HR $\downarrow$ & TCR $\uparrow$ & Params (M) \\
@@ -62,7 +65,8 @@ $\checkmark$ &   & $\checkmark$ & 80.3 & 72.0 & 27.5 & 44.6 & 42.1 & 22.7 & 40.2
    & $\checkmark$ & $\checkmark$ & 79.8 & 71.4 & 27.0 & 65.1 & 58.4 & 10.9 & 53.2 & 0.8 \\
 $\checkmark$ & $\checkmark$ & $\checkmark$ & \textbf{82.1} & \textbf{74.3} & \textbf{31.6} & \textbf{68.4} & \textbf{61.3} & \textbf{9.8} & \textbf{55.8} & 5.5 \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table*}
 
 \subsection{Degradation Robustness and Generalisation}
