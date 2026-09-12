@@ -25,6 +25,29 @@ export function TopicPage() {
   const { projectId, artifacts, loading: artifactsLoading } = useWorkspaceArtifacts();
   const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
   const activeRunKey = `${ACTIVE_RUN_KEY}:${projectId ?? 'unbound'}`;
+  const draftKey = `navivisor:research-topic:draft:v1:${projectId ?? 'unbound'}`;
+
+  // Keep the user's unfinished Step 1 draft across route changes/remounts.
+  useEffect(() => {
+    const raw = window.sessionStorage.getItem(draftKey);
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw) as { interest?: unknown; context?: unknown };
+      if (typeof draft.interest === 'string') setInterest(draft.interest);
+      if (typeof draft.context === 'string') setContext(draft.context);
+    } catch {
+      window.sessionStorage.removeItem(draftKey);
+    }
+  }, [draftKey]);
+
+  const updateInterest = (value: string) => {
+    setInterest(value);
+    persistTopicDraft(draftKey, value, context);
+  };
+  const updateContext = (value: string) => {
+    setContext(value);
+    persistTopicDraft(draftKey, interest, value);
+  };
   useEffect(() => {
     if (projectId) return;
     setInterest('');
@@ -66,8 +89,11 @@ export function TopicPage() {
         if (intake) {
           const value = JSON.parse(await fetchArtifactText(projectId, intake.artifactId)) as { researchDirection?: string; researchGoal?: string };
           if (!cancelled) {
-            if (value.researchDirection?.trim()) setInterest(value.researchDirection.trim());
-            if (value.researchGoal?.trim()) setContext(value.researchGoal.trim());
+            const restoredInterest = value.researchDirection?.trim() ?? '';
+            const restoredContext = value.researchGoal?.trim() ?? '';
+            if (restoredInterest) setInterest(restoredInterest);
+            if (restoredContext) setContext(restoredContext);
+            if (restoredInterest || restoredContext) persistTopicDraft(draftKey, restoredInterest, restoredContext);
           }
         }
         const candidates = findLatestByRole(artifacts, 'candidate-papers');
@@ -206,7 +232,7 @@ export function TopicPage() {
         })}
       </nav>
 
-      {page === 1 && <><div className="mt-5 flex flex-wrap items-start justify-end gap-2"><LoadWorkspaceDemoButton compact /><TopicPrimerDialog /></div><DirectionPage interest={interest} setInterest={setInterest} context={context} setContext={setContext} task={task} error={error} isRunning={isRunning} isComplete={isComplete} onRun={runSearch} onCancel={cancelSearch} onRetry={runSearch} onNext={() => setPage(2)} /></>}
+      {page === 1 && <><div className="mt-5 flex flex-wrap items-start justify-end gap-2"><LoadWorkspaceDemoButton compact /><TopicPrimerDialog /></div><DirectionPage interest={interest} setInterest={updateInterest} context={context} setContext={updateContext} task={task} error={error} isRunning={isRunning} isComplete={isComplete} onRun={runSearch} onCancel={cancelSearch} onRetry={runSearch} onNext={() => setPage(2)} /></>}
       {page === 2 && <CandidatesPage task={task} selectedCandidate={selectedCandidate} setSelectedCandidate={setSelectedCandidate} error={error} onGenerate={generateCandidates} onBack={() => setPage(1)} onNext={startCoreLiterature} />}
       {page === 3 && (task?.isDemo ? <DemoCoreLiteraturePage papers={task.demoCoreLiterature} onBack={() => setPage(2)} /> : <CoreLiteraturePage task={task} error={error} onStart={startCoreLiterature} onBack={() => setPage(2)} />)}
     </div>
@@ -294,6 +320,10 @@ function parseCoreLiterature(rows: string[][]): NonNullable<ResearchTaskSnapshot
 
 function findArtifactFile(artifacts: Parameters<typeof findLatestByRole>[0], stem: string, extension: string) {
   return artifacts.filter((artifact) => artifact.role === stem && artifact.path.toLowerCase().endsWith(extension)).sort((a, b) => Number(b.createdAt) - Number(a.createdAt))[0];
+}
+
+function persistTopicDraft(key: string, interest: string, context: string) {
+  window.sessionStorage.setItem(key, JSON.stringify({ interest, context }));
 }
 
 function DemoCoreLiteraturePage({ onBack, papers = demoTaskSnapshot.demoCoreLiterature ?? [] }: { onBack: () => void; papers?: Array<{ title: string; openalexId: string; whyRelevant: string }> }) { return <section className="mt-7 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-10"><div className="flex items-start gap-4"><div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><FlaskConical className="size-6" /></div><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">Step 03</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">核心参考文献</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#617da9]">确定课题后，AI 会查找最相关的参考文献及可获取的全文。</p></div></div><div className="mt-6 space-y-3">{papers.map((paper) => <article key={paper.openalexId} className="rounded-2xl border border-[#d8e5f6] bg-[#fbfdff] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 flex-1 text-sm font-black leading-6 text-[#244a7d]">{paper.title}</h3><a href={paper.openalexId} target="_blank" rel="noreferrer" className="text-xs font-black text-[#1f4dcb] underline">来源</a></div><p className="mt-2 text-xs font-semibold leading-5 text-[#526e98]">{paper.whyRelevant}</p></article>)}</div><div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#e3ecf8] pt-5"><Button variant="outline" onClick={onBack} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><ArrowLeft />返回候选课题</Button><GoToExperimentButton /></div></section>; }
