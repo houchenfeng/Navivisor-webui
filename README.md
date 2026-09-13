@@ -4,6 +4,13 @@
 
 ![Navivisor 科研首页预览](docs/screenshots/show-1.png)
 
+## 技术栈
+
+- **前端：** React 19、TypeScript、Vite、Tailwind CSS、TanStack Router / Query、Zustand、Radix UI。
+- **后端：** NestJS 11、Fastify、Socket.IO、SSH2 与 Node PTY，提供 REST API、实时通信、远程实验和终端能力。
+- **数据层：** SQLite、Drizzle ORM 与本地工作目录，统一管理项目、研究产物和运行记录。
+- **工程化：** pnpm、Vitest、ESLint、OpenAPI 类型生成，并集成 Codex CLI 与 LaTeX 论文编译流程。
+
 ## 安装与启动
 
 需要 Node.js 22.12+、pnpm 10（仓库锁定 10.18.3）。后端为 NestJS，前端为 React/Vite，数据使用 SQLite 和本地文件目录。
@@ -80,20 +87,6 @@ bibtex --version
 完整配置见 [.env.example](./.env.example)，容器部署见 [Docker 说明](./docs/docker.md)。
 
 共同输入输出格式见 `research-tools/contract.md`。演示用数据包在 `demo-packages/evivad-surveillance-demo/`（监控视频异常检测 EviVAD 全链路样例，随仓库提交）。
-
-## 最近交接说明（main-clean）
-
-本次交接补充了开题到实验的数据链路：核心文献 CSV 同时提供 `paper_id` / `pdf_path` 兼容列；完成核心文献任务后可登记到研究项目，并从开题页点击“导入开题数据并进入实验”。实验页会优先读取项目 artifact 中的核心文献、课题和实验产物；没有真实实验产物时仍会显示明确的 Demo 回退内容。
-
-实验页的“建议示例”必须由用户主动点击生成和采用，不会自动覆盖用户填写的研究方向、题目或目标。投稿 Step 3 的 Email Sharing 使用可取消的 checkbox。
-
-### SSH runner 与 GPU 验证边界
-
-SSH runner 需要目标机器可访问、SSH 服务已启动、认证信息有效，并且目标机具备配置的代码/数据/结果/文档目录和 `yolo26` Conda 环境。运行器会选择低占用 GPU；没有符合条件的 GPU 时回退 CPU。只有日志出现 SSH 连接成功、`conda run -n yolo26` 执行成功、`cuda_available=True` 和具体 GPU 型号，才算完成 GPU 验证。
-
-本次验证已完成前端 Vite 构建和 Python 语法检查；协作者服务器 `10.61.48.10:22` 当时连接超时，因此尚未完成远程 Conda/GPU 验证。未提交 `.env`、密钥或令牌。
-
----
 
 ## 科研模块使用说明
 
