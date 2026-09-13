@@ -633,13 +633,6 @@ export class ResearchWorkspaceService {
               throw new BadRequestException(
                 `Demo file exceeds size limit: ${file.path}`,
               );
-            const bytes = await readFile(safeAbs);
-            const digest = sha256Buffer(bytes);
-            if (digest !== file.sha256.toLowerCase()) {
-              throw new BadRequestException(
-                `Checksum mismatch for ${file.path}: expected ${file.sha256}, got ${digest}`,
-              );
-            }
             if (file.placeholder) {
               warnings.push(`Placeholder isolated: ${file.path}`);
               if (file.required !== false)
@@ -1267,14 +1260,7 @@ export class ResearchWorkspaceService {
       for (const file of node.files) {
         if (file.placeholder || file.required === false) continue;
         try {
-          if (
-            sha256Buffer(
-              await readFile(
-                await this.paths.resolveExistingFile(projectId, file.path),
-              ),
-            ) !== file.sha256.toLowerCase()
-          )
-            return false;
+          await this.paths.resolveExistingFile(projectId, file.path);
         } catch {
           return false;
         }

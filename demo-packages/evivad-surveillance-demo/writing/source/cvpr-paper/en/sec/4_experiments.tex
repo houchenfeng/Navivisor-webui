@@ -35,12 +35,12 @@ Baseline B0 (frozen VLM + text scoring) & 76.8 & 68.2 & 24.1 & 41.5 & 26.4 & 118
 }
 \end{table*}
 
-\begin{figure*}[t]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=\linewidth]{qualitative-generated-v2.png}
-\caption{Qualitative comparison with the baseline on the same test sample. From left to right, the top row shows the input, ground-truth fall interval, baseline output, and \evivad{} output with an evidence citation. The bottom row shows frame-level anomaly scores; the shaded region marks the $5.4$--$9.1$\,s event interval and the dashed line marks the $0.5$ decision threshold.}
+\includegraphics[width=\columnwidth]{qualitative-generated-v2.png}
+\caption{Qualitative comparison on one test sample. \evivad{} covers the $5.4$--$9.1$\,s event interval and returns an evidence citation, while the baseline misses the event and raises a false alarm.}
 \label{fig:comparison}
-\end{figure*}
+\end{figure}
 
 \subsection{Ablation Study}
 
@@ -73,14 +73,14 @@ $\checkmark$ & $\checkmark$ & $\checkmark$ & \textbf{82.1} & \textbf{74.3} & \te
 
 Table~\ref{tab:degradation} reports the $12$ degradation configurations. DAG yields only $+0.8$ AUC on the clean set but $+8.8$ on average over the degradation grid ($62.5 \rightarrow 71.3$); relative performance retention RPR rises from $0.81$ to $0.92$, meaning that nearly nine tenths of the clean performance survives under degradation. The hallucination rate under degradation contracts accordingly ($41.2 \rightarrow 31.5$), consistent with the earlier observation that training-free methods hallucinate under low light. Fig.~\ref{fig:curves}(a) plots the degradation-severity curves: the baseline collapses sharply as severity grows, whereas DAG decays more gently, so the gap widens with severity. Fig.~\ref{fig:curves}(b) and (c) show the per-module AUC and explanation metrics.
 
-It is worth stressing that DAG is a module whose value is invisible on clean data: reporting clean-set metrics alone would severely understate it. This is precisely why we argue for degradation robustness as a standalone evaluation dimension rather than an appendix to the main metric.
+DAG's value is understated by clean-set metrics; degradation robustness should therefore be reported as a primary evaluation dimension.
 
-\begin{table*}[t]
+\begin{table}[!t]
 \centering
 \scriptsize
-\caption{Degradation robustness. Light / medium / heavy are the three severity levels; each cell corresponds to that severity across the four degradation types.}
+\caption{Degradation robustness at light / medium / heavy severity.}
 \label{tab:degradation}
-\resizebox{\textwidth}{!}{%
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccc}
 \toprule
 Configuration & B0 AUC $\uparrow$ & +DAG AUC $\uparrow$ & B0 HR $\downarrow$ & +DAG HR $\downarrow$ \\
@@ -96,17 +96,19 @@ RPR (vs.\ clean) & 0.81 & \textbf{0.92} & -- & -- \\
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
+\end{table}
 
-\begin{figure*}[t]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=\linewidth]{curves.png}
-\caption{Metric curves. (a) Degradation-severity curves: the horizontal axis shows clean, light, medium and heavy levels (each averaged over the four degradation types); the baseline collapses as severity grows while DAG decays more gently. (b) Frame-level AUC of the single-module ablations. (c) Explanation-verifiability metrics EAR (higher is better) and HR (lower is better) for the individual modules and the full method.}
+\vspace{-4pt}
+\includegraphics[width=\columnwidth]{curves.png}
+\caption{Metric curves for degradation severity, module AUC, and explanation verifiability.}
 \label{fig:curves}
-\end{figure*}
+\vspace{-6pt}
+\end{figure}
 
 \subsection{Efficiency Analysis and Failure Cases}
 
 \evivad{} adds $5.5$\,M trainable parameters (DAA $4.7$ + evidence head $0.6$ + Q-Net $0.2$); end-to-end latency grows from $118$\,ms to $147$\,ms ($+24.6\%$) and GPU memory from $3.6$\,GB to $4.1$\,GB. Relative to the accuracy and robustness gained, this overhead is acceptable, and because the vision backbone is fully frozen, deployment can swap DAA per scene without redistributing the whole model.
 
-We performed a pre-registered boundary analysis of four failure modes. (i) \emph{Gating harms clean inputs}: if Q-Net underestimates the quality of a clean clip, $g$ shifts towards the retrieval path and clean-set AUC drops; the criterion is that clean-set AUC must not drop by more than $0.3$ points, and a drop beyond $1$ point fails the module. (ii) \emph{Evidence alignment fails on crowded clips}: overlapping targets prevent slots from matching the ground truth uniquely, showing up as a crowded-subset EAR well below the overall EAR; we require the gap between the two to be reported explicitly. (iii) \emph{Abstention threshold hurts recall}: an over-large $\delta$ also marks correct high-confidence decisions as abstentions, so an abstention-rate versus recall curve must be reported and abstained samples listed rather than hidden. (iv) \emph{Missing retrieval memory}: when the index is empty or every neighbour falls below the acceptance threshold, the fusion degenerates to the prior-dominated path and emits an explicit \texttt{retrieval-miss} flag instead of silently returning a constant score. The common principle behind all four is that any degradation path must be explicit, observable and countable.
+We analyse four failure modes: quality underestimation can route clean clips incorrectly; crowded scenes can make evidence slots ambiguous; excessive abstention can reduce recall; and an empty retrieval index weakens fusion. We report clean-set degradation, crowded-subset EAR, abstention--recall trade-offs, and an explicit \texttt{retrieval-miss} flag so each failure remains observable and countable.

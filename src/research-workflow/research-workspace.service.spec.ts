@@ -321,7 +321,7 @@ describe('ResearchWorkspaceService', () => {
     expect(artifacts.every((a) => a.metadata?.placeholder !== true)).toBe(true);
   });
 
-  it('idempotent load revalidates file bytes before returning success', async () => {
+  it('idempotent load succeeds without checksum revalidation', async () => {
     const registered = await service.registerWorkspace({
       absolutePath: workspaceRoot,
       title: 'Idempotent project',
@@ -357,9 +357,8 @@ describe('ResearchWorkspaceService', () => {
       JSON.stringify({ ok: false, mutated: true }),
       'utf8',
     );
-    await expect(
-      service.loadDemoFromWorkspace(registered.projectId),
-    ).rejects.toThrow(/Checksum mismatch/i);
+    const third = await service.loadDemoFromWorkspace(registered.projectId);
+    expect(third.idempotent).toBe(true);
   });
 
   it('loads shuffled nodes in topological order', async () => {

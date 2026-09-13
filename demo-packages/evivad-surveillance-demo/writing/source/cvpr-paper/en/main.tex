@@ -11,6 +11,10 @@
 
 % Import additional packages in the preamble file, before hyperref
 \input{preamble}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\dblfloatsep}{6pt plus 2pt minus 2pt}
 
 % It is strongly recommended to use hyperref, especially for the review version.
 \definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
@@ -43,6 +47,7 @@ Anonymous Institution\\
 \input{sec/3_method}
 \input{sec/4_experiments}
 \input{sec/5_conclusion}
+\clearpage
 {
     \small
     \bibliographystyle{ieeenat_fullname}

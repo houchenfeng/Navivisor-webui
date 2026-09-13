@@ -734,7 +734,7 @@
           "role": "paper-source",
           "mediaType": "application/x-tex",
           "required": true,
-          "sha256": "e9e257ff03253c57af3fc5edbb13a9aa1d075a512cfa8a545f28c6ee7f6d0041"
+          "sha256": "b7bf9c793fa058d37ec7023fdcdb1cd179eff891935e80ba80aee1fee9a8b2b9"
         },
         {
           "key": "paper-source-zh",
@@ -800,7 +800,7 @@
           "role": "paper-pdf",
           "mediaType": "application/pdf",
           "required": true,
-          "sha256": "8d697d7ba713e17b74daf98a282172569ce70355ded3b462c8cb823786747ecb"
+          "sha256": "3c83c326c1c260cc4f0e828b5b5c6c65e1414de8ed39572a9345129b5a4310f5"
         },
         {
           "key": "paper-pdf-zh",
@@ -816,7 +816,7 @@
           "role": "paper-source",
           "mediaType": "application/zip",
           "required": true,
-          "sha256": "002e6e9284636817ca64fa9f5c25a2e84a1365c57326e668c71c3164c3414a32"
+          "sha256": "b647a7a514b602e92967c35e5811cd0970589f7d8e4254f9515c957764f0ec01"
         },
         {
           "key": "writing-architecture",

@@ -11,11 +11,13 @@ where $S \in \mathbb{R}^{T}$ is a frame-level anomaly score curve, $I{=}\{(t_s^{
 
 The data flow of \evivad{} is shown in Fig.~\ref{fig:framework}. A raw clip first enters the quality probe Q-Net to produce a quality score $q$. In parallel it passes through a \emph{fully frozen} vision encoder (CLIP ViT-B/16), where DAA injects low-rank bypasses into the last four blocks, yielding frame-level visual features $F$. A frozen text tower supplies prompt embeddings for abnormal/normal descriptions. The clip-level feature retrieves its top-$K$ ($K{=}8$) neighbours from a retrieval-augmented normality memory to form a retrieval evidence score. DAG blends the two scoring paths continuously according to $q$. The fused score is temporally smoothed and passed to EAD, which decodes an evidence-cited explanation under a structural constraint. Tensor shapes at every stage are listed in Table~\ref{tab:tensor}.
 
-\begin{figure*}[t]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=\linewidth]{framework-generated-v2.png}
+\vspace{-5pt}
+\includegraphics[width=\linewidth,trim=0 150 0 160,clip]{framework-generated-v2.png}
 \caption{Algorithmic framework of \evivad{}. A surveillance clip is sampled and assessed by the quality probe before entering a frozen CLIP ViT-B/16 encoder equipped with DAA. Vision--text scoring and normality-memory retrieval provide complementary evidence to EAD, while DAG controls degradation-aware routing. The model returns an anomaly score, temporal interval, evidence citation, and confidence or abstention decision.}
 \label{fig:framework}
+\vspace{-6pt}
 \end{figure*}
 
 \begin{table}[t]
@@ -123,22 +125,23 @@ $L_{BCE}$ is the frame-level binary cross-entropy and $L_{rank}$ a margin rankin
 
 Training proceeds in four stages so that each part is first calibrated with the simplest one-dimensional signal, and only then jointly fine-tuned; this avoids multi-variable changes that would break attribution. (i) Q-Net is trained alone for $10$ epochs at a learning rate of $1\times10^{-3}$ with batch size $8$. (ii) DAA and the scoring layer are trained for $20$ epochs with learning rates $1\times10^{-4}$ (LoRA) and $5\times10^{-4}$ (scoring layer), batch size $2$ with $8$ gradient-accumulation steps. (iii) The EAD evidence head is trained for $15$ epochs at $5\times10^{-4}$ with batch size $4$. (iv) All four parameter groups are jointly fine-tuned for $20$ epochs using the same grouped learning rates. Every stage uses AdamW, weight decay $1\times10^{-2}$, AMP FP16 and a warm-up plus cosine schedule. The full forward and training procedure is given in Alg.~\ref{alg:evivad}.
 
-\begin{algorithm*}[t]
-\small
+\begin{algorithm}[!t]
+\scriptsize
+\setlength{\algorithmicindent}{1em}
 \caption{Training and forward procedure of \evivad{}}
 \label{alg:evivad}
 \begin{algorithmic}[1]
 \REQUIRE clip $X$, memory $M$, rule prior $\mathcal{R}$, configuration $\theta$
 \ENSURE score curve $\hat{S}$, intervals $I$, evidence $E$, confidence $c$, abstention $a$
 \STATE $q \leftarrow \mathrm{QNet}(X)$ \COMMENT{clip-level quality}
-\STATE $F \leftarrow \mathrm{VisionTower}_{\mathrm{DAA}}(X)$ \COMMENT{frozen tower + low-rank bypass}
+\STATE $F \leftarrow \mathrm{VisionTower}_{\mathrm{DAA}}(X)$
 \STATE $\bar{f} \leftarrow \mathrm{Mean}_t(F)$
 \STATE $S_{vl} \leftarrow \mathrm{Mean}_k \cos(F, E_{txt})$
 \STATE $\mathcal{N} \leftarrow \mathrm{TopK}(\bar{f}, M, K)$
 \IF{$|\mathcal{N}| > 0$}
     \STATE $S_{ret} \leftarrow \mathrm{Mean}_{n \in \mathcal{N}} \cos(F, m_n)$
 \ELSE
-    \STATE $S_{ret} \leftarrow \mathbf{0}$ \COMMENT{retrieval miss, degraded path}
+    \STATE $S_{ret} \leftarrow \mathbf{0}$ \COMMENT{retrieval miss}
 \ENDIF
 \STATE $S_{pri} \leftarrow \mathrm{RuleScore}(F, \mathcal{R})$
 \STATE $g \leftarrow \sigma\big((\tau_g - q)/T_g\big)$
@@ -147,7 +150,8 @@ Training proceeds in four stages so that each part is first calibrated with the 
 \ELSE
     \STATE $S \leftarrow (1-g) S_{vl} + g S_{pri}$
 \ENDIF
-\STATE $\hat{S} \leftarrow \mathrm{Smooth}(S)$; \quad $s \leftarrow \mathrm{Mean}_t(\hat{S})$
+\STATE $\hat{S} \leftarrow \mathrm{Smooth}(S)$
+\STATE $s \leftarrow \mathrm{Mean}_t(\hat{S})$
 \STATE $a \leftarrow \mathbb{1}\big[\,|s - \tau_s| < \delta\,\big]$
 \STATE $I \leftarrow \mathrm{ExtractIntervals}(\hat{S}, \tau_s)$
 \STATE $Z \leftarrow \mathrm{BuildSlots}(\hat{S}, M, \mathcal{N})$
@@ -157,4 +161,4 @@ Training proceeds in four stages so that each part is first calibrated with the 
 \ENDIF
 \RETURN $\hat{S}, I, E, \sigma(s), a$
 \end{algorithmic}
-\end{algorithm*}
+\end{algorithm}

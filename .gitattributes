@@ -7,6 +7,9 @@
 *.yml text eol=lf
 *.py text eol=lf
 *.sql text eol=lf
+*.csv text eol=lf
+*.tex text eol=lf
+*.jsonl text eol=lf
 *.pdf binary
 *.png binary
 *.zip binary
