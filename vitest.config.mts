@@ -20,6 +20,10 @@ export default defineConfig({
     environment: 'node',
     root: './',
     include: ['src/**/*.spec.ts'],
+    // This repository lives on a slow secondary volume where recursive
+    // temp-directory cleanup in afterEach hooks can exceed the 10s default.
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
     coverage: {
       provider: 'v8',
       include: ['src/**'],

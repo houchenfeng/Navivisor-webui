@@ -71,3 +71,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .codex
 CLAUDE.md
 codex-schema/
+
+# Local shell env backup with API keys
+scripts/.env.qwen.sh
