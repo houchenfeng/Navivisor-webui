@@ -45,9 +45,7 @@ export default function Step1Upload({ data, onChange }: Props) {
       setFillNote(
         source === "workspace"
           ? `已从工作目录产物填入课题「${topic}」。`
-          : source === "demo-fallback"
-            ? `已填入课题「${topic}」及相关素材。`
-            : `已根据实验模块产出填入课题「${topic}」及相关素材。`,
+          : `已根据实验模块产出填入课题「${topic}」及相关素材。`,
       );
     })();
   };

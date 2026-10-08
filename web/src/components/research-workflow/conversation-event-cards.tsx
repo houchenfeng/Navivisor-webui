@@ -34,7 +34,7 @@ function ConversationEventCardsInner({
   projectId: string;
   className?: string;
 }) {
-  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
+  const projectEpoch = useResearchProjectStore((s) => s.projectEpoch);
   const [events, setEvents] = useState<ResearchUiEvent[]>([]);
   const [artifacts, setArtifacts] = useState<ResearchArtifact[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ function ConversationEventCardsInner({
     return () => {
       cancelled = true;
     };
-  }, [projectId, demoEpoch]);
+  }, [projectId, projectEpoch]);
 
   const byId = new Map(artifacts.map((a) => [a.artifactId, a]));
 

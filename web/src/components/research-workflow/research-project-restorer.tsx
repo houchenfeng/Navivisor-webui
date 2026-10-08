@@ -26,10 +26,6 @@ export function ResearchProjectRestorer({ children }: { children: ReactNode }) {
           title: workspace.title,
           rootPath: workspace.rootPath,
           description: workspace.description,
-          demoComplete: workspace.index.demo?.complete ?? null,
-          missing: (workspace.index.demo?.missing ?? []).map((item) =>
-            typeof item === 'string' ? item : item.path,
-          ),
         });
       })
       .catch(() => {

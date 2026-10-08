@@ -12,18 +12,15 @@ export type ResearchProjectSummary = {
   title: string;
   rootPath: string;
   description?: string;
-  demoComplete?: boolean | null;
-  missing?: string[];
 };
 
 type ResearchProjectState = {
   activeProjectId: string | null;
   project: ResearchProjectSummary | null;
-  /** Bumped after workspace demo load/unload so modules remount/hydrate. */
-  demoEpoch: number;
+  /** Bumped when the bound workspace changes so modules remount/hydrate. */
+  projectEpoch: number;
   setProject: (project: ResearchProjectSummary | null) => void;
   clearProject: () => void;
-  bumpDemoEpoch: () => void;
 };
 
 export const useResearchProjectStore = create<ResearchProjectState>()(
@@ -31,16 +28,19 @@ export const useResearchProjectStore = create<ResearchProjectState>()(
     (set) => ({
       activeProjectId: null,
       project: null,
-      demoEpoch: 0,
+      projectEpoch: 0,
       setProject: (project) =>
-        set({ project, activeProjectId: project?.projectId ?? null }),
+        set((state) => ({
+          project,
+          activeProjectId: project?.projectId ?? null,
+          projectEpoch: state.projectEpoch + 1,
+        })),
       clearProject: () =>
         set((state) => ({
           project: null,
           activeProjectId: null,
-          demoEpoch: state.demoEpoch + 1,
+          projectEpoch: state.projectEpoch + 1,
         })),
-      bumpDemoEpoch: () => set((state) => ({ demoEpoch: state.demoEpoch + 1 })),
     }),
     {
       name: 'navivisor-research-project',
@@ -51,15 +51,3 @@ export const useResearchProjectStore = create<ResearchProjectState>()(
     },
   ),
 );
-
-export function isResearchDemoMode(
-  project: ResearchProjectSummary | null | undefined,
-): boolean {
-  if (!project) return false;
-  if (project.demoComplete != null) return true;
-  const root = project.rootPath.replace(/\\/g, '/').toLowerCase();
-  return (
-    root.includes('/demo-workspaces/') ||
-    root.includes('evivad-surveillance-demo')
-  );
-}

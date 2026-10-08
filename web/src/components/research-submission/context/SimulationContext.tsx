@@ -64,10 +64,10 @@ const INITIAL_FORM: ISubmissionForm = {
 
 export function SimulationProvider({ children }: { children: ReactNode }) {
   const { projectId, artifacts, loading: artifactsLoading } = useWorkspaceArtifacts();
-  const demoLoaded = useResearchProjectStore(
-    (state) => state.project != null && state.project.demoComplete != null,
-  );
-  const demoEpoch = useResearchProjectStore((state) => state.demoEpoch);
+  // Demo mode was removed: the submission module always seeds from real
+  // workspace artifacts.
+  const demoLoaded = false;
+  const projectEpoch = useResearchProjectStore((state) => state.projectEpoch);
   const [step, setStep] = useState<StepId>(1);
   const [form, setForm] = useState<ISubmissionForm>(INITIAL_FORM);
   const [round1Reviewers, setRound1Reviewers] = useState<IReviewer[]>([]);
@@ -97,7 +97,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         setWorkspaceSeedSource('loading');
         return;
       }
-      const seedKey = `${projectId ?? 'none'}:${demoEpoch}:${demoLoaded}:${artifacts.map((a) => a.artifactId).join(',')}`;
+      const seedKey = `${projectId ?? 'none'}:${projectEpoch}:${demoLoaded}:${artifacts.map((a) => a.artifactId).join(',')}`;
       if (seededKeyRef.current === seedKey) return;
 
       try {
@@ -158,7 +158,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [projectId, artifacts, artifactsLoading, demoLoaded, demoEpoch]);
+  }, [projectId, artifacts, artifactsLoading, demoLoaded, projectEpoch]);
 
   const goToStep = (nextStep: StepId) => {
     setStep(nextStep);

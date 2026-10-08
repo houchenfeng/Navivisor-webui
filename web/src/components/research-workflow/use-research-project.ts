@@ -155,12 +155,12 @@ export type WorkspaceArtifactsState = {
   reload: () => Promise<void>;
 };
 
-/** List artifacts for the shared project; refreshes when demoEpoch bumps. */
+/** List artifacts for the shared project; refreshes when projectEpoch bumps. */
 export function useWorkspaceArtifacts(): WorkspaceArtifactsState {
   const projectId = useResearchProjectStore(
     (s) => s.project?.projectId ?? null,
   );
-  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
+  const projectEpoch = useResearchProjectStore((s) => s.projectEpoch);
   const [artifacts, setArtifacts] = useState<ResearchArtifact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -198,7 +198,7 @@ export function useWorkspaceArtifacts(): WorkspaceArtifactsState {
       window.clearTimeout(refresh);
       requestVersion.current += 1;
     };
-  }, [reload, demoEpoch]);
+  }, [reload, projectEpoch]);
 
   return { projectId, artifacts, loading, error, reload };
 }

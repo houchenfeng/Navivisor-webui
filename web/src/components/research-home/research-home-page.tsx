@@ -14,7 +14,6 @@ import {
   PenLine,
   Sparkles,
 } from 'lucide-react';
-import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { ConversationEventCards } from '@/components/research-workflow/conversation-event-cards';
 import { researchWorkflowClient } from '@/components/research-workflow/research-workflow-client';
 import { useResearchProjectStore } from '@/stores/research-project-store';
@@ -141,7 +140,7 @@ export function ResearchHomePage() {
   const selectThread = useTimelineStore((s) => s.selectThread);
   const project = useResearchProjectStore((s) => s.project);
   const setProject = useResearchProjectStore((s) => s.setProject);
-  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
+  const projectEpoch = useResearchProjectStore((s) => s.projectEpoch);
   const [workspacePath, setWorkspacePath] = useState(project?.rootPath ?? '');
   const [workspaceTitle, setWorkspaceTitle] = useState(project?.title ?? '');
   const [registerBusy, setRegisterBusy] = useState(false);
@@ -154,7 +153,7 @@ export function ResearchHomePage() {
   useEffect(() => {
     setWorkspacePath(project?.rootPath ?? '');
     setWorkspaceTitle(project?.title ?? '');
-  }, [project?.rootPath, project?.title, demoEpoch]);
+  }, [project?.rootPath, project?.title, projectEpoch]);
 
   async function registerWorkspace() {
     const absolutePath = workspacePath.trim();
@@ -175,10 +174,6 @@ export function ResearchHomePage() {
         title: workspace.title,
         rootPath: workspace.rootPath,
         description: workspace.description,
-        demoComplete: workspace.index.demo?.complete ?? null,
-        missing: (workspace.index.demo?.missing ?? []).map((item) =>
-          typeof item === 'string' ? item : item.path,
-        ),
       });
       setRegisterMessage(
         workspace.reused
@@ -229,12 +224,9 @@ export function ResearchHomePage() {
                 {project ? '当前论文工作目录' : '新论文工作目录'}
               </h2>
               <p className="mt-0.5 text-[11px] font-medium text-[#7890b6]">
-                {project?.demoComplete != null
-                  ? 'Demo 模式已开启：四模块使用已载入的研究数据。卸载后可恢复空白工作流。'
-                  : '选择服务端可访问目录，四模块所有数据均储存在此目录。'}
+                {'选择服务端可访问目录，四模块所有数据均储存在此目录。'}
               </p>
             </div>
-            <LoadWorkspaceDemoButton compact allowUnload />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input

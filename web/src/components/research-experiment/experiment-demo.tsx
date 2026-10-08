@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { ExperimentPrimerDialog } from '@/components/research-experiment/experiment-primer-dialog';
 import { ArtifactPreviewDialog } from '@/components/research-workflow/artifact-preview-dialog';
 import { researchWorkflowClient, type SshExperimentJob } from '@/components/research-workflow/research-workflow-client';
@@ -15,15 +14,6 @@ import type { ResearchArtifact } from '@/components/research-workflow/research-w
 import { cn } from '@/lib/utils';
 import { type ExperimentStep, useExperimentStore } from '@/stores/experiment-store';
 import { useResearchProjectStore } from '@/stores/research-project-store';
-import {
-  DEMO_ABLATION_HEADERS,
-  DEMO_ABLATION_ROWS,
-  DEMO_ARCHITECTURE_MARKDOWN,
-  DEMO_COMPARISON_HEADERS,
-  DEMO_COMPARISON_ROWS,
-  DEMO_PLAN_MARKDOWN,
-  DEMO_RESULTS_MARKDOWN,
-} from '@/components/research-experiment/demo-artifacts';
 import { TerminalWorkspace } from '@/components/terminal/terminal-workspace';
 import {
   type ExperimentHydration,
@@ -34,20 +24,22 @@ const ExperimentHydrationContext = createContext<ExperimentHydration | null>(nul
 
 function useHydration(): ExperimentHydration {
   return (
+    // No workspace artifacts yet: show a real empty state instead of
+    // fabricated demo content.
     useContext(ExperimentHydrationContext) ?? {
       source: 'offline-fallback',
       loading: false,
-      planMarkdown: DEMO_PLAN_MARKDOWN,
+      planMarkdown: '',
       planHeadline: '',
       shortestPath: '',
       protocolNote: '',
-      resultsMarkdown: DEMO_RESULTS_MARKDOWN,
-      architectureMarkdown: DEMO_ARCHITECTURE_MARKDOWN,
+      resultsMarkdown: '',
+      architectureMarkdown: '',
       configJson: null,
-      comparisonHeaders: [...DEMO_COMPARISON_HEADERS],
-      comparisonRows: DEMO_COMPARISON_ROWS.map((row) => [...row]),
-      ablationHeaders: [...DEMO_ABLATION_HEADERS],
-      ablationRows: DEMO_ABLATION_ROWS.map((row) => [...row]),
+      comparisonHeaders: [],
+      comparisonRows: [],
+      ablationHeaders: [],
+      ablationRows: [],
       comparisonFigureUrl: null,
       architectureFigureUrl: null,
       ideas: [],
@@ -595,7 +587,8 @@ function RunPage({ go }: { go: (step: ExperimentStep) => void }) {
   const hydration = useHydration();
   const projectId = useResearchProjectStore((s) => s.project?.projectId);
   const rootPath = useResearchProjectStore((s) => s.project?.rootPath ?? '');
-  const demoLoaded = useResearchProjectStore((s) => s.project?.demoComplete != null);
+  // Demo mode was removed: the experiment module always reads real workspace state.
+  const demoLoaded = false;
   const isReal = state.runMode === 'real';
   const [progress, setProgress] = useState(state.completed ? 100 : 0);
   const [sshJob, setSshJob] = useState<SshExperimentJob | null>(null);
@@ -895,7 +888,6 @@ export function ExperimentDemo() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <LoadWorkspaceDemoButton compact />
               <ExperimentPrimerDialog />
               {experiment.runMode === 'real' ? (
                 <Badge className="bg-[#1F4DCB] text-white">真实目标配置 · SSH runner</Badge>

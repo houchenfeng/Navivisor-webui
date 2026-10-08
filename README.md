@@ -249,6 +249,20 @@ pnpm --dir web lint
 
 实验远程执行还会用到 `research-tools/ssh-experiment/run_navivisor_experiment.py`（SSH 侧运行脚本），它不是 Codex Skill。算法流程图是 `research-writing` 内的动作，见 `research-skills/research-writing/references/algorithm-flowchart-generation.md`。
 
+## 版本更新
+
+改动全过程记录见 [`docs/TODO-topic-realization.md`](./docs/TODO-topic-realization.md)（修改清单 / demo 资产清单 / 测试清单 / 最终结果）。
+
+| 版本 | 日期 | 变更摘要 | 影响文件 |
+| --- | --- | --- | --- |
+| v0.2.0 | 2026-10-08 | **去 demo（开题链路）**：删除整套演示数据与入口。后端移除 `demo-packages/`、demo 加载/校验服务方法与 `DemoManifest*` 类型、`/research/demos` 与 `/research/projects/:id/demo/load` 端点；前端移除 `LoadWorkspaceDemoButton`、`exitResearchDemo`、`demoTaskSnapshot` 假数据、实验模块离线假指标回退、写作模块 `DEMO_*` 兜底素材。检索失败改为真实空态 + 明确错误 + 可重试，**不再回退演示数据**。保留全部真实功能（科普弹窗、文件管理、多会话/token、终端 + SSH、插件/skill/MCP、深夜模式、Codex 配置、OnlyOffice、LaTeX 编译、Artifact 证据链与 run 状态机）。 | `src/research-workflow/{research-contracts,research-workspace.service,research-workspace.controller}.ts`、`demo-packages/`、`scripts/*demo*`、`web/src/components/research-{topic,workflow,experiment,writing,home,submission}/**`、`.gitattributes` |
+| v0.1.0 | 2026-10-08 | 环境准备：`vitest.config.mts` 提高 `testTimeout`/`hookTimeout` 至 60s（仓库位于慢速副盘，`afterEach` 递归清理超过 10s 默认上限）；`.gitignore` 排除本地密钥备份；新增改动总账 `docs/TODO-topic-realization.md`。 | `vitest.config.mts`、`.gitignore`、`docs/TODO-topic-realization.md` |
+
+### 分支说明
+
+- `main`：真实版本（去 demo，逐步落地真实能力）
+- `demo-2026-10-07`：改造前的完整存档（含全部 demo 模式），基线提交 `6530bc5`
+
 ## 上游与许可
 
 基于 [LimLLL/codex-webui](https://github.com/LimLLL/codex-webui) 二次开发，使用 AGPL-3.0-or-later，见 [LICENSE](./LICENSE)。更多资料见 [文档索引](./docs/README.md)。

@@ -2,13 +2,6 @@
  * Build WritingData patch from workspace artifacts or experiment module outputs.
  */
 import {
-  DEMO_ARCHITECTURE_MARKDOWN,
-  DEMO_BIBTEX,
-  DEMO_COMPARISON_HEADERS,
-  DEMO_COMPARISON_ROWS,
-  DEMO_RESULTS_MARKDOWN,
-} from '@/components/research-experiment/demo-artifacts';
-import {
   fetchArtifactText,
   findLatestByPathHint,
   findLatestByRole,
@@ -21,18 +14,14 @@ import { useResearchProjectStore } from '@/stores/research-project-store';
 
 export type ExperimentFillResult = {
   patch: Partial<WritingData>;
-  source: 'workspace' | 'store' | 'demo-fallback';
+  source: 'workspace' | 'store';
   topic: string;
 };
 
-function buildStoreOrDemoPatch(source: 'store' | 'demo-fallback'): ExperimentFillResult {
+function buildStorePatch(): ExperimentFillResult {
   const state = useExperimentStore.getState();
-  const topic =
-    state.researchTopic.trim() ||
-    (source === 'demo-fallback'
-      ? '面向小样本道路裂缝分割的轻量化 SAM 适配方法'
-      : '');
-  const projectName = state.projectName.trim() || 'RoadCrack-SAM-MVP';
+  const topic = state.researchTopic.trim();
+  const projectName = state.projectName.trim() || '（未命名项目）';
   const researchGoal = state.researchGoal.trim() || '（未填写）';
   const winners = state.ideas.filter((idea) => idea.status === '成功');
   const ideaBlock = winners
@@ -57,22 +46,13 @@ function buildStoreOrDemoPatch(source: 'store' | 'demo-fallback'): ExperimentFil
     '',
     `## 成功创新点摘要`,
     ideaBlock || '（暂无成功 Idea）',
-    '',
-    `## 算法架构文档`,
-    DEMO_ARCHITECTURE_MARKDOWN,
   ].join('\n');
 
   const resultDoc = [
-    source === 'demo-fallback'
-      ? '<!-- source: demo-fallback -->'
-      : '<!-- source: experiment-store -->',
-    DEMO_RESULTS_MARKDOWN,
+    '<!-- source: experiment-store -->',
+    '## 主实验结果表',
     '',
-    '## 主实验结果表（Demo）',
-    '',
-    `| ${DEMO_COMPARISON_HEADERS.join(' | ')} |`,
-    `| ${DEMO_COMPARISON_HEADERS.map(() => '---').join(' | ')} |`,
-    ...DEMO_COMPARISON_ROWS.map((row) => `| ${row.join(' | ')} |`),
+    '（尚未从实验模块回收结果文件）',
   ].join('\n');
 
   const references = winners.flatMap((idea, ideaIndex) =>
@@ -83,13 +63,13 @@ function buildStoreOrDemoPatch(source: 'store' | 'demo-fallback'): ExperimentFil
   );
 
   return {
-    source,
+    source: 'store',
     topic: topic || projectName,
     patch: {
       topic: topic || projectName,
       experimentDetail: detail,
       experimentResult: resultDoc,
-      bibContent: DEMO_BIBTEX,
+      bibContent: '',
       experimentTables: [],
       experimentTable: { title: '结果表格', headers: [], rows: [] },
       references:
@@ -193,21 +173,21 @@ export async function fillWritingFromExperiment(): Promise<ExperimentFillResult>
             experimentResult: resultsText
               ? formatMaterialForReading(resultsText)
               : '（工作目录暂无实验结果文件）',
-            bibContent: bibText || DEMO_BIBTEX,
+            bibContent: bibText,
             experimentTables: [],
             experimentTable: { title: '结果表格', headers: [], rows: [] },
           },
         };
       }
     } catch {
-      // fall through to store / demo-fallback
+      // fall through to the experiment store
     }
   }
 
   const store = useExperimentStore.getState();
   if (store.researchTopic.trim()) {
-    return buildStoreOrDemoPatch('store');
+    return buildStorePatch();
   }
 
-  return buildStoreOrDemoPatch('demo-fallback');
+  return buildStorePatch();
 }

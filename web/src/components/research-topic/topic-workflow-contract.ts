@@ -55,8 +55,6 @@ export interface ResearchTaskSnapshot {
     expectedInnovation: string;
     rationale: string;
   }>;
-  isDemo?: boolean;
-  demoCoreLiterature?: Array<{ title: string; openalexId: string; whyRelevant: string }>;
 }
 
 export interface TopicWorkflowClient {

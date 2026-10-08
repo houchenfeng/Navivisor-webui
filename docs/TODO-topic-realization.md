@@ -87,6 +87,8 @@
 | 第 2 轮 | 提高 `hookTimeout` 到 60s | 331 通过 / 2 失败 |
 | 第 3 轮 | 前置同步 spawn 兼容层 | 330 通过 / 3 失败 |
 | 第 4 轮 | 关闭 safe-delete 拦截（`CODEBUDDY_SAFE_DELETE_ENABLED=0`） | ✅ **331 通过 / 2 失败**（43 个文件 42 通过） |
+| 第 5 轮 | 去 demo 完成后（后端） | ✅ **327 通过 / 0 失败（42/42 文件）**；`nest build` 通过 |
+| 第 5 轮 | 去 demo 完成后（前端） | ✅ **195 通过 / 0 失败（20/20 文件）**；`vite build` 通过；`tsc --noEmit` 通过 |
 
 **基线结论**：唯一失败的 `src/research-workflow/research-workspace.demo-load.spec.ts`（2 个用例）属于本次要删除的 demo 演示包测试，其余全部通过。基线可用。
 
@@ -155,7 +157,25 @@ pnpm install --ignore-scripts
 
 ## 四、最终结果
 
-> 待端到端验收后填写。
+### 4.0 阶段成果（v0.2.0 · 去 demo）
+
+**已完成并验证**
+
+| 项 | 结果 |
+| --- | --- |
+| 分支整理 | 远端只保留 `main` + 存档分支 `demo-2026-10-07`；删除 7 个旧分支（`demo`、`feat/research-{submission,topic,writing}`、`feat/writing-workflow-unification`、`integration/research-workflow`、`topic`）；删除前已做 `git clone --mirror` 全量备份 |
+| 后端去 demo | `research-workspace.service.ts` 1846 → 1226 行（移除 11 个 demo 方法与 5 处散落引用）；删除 3 个 demo 端点；删除 `DemoManifest*` / `DemoMissingReasonCode` / `DEMO_MISSING_REASON_CODES` 类型与 `demo-manifest` artifact role；`WorkspaceProjectJson.demo` / `PortableProjectJson.demo` 字段移除 |
+| 演示数据清理 | `demo-packages/`（2 套完整演示包）、8 个 demo 脚本、3 份 demo 文档、1 个 demo 集成测试全部删除；`.gitattributes` 移除 LFS 演示规则 |
+| 前端去 demo | 删除 `load-workspace-demo-button.tsx`、`exit-research-demo.ts`、`research-topic/data.ts`、`research-topic/types.ts`、`research-experiment/demo-artifacts.ts`；`demoTaskSnapshot` 假数据、`DemoCoreLiteraturePage`、「填入教学示例」入口、实验模块离线假指标回退、写作模块 `DEMO_*` 兜底素材全部移除；store 的 `demoComplete`/`missing`/`demoEpoch`/`isResearchDemoMode` 移除（`demoEpoch` 改为语义中性的 `projectEpoch`） |
+| 真实功能保留 | 科普弹窗、文件管理、多会话/token、终端 + SSH、插件/skill/MCP、深夜模式、Codex 配置、OnlyOffice、LaTeX、Artifact 证据链与 run 状态机均未改动（见「二、C 类」白名单） |
+| 回归验证 | 后端 327/327、前端 195/195，两端构建与类型检查全部通过 |
+
+**遗留（属于 v1.0.0 四模块范围，见「二、B 类」）**
+
+- 实验模块 `experiment-demo.tsx` 的 `DEMO_REAL_RUN_LINES` 模拟运行日志、`experiment-store` 的模拟模式字段
+- 投稿模块 `mockData.ts` / `workspace-submission-seed.ts` 的演示审稿数据、`SimulationContext` 的 `demoForm`/`demoRound1`/`demoRound2` 状态
+- 写作模块 `demo-writing.ts`
+- 上述模块的演示能力目前**不会被加载**（入口已删、`demoLoaded` 恒为 `false`），但代码尚未物理删除
 
 ### 4.1 端到端验收
 

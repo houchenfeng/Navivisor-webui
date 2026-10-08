@@ -1,5 +1,4 @@
 import { initialWritingData, type WritingData } from "@/components/research-writing/data/writingSteps";
-import { DEMO_COMPARISON_HEADERS } from "@/components/research-experiment/demo-artifacts";
 
 const STORAGE_KEY_PREFIX = "writing-app:data:v2";
 
@@ -18,7 +17,6 @@ export function loadData(projectId?: string | null): WritingData {
 
     const parsed = JSON.parse(raw) as Partial<WritingData>;
     const looksLikeSamDefault =
-      JSON.stringify(parsed.experimentTable?.headers) === JSON.stringify([...DEMO_COMPARISON_HEADERS]) ||
       JSON.stringify(parsed.experimentTable?.headers) === JSON.stringify(["Method", "Dataset", "Accuracy", "F1"]);
     const tables =
       Array.isArray(parsed.experimentTables) && parsed.experimentTables.length > 0

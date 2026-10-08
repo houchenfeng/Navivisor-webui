@@ -2,14 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, FileSearch, FlaskConical, LoaderCircle, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LoadWorkspaceDemoButton } from '@/components/research-workflow/load-workspace-demo-button';
 import { fetchArtifactText, findLatestByRole, parseCsvRows, useWorkspaceArtifacts } from '@/components/research-workflow/use-research-project';
 import { ArtifactPreviewDialog } from '@/components/research-workflow/artifact-preview-dialog';
 import type { ResearchArtifact } from '@/components/research-workflow/research-workflow-types';
 import { useResearchProjectStore } from '@/stores/research-project-store';
 import { getApiToken } from '@/auth-token';
 import { withBasePath } from '@/base-path';
-import { demoTaskSnapshot } from './data';
 import { TopicPrimerDialog } from './topic-primer-dialog';
 import { buildOpenAlexQueryPlan } from './openalex-query';
 import type { ResearchTaskSnapshot } from './topic-workflow-contract';
@@ -32,7 +30,7 @@ export function TopicPage() {
   const [error, setError] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const { projectId, artifacts, loading: artifactsLoading } = useWorkspaceArtifacts();
-  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
+  const projectEpoch = useResearchProjectStore((s) => s.projectEpoch);
   const activeRunKey = `${ACTIVE_RUN_KEY}:${projectId ?? 'unbound'}`;
   const draftKey = `navivisor:research-topic:draft:v1:${projectId ?? 'unbound'}`;
 
@@ -65,7 +63,7 @@ export function TopicPage() {
     setSelectedCandidate(null);
     setPage(1);
     setError('');
-  }, [projectId, demoEpoch]);
+  }, [projectId, projectEpoch]);
   useEffect(() => {
     // Workspace artifacts are the durable source of truth for imported runs.
     // An old browser-session run must not hide a complete imported workflow.
@@ -143,7 +141,7 @@ export function TopicPage() {
           const coreLiterature = coreArtifact ? parseCoreLiterature(parseCsvRows(await fetchArtifactText(projectId, coreArtifact.artifactId))) : [];
           // Imported runs are valid workflow inputs too.  Do not require users to
           // repeat a network search merely because the data was not created by the
-          // built-in demo loader.
+          // this browser session.
           const candidatesReady = topics.length === 3;
           const coreReady = coreLiterature.length > 0;
           const pdfDownloaded = artifacts.filter((artifact) => artifact.role === 'literature-pdf').length;
@@ -156,8 +154,6 @@ export function TopicPage() {
               candidates: candidatesReady ? topics : undefined,
               coreStatus: coreReady ? 'completed' : 'idle',
               coreManifest: coreReady ? { status: 'completed', files: ['references.csv', 'references.bib'], counts: { references: coreLiterature.length, pdfDownloaded } } : undefined,
-              demoCoreLiterature: coreReady ? coreLiterature : undefined,
-              isDemo: false,
             });
             setPage(coreReady ? 3 : candidatesReady ? 2 : 1);
           }
@@ -227,7 +223,6 @@ export function TopicPage() {
   };
 
   const startCoreLiterature = async () => {
-    if (task?.isDemo) { setPage(3); return; }
     if (!task || !selectedCandidate || task.coreStatus === 'completed' || task.coreStatus === 'partial') { setPage(3); return; }
     setPage(3); setError('');
     try {
@@ -273,9 +268,9 @@ export function TopicPage() {
         })}
       </nav>
 
-      {page === 1 && <><div className="mt-5 flex flex-wrap items-start justify-end gap-2"><LoadWorkspaceDemoButton compact /><TopicPrimerDialog /></div><DirectionPage interest={interest} setInterest={updateInterest} context={context} setContext={updateContext} task={task} error={error} isRunning={isRunning} isComplete={isComplete} onRun={runSearch} onCancel={cancelSearch} onRetry={runSearch} onNext={() => setPage(2)} /></>}
+      {page === 1 && <><div className="mt-5 flex flex-wrap items-start justify-end gap-2"><TopicPrimerDialog /></div><DirectionPage interest={interest} setInterest={updateInterest} context={context} setContext={updateContext} task={task} error={error} isRunning={isRunning} isComplete={isComplete} onRun={runSearch} onCancel={cancelSearch} onRetry={runSearch} onNext={() => setPage(2)} /></>}
       {page === 2 && <CandidatesPage task={task} selectedCandidate={selectedCandidate} setSelectedCandidate={setSelectedCandidate} error={error} onGenerate={generateCandidates} onBack={() => setPage(1)} onNext={startCoreLiterature} />}
-      {page === 3 && (task?.isDemo ? <DemoCoreLiteraturePage papers={task.demoCoreLiterature} onBack={() => setPage(2)} /> : <CoreLiteraturePage task={task} artifacts={artifacts} projectId={projectId} error={error} onStart={startCoreLiterature} onBack={() => setPage(2)} />)}
+      {page === 3 && (<CoreLiteraturePage task={task} artifacts={artifacts} projectId={projectId} error={error} onStart={startCoreLiterature} onBack={() => setPage(2)} />)}
     </div>
   </main>;
 }
@@ -395,10 +390,10 @@ function parseCandidateTopics(value: unknown): NonNullable<ResearchTaskSnapshot[
   }).filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
 }
 
-function parseCoreLiterature(rows: string[][]): NonNullable<ResearchTaskSnapshot['demoCoreLiterature']> {
+function parseCoreLiterature(rows: string[][]): Array<{ title: string; openalexId: string; whyRelevant: string }> {
   const headers = rows[0]?.map((value) => value.trim().toLowerCase()) ?? [];
   const index = (name: string) => headers.indexOf(name);
-  return rows.slice(1).map((row, offset) => ({ title: row[index('title')] || '无标题', openalexId: row[index('source_url')] || row[index('doi')] || `demo-core-${offset + 1}`, whyRelevant: row[index('relevance_reason')] || row[index('method_relation')] || 'Demo 核心文献条目，需打开来源进一步核验。' })).filter((paper) => paper.title !== '无标题');
+  return rows.slice(1).map((row, offset) => ({ title: row[index('title')] || '无标题', openalexId: row[index('source_url')] || row[index('doi')] || `core-${offset + 1}`, whyRelevant: row[index('relevance_reason')] || row[index('method_relation')] || '核心文献条目，需打开来源进一步核验。' })).filter((paper) => paper.title !== '无标题');
 }
 
 function findArtifactFile(artifacts: Parameters<typeof findLatestByRole>[0], stem: string, extension: string) {
@@ -409,7 +404,6 @@ function persistTopicDraft(key: string, interest: string, context: string) {
   window.sessionStorage.setItem(key, JSON.stringify({ interest, context }));
 }
 
-function DemoCoreLiteraturePage({ onBack, papers = demoTaskSnapshot.demoCoreLiterature ?? [], artifacts: _artifacts = [], projectId: _projectId = null }: { onBack: () => void; papers?: Array<{ title: string; openalexId: string; whyRelevant: string }>; artifacts?: ResearchArtifact[]; projectId?: string | null }) { return <section className="mt-7 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-10"><div className="flex items-start gap-4"><div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><FlaskConical className="size-6" /></div><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">Step 03</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">核心参考文献</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#617da9]">确定课题后，AI 会查找最相关的参考文献及可获取的全文。</p></div></div><div className="mt-6 space-y-3">{papers.map((paper) => <article key={paper.openalexId} className="rounded-2xl border border-[#d8e5f6] bg-[#fbfdff] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 flex-1 text-sm font-black leading-6 text-[#244a7d]">{paper.title}</h3><a href={paper.openalexId} target="_blank" rel="noreferrer" className="text-xs font-black text-[#1f4dcb] underline">来源</a></div><p className="mt-2 text-xs font-semibold leading-5 text-[#526e98]">{paper.whyRelevant}</p></article>)}</div><div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#e3ecf8] pt-5"><Button variant="outline" onClick={onBack} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><ArrowLeft />返回候选课题</Button><GoToExperimentButton /></div></section>; }
 
 export function FuturePage({ number, title, icon: Icon, description, detail, onBack }: { number: string; title: string; icon: typeof Sparkles; description: string; detail: string; onBack: () => void }) { return <section className="mt-7 rounded-[28px] bg-white p-6 shadow-[0_15px_40px_rgba(42,83,143,0.14)] sm:p-10"><div className="flex items-start gap-4"><div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f0ff] text-[#1f4dcb]"><Icon className="size-6" /></div><div><p className="text-xs font-black tracking-[0.16em] text-[#5f85b8] uppercase">Step {number} · 待接入</p><h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#183b70]">{title}</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#617da9]">{description}</p></div></div><div className="mt-8 rounded-2xl border border-dashed border-[#b9d0ef] bg-[#f7faff] p-8 text-center"><Icon className="mx-auto size-8 text-[#6594ce]" /><h3 className="mt-4 text-sm font-black text-[#315a98]">当前功能尚未接入</h3><p className="mx-auto mt-2 max-w-xl text-xs font-semibold leading-5 text-[#7189aa]">{detail}</p></div><div className="mt-7 border-t border-[#e3ecf8] pt-5"><Button variant="outline" onClick={onBack} className="rounded-xl border-[#9bbce8] font-black text-[#1f4dcb]"><ArrowLeft />返回上一步</Button></div></section>; }
 

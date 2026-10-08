@@ -38,7 +38,7 @@ export function CurrentPaperCard({
   slim?: boolean;
 }) {
   const project = useResearchProjectStore((s) => s.project);
-  const demoEpoch = useResearchProjectStore((s) => s.demoEpoch);
+  const projectEpoch = useResearchProjectStore((s) => s.projectEpoch);
   const [open, setOpen] = useState(slim ? false : defaultOpen);
   const [workspace, setWorkspace] = useState<ResearchWorkspace | null>(null);
   const [artifacts, setArtifacts] = useState<ResearchArtifact[]>([]);
@@ -74,7 +74,7 @@ export function CurrentPaperCard({
     return () => {
       cancelled = true;
     };
-  }, [project?.projectId, demoEpoch]);
+  }, [project?.projectId, projectEpoch]);
 
   if (!project) return null;
 
@@ -163,16 +163,9 @@ export function CurrentPaperCard({
             <p>{project.description || workspace?.description}</p>
           ) : null}
           <p>
-            数据包：{workspace?.demo?.id ?? '未选择'}
-            {' · '}
-            {project.demoComplete == null
-              ? '未载入'
-              : project.demoComplete
-                ? '完整'
-                : `部分（待补 ${project.missing?.length ?? 0} 项）`}
             {workspace?.index?.updatedAt
-              ? ` · 最近保存 ${new Date(workspace.index.updatedAt).toLocaleString()}`
-              : null}
+              ? `最近保存 ${new Date(workspace.index.updatedAt).toLocaleString()}`
+              : '尚未保存任何产物'}
           </p>
           {modules ? (
             <div className="flex flex-wrap gap-1.5">

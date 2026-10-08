@@ -19,10 +19,10 @@ import Step9Export from "@/components/research-writing/components/writing/Step9E
 export default function EditorPage() {
   const navigate = useNavigate();
   const projectId = useResearchProjectStore((state) => state.project?.projectId ?? null);
-  const demoEpoch = useResearchProjectStore((state) => state.demoEpoch);
-  const demoMode = useResearchProjectStore(
-    (state) => state.project != null && state.project.demoComplete != null,
-  );
+  const projectEpoch = useResearchProjectStore((state) => state.projectEpoch);
+  // Demo mode was removed: writing drafts are always filled from real
+  // experiment artifacts when no saved draft exists yet.
+  const demoMode = false;
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<WritingData>(() => loadData(projectId));
 
@@ -43,7 +43,7 @@ export default function EditorPage() {
       cancelled = true;
       window.clearTimeout(syncSaved);
     };
-  }, [projectId, demoEpoch, demoMode]);
+  }, [projectId, projectEpoch, demoMode]);
 
   useEffect(() => {
     saveData(data, projectId);
