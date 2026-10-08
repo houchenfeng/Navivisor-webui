@@ -55,6 +55,40 @@ export interface ResearchTaskSnapshot {
     expectedInnovation: string;
     rationale: string;
   }>;
+  /**
+   * Per-stage state for the first-search pipeline (T20/T28). Optional because
+   * runs persisted before the stages existed are still readable.
+   */
+  stages?: Record<string, StageSnapshot>;
+  /** Machine-readable warnings, e.g. 'insufficient_results'. */
+  warnings?: string[];
+}
+
+/** One stage of the first-search pipeline, as returned by GET /stages. */
+export interface StageSnapshot {
+  status: 'idle' | 'queued' | 'running' | 'completed' | 'failed';
+  error?: string;
+  /** Which provider actually answered, when the stage called one. */
+  provider?: 'codex' | 'http';
+  /** True when the primary provider failed and the fallback answered. */
+  fallbackUsed?: boolean;
+  startedAt?: string;
+  finishedAt?: string;
+  /** Stage-specific payload; shape depends on the stage. */
+  data?: unknown;
+}
+
+/** Batch progress for the core-literature analysis (T43). */
+export interface CoreAnalysisProgress {
+  totalBatches: number;
+  completedBatches: number;
+  batches: Array<{
+    index: number;
+    name: string;
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+    error?: string;
+  }>;
+  updatedAt: string;
 }
 
 export interface TopicWorkflowClient {
