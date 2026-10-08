@@ -255,6 +255,7 @@ pnpm --dir web lint
 
 | 版本 | 日期 | 变更摘要 | 影响文件 |
 | --- | --- | --- | --- |
+| v0.3.0 | 2026-10-08 | **AI provider 抽象**：新增 `src/research-topic/ai/`，把 Codex CLI 与 OpenAI 兼容 HTTP（DashScope `qwen3.8-max-0902`）统一为 `AiProvider` 接口。`AiProviderFactory` 默认以 codex 为主、http 为兜底（`NAVIVISOR_AI_PROVIDER` / `NAVIVISOR_AI_FALLBACK`），兜底必定留痕（`fallbackUsed`），两者都失败时抛主 provider 的错误。附带容错 JSON 提取 `extractJsonPayload`。新增 13 个单测。 | `src/research-topic/ai/{ai-provider,codex-provider,http-provider,ai-provider.factory}.ts`、`src/research-topic/research-topic.module.ts` |
 | v0.2.0 | 2026-10-08 | **去 demo（开题链路）**：删除整套演示数据与入口。后端移除 `demo-packages/`、demo 加载/校验服务方法与 `DemoManifest*` 类型、`/research/demos` 与 `/research/projects/:id/demo/load` 端点；前端移除 `LoadWorkspaceDemoButton`、`exitResearchDemo`、`demoTaskSnapshot` 假数据、实验模块离线假指标回退、写作模块 `DEMO_*` 兜底素材。检索失败改为真实空态 + 明确错误 + 可重试，**不再回退演示数据**。保留全部真实功能（科普弹窗、文件管理、多会话/token、终端 + SSH、插件/skill/MCP、深夜模式、Codex 配置、OnlyOffice、LaTeX 编译、Artifact 证据链与 run 状态机）。 | `src/research-workflow/{research-contracts,research-workspace.service,research-workspace.controller}.ts`、`demo-packages/`、`scripts/*demo*`、`web/src/components/research-{topic,workflow,experiment,writing,home,submission}/**`、`.gitattributes` |
 | v0.1.0 | 2026-10-08 | 环境准备：`vitest.config.mts` 提高 `testTimeout`/`hookTimeout` 至 60s（仓库位于慢速副盘，`afterEach` 递归清理超过 10s 默认上限）；`.gitignore` 排除本地密钥备份；新增改动总账 `docs/TODO-topic-realization.md`。 | `vitest.config.mts`、`.gitignore`、`docs/TODO-topic-realization.md` |
 

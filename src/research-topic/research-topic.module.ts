@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ResearchWorkflowModule } from '../research-workflow/research-workflow.module';
+import { AiProviderFactory } from './ai/ai-provider.factory';
 import { ResearchTopicController } from './research-topic.controller';
 import { ResearchTopicService } from './research-topic.service';
 
 @Module({
   imports: [ResearchWorkflowModule],
   controllers: [ResearchTopicController],
-  providers: [ResearchTopicService],
+  providers: [ResearchTopicService, AiProviderFactory],
+  exports: [AiProviderFactory],
 })
 export class ResearchTopicModule {}

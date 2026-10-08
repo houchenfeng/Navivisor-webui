@@ -89,6 +89,7 @@
 | 第 4 轮 | 关闭 safe-delete 拦截（`CODEBUDDY_SAFE_DELETE_ENABLED=0`） | ✅ **331 通过 / 2 失败**（43 个文件 42 通过） |
 | 第 5 轮 | 去 demo 完成后（后端） | ✅ **327 通过 / 0 失败（42/42 文件）**；`nest build` 通过 |
 | 第 5 轮 | 去 demo 完成后（前端） | ✅ **195 通过 / 0 失败（20/20 文件）**；`vite build` 通过；`tsc --noEmit` 通过 |
+| 第 6 轮 | AI provider 抽象后（后端） | ✅ **340 通过 / 0 失败（44/44 文件）**（新增 13 个 provider 单测）；`nest build` 通过 |
 
 **基线结论**：唯一失败的 `src/research-workflow/research-workspace.demo-load.spec.ts`（2 个用例）属于本次要删除的 demo 演示包测试，其余全部通过。基线可用。
 
