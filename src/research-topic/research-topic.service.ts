@@ -8,6 +8,10 @@ import type {
   FirstSearchInput,
   FirstSearchStage,
   QueryPlanArtifact,
+  RelevanceCheck,
+  Landscape,
+  ResearchGaps,
+  VenueTiering,
   ResearchTopicManifest,
   ResearchTopicPaper,
   ResearchTopicTask,
@@ -22,6 +26,17 @@ import {
   type OpenAlexQueryPlan,
 } from './openalex-query';
 import { translateResearchInterest } from './query-translation';
+import {
+  MAX_RELEVANCE_ROUNDS,
+  RELEVANCE_SAMPLE_SIZE,
+  runRelevanceCheck,
+} from './relevance-feedback';
+import { runVenueTiering } from './venue-tiering';
+import { runLandscapeAnalysis } from './landscape-analysis';
+import {
+  deriveResearchGaps,
+  renderResearchGapsMarkdown,
+} from './research-gaps';
 // Must be a value import: NestJS resolves constructor dependencies at runtime,
 // and `import type` is erased by the compiler.
 import { AiProviderFactory } from './ai/ai-provider.factory';
@@ -537,6 +552,263 @@ export class ResearchTopicService implements OnModuleInit {
       if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
     }
     throw new Error(lastCode);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Analysis stages (T23–T27). These are triggered on demand by the routes in
+  // T28 rather than run eagerly, because each one is a full-context AI call.
+  // ---------------------------------------------------------------------------
+
+  /** Throws a typed error when the run or the AI provider is unavailable. */
+  private async requireTaskForStage(
+    runId: string,
+    stage: FirstSearchStage,
+  ): Promise<ResearchTopicTask> {
+    const task = await this.get(runId);
+    if (!task) throw new Error('RUN_NOT_FOUND');
+    if (!this.aiFactory) throw new Error('AI_PROVIDER_UNAVAILABLE');
+    if (task.status !== 'completed') {
+      throw new Error('RUN_NOT_COMPLETED');
+    }
+    return task;
+  }
+
+  /** Stage state for the UI poller (T28). */
+  async getStages(runId: string): Promise<Record<FirstSearchStage, StageState<unknown>>> {
+    const task = await this.get(runId);
+    if (!task) throw new Error('RUN_NOT_FOUND');
+    return task.stages;
+  }
+
+  /** Reads a persisted first-search artifact by file name (T28). */
+  async readArtifact(runId: string, name: string): Promise<string> {
+    if (!/^[A-Za-z0-9._-]+\.(md|json|csv|txt)$/.test(name) || name.includes('..')) {
+      throw new Error('INVALID_ARTIFACT_NAME');
+    }
+    const task = await this.get(runId);
+    if (!task) throw new Error('RUN_NOT_FOUND');
+    return readFile(join(OUTPUT_ROOT, task.runId, 'first-search', name), 'utf8');
+  }
+
+  /** T23 — inspect the newest slice of the pool and optionally refine the plan. */
+  async runRelevanceCheckStage(runId: string): Promise<RelevanceCheck> {
+    const task = await this.requireTaskForStage(runId, 'relevance-check');
+    const factory = this.aiFactory as AiProviderFactory;
+
+    const previous = task.stages['relevance-check'];
+    const completedRound =
+      previous?.status === 'completed' && previous.data
+        ? (previous.data as RelevanceCheck).round
+        : 0;
+    const round = completedRound + 1;
+    if (round > MAX_RELEVANCE_ROUNDS) {
+      throw new Error('RELEVANCE_ROUNDS_EXCEEDED');
+    }
+
+    const plan = (task.stages['query-plan']?.data ?? null) as QueryPlanArtifact | null;
+    if (!plan?.concepts) throw new Error('QUERY_PLAN_MISSING');
+
+    const yearFrom =
+      (task.stages['search']?.data as { yearFrom?: number } | undefined)?.yearFrom ??
+      new Date().getUTCFullYear() - 4;
+    const yearTo =
+      (task.stages['search']?.data as { yearTo?: number } | undefined)?.yearTo ??
+      new Date().getUTCFullYear();
+
+    await this.setStage(task, 'relevance-check', { status: 'running' });
+    try {
+      // Newest first: the caller already stores the pool in retrieval order.
+      const samples = task.papers.slice(0, RELEVANCE_SAMPLE_SIZE).map((paper) => ({
+        title: paper.title,
+        abstract: paper.abstract,
+        keywords: paper.source,
+      }));
+
+      const { check, provider, fallbackUsed } = await runRelevanceCheck(factory, {
+        direction: task.researchInterest ?? '',
+        samples,
+        currentPlan: plan,
+        round,
+        yearFrom,
+        yearTo,
+      });
+
+      await this.setStage(task, 'relevance-check', {
+        status: 'completed',
+        data: check,
+        provider,
+        fallbackUsed,
+      });
+      if (fallbackUsed) this.pushWarning(task, TOPIC_WARNINGS.aiFallbackUsed);
+
+      await this.persistStageArtifact(
+        task.runId,
+        `relevance-check-round-${round}.json`,
+        check,
+      );
+      await this.persistStageArtifact(task.runId, 'relevance-check.md', {
+        round,
+        sampleSize: check.sampleSize,
+        relevantRatio: check.relevantRatio,
+        irrelevantSamples: check.irrelevantSamples,
+        refined: Boolean(check.refinedQueryPlan),
+      });
+      return check;
+    } catch (error) {
+      await this.setStage(task, 'relevance-check', {
+        status: 'failed',
+        error: safeErrorMessage(error),
+      });
+      throw error;
+    }
+  }
+
+  /** T24 — tier the venues present in the pool. */
+  async runVenueTieringStage(runId: string): Promise<VenueTiering> {
+    const task = await this.requireTaskForStage(runId, 'venue-tiering');
+    const factory = this.aiFactory as AiProviderFactory;
+
+    await this.setStage(task, 'venue-tiering', { status: 'running' });
+    try {
+      const { tiering, provider, fallbackUsed } = await runVenueTiering(
+        factory,
+        task.papers,
+        task.researchInterest ?? '',
+      );
+      await this.setStage(task, 'venue-tiering', {
+        status: 'completed',
+        data: tiering,
+        provider,
+        fallbackUsed,
+      });
+      if (fallbackUsed) this.pushWarning(task, TOPIC_WARNINGS.aiFallbackUsed);
+      await this.persistStageArtifact(task.runId, 'venue-tiers.json', tiering);
+      await this.persistStageArtifact(
+        task.runId,
+        'venue-tiers.md',
+        [
+          `# 期刊分层 · ${task.researchInterest ?? ''}`,
+          '',
+          ...tiering.tiers.map(
+            (tier) => `- 第 ${tier.tier} 梯队 · ${tier.name}（${tier.count} 篇）`,
+          ),
+          '',
+          `一梯队占比：${(tiering.topVenueRatio * 100).toFixed(1)}%`,
+          '',
+          tiering.note,
+        ].join('\n'),
+      );
+      return tiering;
+    } catch (error) {
+      await this.setStage(task, 'venue-tiering', {
+        status: 'failed',
+        error: safeErrorMessage(error),
+      });
+      throw error;
+    }
+  }
+
+  /** T25 — full landscape analysis over the four-field paper view. */
+  async runLandscapeStage(runId: string): Promise<Landscape> {
+    const task = await this.requireTaskForStage(runId, 'landscape');
+    const factory = this.aiFactory as AiProviderFactory;
+
+    const yearFrom =
+      (task.stages['search']?.data as { yearFrom?: number } | undefined)?.yearFrom ??
+      new Date().getUTCFullYear() - 4;
+    const yearTo =
+      (task.stages['search']?.data as { yearTo?: number } | undefined)?.yearTo ??
+      new Date().getUTCFullYear();
+
+    await this.setStage(task, 'landscape', { status: 'running' });
+    try {
+      const { landscape, payload, provider, fallbackUsed } =
+        await runLandscapeAnalysis(factory, task.papers, {
+          direction: task.researchInterest ?? '',
+          yearFrom,
+          yearTo,
+        });
+
+      // The gap stage reads the raw payload; keep it alongside the parsed view.
+      await this.setStage(task, 'landscape', {
+        status: 'completed',
+        data: { landscape, payload },
+        provider,
+        fallbackUsed,
+      });
+      if (fallbackUsed) this.pushWarning(task, TOPIC_WARNINGS.aiFallbackUsed);
+
+      await this.persistStageArtifact(task.runId, 'landscape.json', {
+        landscape,
+        payload,
+      });
+      await this.persistStageArtifact(task.runId, 'landscape.md', landscape.diagnosis);
+      await this.persistStageArtifact(
+        task.runId,
+        'concept-dictionary.md',
+        landscape.conceptDictionary,
+      );
+      await this.persistStageArtifact(
+        task.runId,
+        'trend-matrix.md',
+        landscape.trendMatrix,
+      );
+      await this.persistStageArtifact(
+        task.runId,
+        'venue-preference.md',
+        landscape.venuePreference,
+      );
+      await this.persistStageArtifact(
+        task.runId,
+        'combination-matrix.md',
+        landscape.combinationMatrix,
+      );
+      return landscape;
+    } catch (error) {
+      await this.setStage(task, 'landscape', {
+        status: 'failed',
+        error: safeErrorMessage(error),
+      });
+      throw error;
+    }
+  }
+
+  /** T26 — project the landscape result into the gap view. */
+  async runResearchGapsStage(runId: string): Promise<ResearchGaps> {
+    const task = await this.requireTaskForStage(runId, 'research-gaps');
+    const landscapeStage = task.stages['landscape'];
+    const payload =
+      (landscapeStage?.data as { payload?: unknown } | undefined)?.payload ?? null;
+    if (!payload) throw new Error('LANDSCAPE_MISSING');
+
+    await this.setStage(task, 'research-gaps', { status: 'running' });
+    try {
+      const gaps = deriveResearchGaps(payload);
+      await this.setStage(task, 'research-gaps', {
+        status: 'completed',
+        data: gaps,
+        provider: landscapeStage?.provider,
+        fallbackUsed: landscapeStage?.fallbackUsed,
+      });
+      await this.persistStageArtifact(task.runId, 'research-gaps.json', gaps);
+      await this.persistStageArtifact(
+        task.runId,
+        'research-gaps.md',
+        renderResearchGapsMarkdown(gaps, task.researchInterest ?? ''),
+      );
+      return gaps;
+    } catch (error) {
+      await this.setStage(task, 'research-gaps', {
+        status: 'failed',
+        error: safeErrorMessage(error),
+      });
+      throw error;
+    }
+  }
+
+  /** Adds a warning once, preserving order. */
+  private pushWarning(task: ResearchTopicTask, warning: string): void {
+    if (!task.warnings.includes(warning)) task.warnings.push(warning);
   }
 
   private async persist(task: ResearchTopicTask, sourceQueries: Array<Record<string, unknown>>) {

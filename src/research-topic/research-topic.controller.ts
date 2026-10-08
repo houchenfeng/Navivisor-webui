@@ -59,6 +59,103 @@ export class ResearchTopicController {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // First-search analysis stages (T28). The UI polls `stages` and reads the
+  // rendered Markdown through `artifacts/:name`.
+  // ---------------------------------------------------------------------------
+
+  @Get('tasks/:runId/stages')
+  async getStages(@Param('runId') runId: string) {
+    this.assertRunId(runId);
+    try {
+      return await this.service.getStages(runId);
+    } catch {
+      throw new NotFoundException('检索任务不存在或已过期。');
+    }
+  }
+
+  @Post('tasks/:runId/relevance-check')
+  async runRelevanceCheck(@Param('runId') runId: string) {
+    this.assertRunId(runId);
+    try {
+      return await this.service.runRelevanceCheckStage(runId);
+    } catch (error) {
+      throw this.toStageError(error, {
+        RELEVANCE_ROUNDS_EXCEEDED: '相关度自检最多进行 3 轮。',
+        QUERY_PLAN_MISSING: '缺少检索式规划结果，无法自检。',
+        RUN_NOT_COMPLETED: '请先完成第一环节的文献检索。',
+        AI_PROVIDER_UNAVAILABLE: '当前没有可用的 AI 服务，无法执行相关度自检。',
+      });
+    }
+  }
+
+  @Post('tasks/:runId/venue-tiering')
+  async runVenueTiering(@Param('runId') runId: string) {
+    this.assertRunId(runId);
+    try {
+      return await this.service.runVenueTieringStage(runId);
+    } catch (error) {
+      throw this.toStageError(error, {
+        RUN_NOT_COMPLETED: '请先完成第一环节的文献检索。',
+        AI_PROVIDER_UNAVAILABLE: '当前没有可用的 AI 服务，无法执行期刊分层。',
+      });
+    }
+  }
+
+  @Post('tasks/:runId/landscape')
+  async runLandscape(@Param('runId') runId: string) {
+    this.assertRunId(runId);
+    try {
+      return await this.service.runLandscapeStage(runId);
+    } catch (error) {
+      throw this.toStageError(error, {
+        RUN_NOT_COMPLETED: '请先完成第一环节的文献检索。',
+        AI_PROVIDER_UNAVAILABLE: '当前没有可用的 AI 服务，无法执行态势分析。',
+      });
+    }
+  }
+
+  @Post('tasks/:runId/research-gaps')
+  async runResearchGaps(@Param('runId') runId: string) {
+    this.assertRunId(runId);
+    try {
+      return await this.service.runResearchGapsStage(runId);
+    } catch (error) {
+      throw this.toStageError(error, {
+        LANDSCAPE_MISSING: '请先完成研究态势分析。',
+        RUN_NOT_COMPLETED: '请先完成第一环节的文献检索。',
+        AI_PROVIDER_UNAVAILABLE: '当前没有可用的 AI 服务，无法识别研究空白。',
+      });
+    }
+  }
+
+  @Get('tasks/:runId/artifacts/:name')
+  async readArtifact(@Param('runId') runId: string, @Param('name') name: string) {
+    this.assertRunId(runId);
+    try {
+      const content = await this.service.readArtifact(runId, name);
+      return { name, content };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'INVALID_ARTIFACT_NAME') throw new BadRequestException('产物名称无效。');
+      if (message === 'RUN_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
+      throw new NotFoundException('产物不存在或尚未生成。');
+    }
+  }
+
+  private assertRunId(runId: string): void {
+    if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
+  }
+
+  /** Maps a stage failure message onto a 4xx with an operator-readable reason. */
+  private toStageError(error: unknown, messages: Record<string, string>): Error {
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'RUN_NOT_FOUND') return new NotFoundException('检索任务不存在或已过期。');
+    const known = messages[message];
+    if (known) return new BadRequestException(known);
+    return new BadRequestException('分析阶段执行失败，请稍后重试。');
+  }
+
   @Post('tasks/:runId/import')
   async importCoreLiterature(@Param('runId') runId: string, @Req() request: FastifyRequest) {
     if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
