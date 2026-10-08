@@ -33,6 +33,11 @@ import {
 } from './relevance-feedback';
 import { runVenueTiering } from './venue-tiering';
 import {
+  analyzeBatches,
+  synthesizeAnalysis,
+  type BatchProgress,
+} from './batch-analyzer';
+import {
   CANDIDATE_SYSTEM,
   buildCandidatePrompt,
   renderCandidateMarkdown,
@@ -810,6 +815,86 @@ export class ResearchTopicService implements OnModuleInit {
       });
       throw error;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Core-literature batch analysis (T39–T43). Resumable: a batch whose report
+  // already exists is skipped, so an interrupted run can be restarted cheaply.
+  // ---------------------------------------------------------------------------
+
+  private coreLiteratureDirectory(runId: string): string {
+    return join(OUTPUT_ROOT, runId, 'core-literature');
+  }
+
+  /** Runs 指令一 over every pending batch, then writes the progress file. */
+  async analyzeCoreLiterature(runId: string): Promise<BatchProgress> {
+    const task = await this.get(runId);
+    if (!task) throw new Error('RUN_NOT_FOUND');
+    if (!this.aiFactory) throw new Error('AI_PROVIDER_UNAVAILABLE');
+
+    const result = await analyzeBatches(this.aiFactory, {
+      runDirectory: this.coreLiteratureDirectory(runId),
+      direction: task.researchInterest ?? '',
+    });
+    return result.progress;
+  }
+
+  /** Reads the persisted batch progress for the UI poller. */
+  async getCoreAnalysis(runId: string): Promise<BatchProgress | null> {
+    const task = await this.get(runId);
+    if (!task) throw new Error('RUN_NOT_FOUND');
+    try {
+      return JSON.parse(
+        await readFile(
+          join(this.coreLiteratureDirectory(runId), 'analysis', 'progress.json'),
+          'utf8',
+        ),
+      ) as BatchProgress;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Reads one core-literature artifact by file name. */
+  async readCoreArtifact(runId: string, name: string): Promise<string> {
+    if (
+      !/^[A-Za-z0-9._-]+\.(md|json|csv|txt|bib)$/.test(name) ||
+      name.includes('..')
+    ) {
+      throw new Error('INVALID_ARTIFACT_NAME');
+    }
+    const task = await this.get(runId);
+    if (!task) throw new Error('RUN_NOT_FOUND');
+    const directory = this.coreLiteratureDirectory(task.runId);
+    // Analysis artifacts live one level down; everything else sits at the root.
+    for (const candidate of [
+      join(directory, 'analysis', name),
+      join(directory, name),
+    ]) {
+      try {
+        return await readFile(candidate, 'utf8');
+      } catch {
+        // Try the next location.
+      }
+    }
+    throw new Error('ARTIFACT_NOT_FOUND');
+  }
+
+  /** T41/T42 — 指令二 or the 降维 variant over the collected batch reports. */
+  async synthesizeCoreLiterature(
+    runId: string,
+    mode: 'meta' | 'feasible',
+  ): Promise<{ markdown: string; provider: 'codex' | 'http'; fallbackUsed: boolean }> {
+    const task = await this.get(runId);
+    if (!task) throw new Error('RUN_NOT_FOUND');
+    if (!this.aiFactory) throw new Error('AI_PROVIDER_UNAVAILABLE');
+
+    return synthesizeAnalysis(this.aiFactory, {
+      runDirectory: this.coreLiteratureDirectory(runId),
+      direction: task.researchInterest ?? '',
+      totalPapers: task.papers.length,
+      mode,
+    });
   }
 
   /** Adds a warning once, preserving order. */

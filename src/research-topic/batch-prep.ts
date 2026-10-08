@@ -102,6 +102,62 @@ export function renderCsv(
   return lines.join('\n');
 }
 
+/**
+ * Parses CSV text back into rows.
+ *
+ * Handles quoted fields containing commas, escaped double quotes and embedded
+ * newlines — `renderCsv` emits all three, so a naive `split(',')` would corrupt
+ * any title that contains a comma.
+ */
+export function parseCsvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (text[index + 1] === '"') {
+          field += '"';
+          index += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      row.push(field);
+      field = '';
+    } else if (char === '\n' || char === '\r') {
+      // Treat CRLF as one terminator.
+      if (char === '\r' && text[index + 1] === '\n') index += 1;
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += char;
+    }
+  }
+
+  // Flush the final field unless the text ended exactly on a newline.
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows.filter((entry) => entry.some((value) => value.trim() !== ''));
+}
+
 /** Escapes a BibTeX field value. */
 function bibField(value: string): string {
   return value.replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();

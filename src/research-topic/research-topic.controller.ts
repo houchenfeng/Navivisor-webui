@@ -143,6 +143,72 @@ export class ResearchTopicController {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Core-literature batch analysis (T43).
+  // ---------------------------------------------------------------------------
+
+  @Post('tasks/:runId/core-literature/analyze')
+  async analyzeCoreLiterature(@Param('runId') runId: string) {
+    this.assertRunId(runId);
+    try {
+      return await this.service.analyzeCoreLiterature(runId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'RUN_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
+      if (message === 'AI_PROVIDER_UNAVAILABLE') {
+        throw new BadRequestException('当前没有可用的 AI 服务，无法执行分批分析。');
+      }
+      throw new BadRequestException('分批分析执行失败，请稍后重试。');
+    }
+  }
+
+  @Get('tasks/:runId/core-literature/analysis')
+  async getCoreAnalysis(@Param('runId') runId: string) {
+    this.assertRunId(runId);
+    try {
+      const progress = await this.service.getCoreAnalysis(runId);
+      if (!progress) throw new NotFoundException('还没有分批分析进度。');
+      return progress;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new NotFoundException('检索任务不存在或已过期。');
+    }
+  }
+
+  @Post('tasks/:runId/core-literature/synthesize')
+  async synthesizeCoreLiterature(
+    @Param('runId') runId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    this.assertRunId(runId);
+    const body = (request.body ?? {}) as { mode?: string };
+    const mode = body.mode === 'feasible' ? 'feasible' : 'meta';
+    try {
+      return await this.service.synthesizeCoreLiterature(runId, mode);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'RUN_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
+      if (message === 'AI_PROVIDER_UNAVAILABLE') {
+        throw new BadRequestException('当前没有可用的 AI 服务，无法执行综合分析。');
+      }
+      throw new BadRequestException('综合分析执行失败，请先完成分批分析。');
+    }
+  }
+
+  @Get('tasks/:runId/core-literature/artifacts/:name')
+  async readCoreArtifact(@Param('runId') runId: string, @Param('name') name: string) {
+    this.assertRunId(runId);
+    try {
+      const content = await this.service.readCoreArtifact(runId, name);
+      return { name, content };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'INVALID_ARTIFACT_NAME') throw new BadRequestException('产物名称无效。');
+      if (message === 'RUN_NOT_FOUND') throw new NotFoundException('检索任务不存在或已过期。');
+      throw new NotFoundException('产物不存在或尚未生成。');
+    }
+  }
+
   private assertRunId(runId: string): void {
     if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new BadRequestException('任务标识无效。');
   }
