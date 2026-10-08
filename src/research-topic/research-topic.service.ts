@@ -32,6 +32,7 @@ import {
   runRelevanceCheck,
 } from './relevance-feedback';
 import { runVenueTiering } from './venue-tiering';
+import { buildCorePackInput } from './core-collect';
 import {
   analyzeBatches,
   synthesizeAnalysis,
@@ -239,14 +240,45 @@ export class ResearchTopicService implements OnModuleInit {
       coreSourceQueries.push({ source: 'query-translation', status: translation.status, terms: translation.terms, reason: translation.reason ?? null });
       const queryPlan = buildOpenAlexQueryPlan(coreSearchText, { translatedTerms: translation.terms });
       const papers = await this.searchCorePapers(coreSearchText, 100, coreSourceQueries, translation.terms);
-      await writeFile(join(inputDirectory, 'papers.json'), JSON.stringify(papers, null, 2), 'utf8');
-      await writeFile(configPath, JSON.stringify({
-        runId: task.coreRunId, confirmedTopic,
-        selection: { targetCount: 100, rankingRule: 'OpenAlex relevance order' },
-        pdfPolicy: { allowedPdfHosts: ['content.openalex.org', 'arxiv.org', 'europepmc.org', 'pmc.ncbi.nlm.nih.gov'], maxBytes: 25 * 1024 * 1024 },
-        downloadPolicy: { targetSuccessfulPdfs: 100, maxCandidatesToAttempt: 100, maxWorkers: 4, maxWorkersPerHost: 2 },
-        sourcePolicy: { allowedHosts: ['api.openalex.org'] }, queries: coreSourceQueries.length > 0 ? coreSourceQueries : [{ source: 'OpenAlex', oql: queryPlan.oql, includeTerms: queryPlan.includeTerms, excludeTitleTerms: queryPlan.excludeTitleTerms, targetCount: 100 }],
-      }, null, 2), 'utf8');
+      // Assign the RE ids here so the packer and the batch analyzer agree on
+      // how a paper is referenced; targetCount reflects what we actually have,
+      // not what we originally asked for.
+      // searchCorePapers already emits the packer's field names; add the RE id
+      // so the packer and the batch analyzer reference papers identically.
+      const numbered = papers.map((paper, index) => ({
+        refId: `RE${String(index + 1).padStart(3, '0')}`,
+        ...paper,
+      }));
+      await writeFile(
+        join(inputDirectory, 'papers.json'),
+        JSON.stringify(numbered, null, 2),
+        'utf8',
+      );
+      await writeFile(
+        configPath,
+        JSON.stringify(
+          buildCorePackInput({
+            runId: task.coreRunId ?? task.runId,
+            confirmedTopic,
+            paperCount: numbered.length,
+            sourceQueries:
+              coreSourceQueries.length > 0
+                ? coreSourceQueries
+                : [
+                    {
+                      source: 'OpenAlex',
+                      oql: queryPlan.oql,
+                      includeTerms: queryPlan.includeTerms,
+                      excludeTitleTerms: queryPlan.excludeTitleTerms,
+                      targetCount: numbered.length,
+                    },
+                  ],
+          }),
+          null,
+          2,
+        ),
+        'utf8',
+      );
       await new Promise<void>((resolve) => {
         const child = spawn('python', [scriptPath, '--config', configPath, '--mode', 'run', '--input-dir', inputDirectory, '--output-dir', runDirectory, '--download-oa'], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
         let stderr = ''; child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
