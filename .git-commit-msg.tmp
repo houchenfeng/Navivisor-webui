@@ -1,0 +1,28 @@
+refactor(topic-web): split topic-page.tsx into four files (v0.16.0)
+
+The file had reached 48 KB and 435 lines. Nothing about it was wrong, but two
+of its components were single lines over 3 KB, which is not reviewable and not
+diffable.
+
+topic-page.tsx (17 KB)      — orchestration: page state, run start, polling.
+topic-page-steps.tsx        — the three step screens and their sub-components.
+topic-page-utils.ts         — parsing, sizing, draft persistence, poll loops.
+topic-page-primitives.tsx   — the shared empty/loading block.
+
+Primitives gets its own file rather than living with the steps because both the
+steps and the page import it; it would otherwise force a circular direction.
+
+The split is pure movement. No behaviour changed.
+
+Before moving anything, TopicPage got seven smoke tests — it had none, so a
+refactor of this size would have been unverifiable. They assert outward
+behaviour (which step renders, what the nav does, that typed input survives a
+step change) rather than internals, so they keep holding after the split.
+
+Writing them surfaced behaviour that was not documented anywhere: on a first
+visit a primer dialog covers the page, and the three-step nav is not reachable
+until it is dismissed. It is gated on a localStorage key. That is now covered
+by a test rather than left as a surprise for whoever reads the file next.
+
+Verification: frontend 283/283 tests pass (25 files), `vite build` and
+`tsc --noEmit` clean.
