@@ -16,7 +16,7 @@
 
 | 阶段 | 责任 | 数量策略 | 工具与说明 |
 | --- | --- | --- | --- |
-| `first-search` | 研究方向 -> 元数据/摘要 -> 三个待核验候选题 | `targetCount` 300–800，默认 300 | [`first-search/README.md`](./first-search/README.md) |
+| `first-search` | 研究方向 -> 元数据/摘要 -> 三个待核验候选题 | `targetCount` 100–800，默认 300 | [`first-search/README.md`](./first-search/README.md) |
 | `core-literature` | 确认课题 -> 核心文献/Bib/合法 OA PDF -> 实验交接包 | `targetCount` 100–300，默认 100 | [`core-literature/README.md`](./core-literature/README.md) |
 
 第一阶段的 OpenAlex 分页 MVP 位于 `src/research-topic/`；本目录的 `first-search/` 提供跨来源、候选题和离线契约工具。第二阶段只在用户确认课题后执行。PDF 数量独立于核心文献数量，绝不承诺每篇均可合法获取全文。
@@ -26,7 +26,7 @@
 - `contract.md`：两种来源的共同格式。
 - `openalex/`：已验证的默认来源说明与不联网 dry-run 配置。
 - `scopus/`：待授权来源适配规范，不包含伪可运行下载器。
-- `first-search/`：300–800 篇首次检索的协议验证工具。
+- `first-search/`：100–800 篇首次检索的协议验证工具（低于 100 记 `insufficient_results`）。
 - `core-literature/`：100–300 篇核心文献与合法 OA PDF 打包工具。
 
 当前项目已在 `src/research-topic/` 接通 OpenAlex 分页试检索：默认目标 300，最多 800；页面只预览前 20 条，完整计数与 CSV 写入运行目录。它不生成候选题，不接入 Scopus，不下载 PDF/Bib，也不调用 Codex CLI。

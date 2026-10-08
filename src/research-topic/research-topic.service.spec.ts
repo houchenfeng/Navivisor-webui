@@ -8,11 +8,14 @@ describe('ResearchTopicService', () => {
     vi.restoreAllMocks();
   });
 
-  it('defaults to 300 and rejects targets outside 300-800', () => {
+  it('defaults to 300 and rejects targets outside 100-800', () => {
     expect(validateFirstSearchInput({ researchInterest: 'computer vision' }).targetCount).toBe(300);
     expect(validateFirstSearchInput({ researchInterest: 'computer vision', targetCount: 300 }).targetCount).toBe(300);
     expect(validateFirstSearchInput({ researchInterest: 'computer vision', targetCount: 800 }).targetCount).toBe(800);
-    expect(() => validateFirstSearchInput({ researchInterest: 'computer vision', targetCount: 299 })).toThrow('INVALID_LIMIT');
+    // Narrow directions legitimately yield far fewer than 300 papers, so the
+    // floor is 100; below it the run is flagged insufficient_results.
+    expect(validateFirstSearchInput({ researchInterest: 'computer vision', targetCount: 100 }).targetCount).toBe(100);
+    expect(() => validateFirstSearchInput({ researchInterest: 'computer vision', targetCount: 99 })).toThrow('INVALID_LIMIT');
     expect(() => validateFirstSearchInput({ researchInterest: 'computer vision', targetCount: 801 })).toThrow('INVALID_LIMIT');
   });
 

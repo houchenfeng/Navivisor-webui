@@ -6,13 +6,27 @@ import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import type {
   FirstSearchInput,
+  FirstSearchStage,
+  QueryPlanArtifact,
   ResearchTopicManifest,
   ResearchTopicPaper,
   ResearchTopicTask,
   ResearchTopicCandidate,
+  StageState,
 } from './research-topic.types';
-import { buildOpenAlexQueryPlan, buildOpenAlexQueryPlans } from './openalex-query';
+import { FIRST_SEARCH_STAGES, TOPIC_WARNINGS } from './research-topic.types';
+import {
+  buildOpenAlexQueryPlan,
+  buildOpenAlexQueryPlans,
+  buildOpenAlexQueryPlansWithAi,
+  type OpenAlexQueryPlan,
+} from './openalex-query';
 import { translateResearchInterest } from './query-translation';
+// Must be a value import: NestJS resolves constructor dependencies at runtime,
+// and `import type` is erased by the compiler.
+import { AiProviderFactory } from './ai/ai-provider.factory';
+import { searchArxiv, type ArxivPaper } from './arxiv-client';
+import { toArxivQuery } from './query-renderers';
 import { ResearchWorkspaceService } from '../research-workflow/research-workspace.service';
 
 const OPENALEX_API_URL = 'https://api.openalex.org/';
@@ -20,8 +34,23 @@ const OUTPUT_ROOT = join(process.cwd(), 'work', 'research-topic', 'runs');
 const MAX_INTEREST_LENGTH = 2000;
 const MAX_CONTEXT_LENGTH = 4000;
 const DEFAULT_TARGET_COUNT = 300;
-const MIN_TARGET_COUNT = 300;
+/**
+ * A narrow research direction legitimately yields far fewer than 300 papers.
+ * 100 is the floor at which the downstream landscape/gap analysis still has
+ * enough signal; below it the run is marked `insufficient_results` instead of
+ * being padded with fabricated data.
+ */
+const MIN_TARGET_COUNT = 100;
 const MAX_TARGET_COUNT = 800;
+/** Runs below this count are usable but flagged. */
+const MIN_ACCEPTABLE_COUNT = 100;
+
+/** Fresh per-stage state for a newly created task. */
+function createEmptyStages(): Record<FirstSearchStage, StageState<unknown>> {
+  return Object.fromEntries(
+    FIRST_SEARCH_STAGES.map((stage) => [stage, { status: 'idle' as const }]),
+  ) as Record<FirstSearchStage, StageState<unknown>>;
+}
 const PREVIEW_COUNT = 20;
 const PAGE_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 15000;
@@ -37,7 +66,51 @@ type OpenAlexPayload = {
 export class ResearchTopicService implements OnModuleInit {
   private readonly tasks = new Map<string, ResearchTopicTask>();
 
-  constructor(private readonly config?: ConfigService, private readonly workspaces?: ResearchWorkspaceService) {}
+  constructor(
+    private readonly config?: ConfigService,
+    private readonly workspaces?: ResearchWorkspaceService,
+    private readonly aiFactory?: AiProviderFactory,
+  ) {}
+
+  /**
+   * Marks a stage running/completed/failed and mirrors the state into the task
+   * so `GET /tasks/:runId/stages` (and the UI cards) can read it.
+   */
+  private async setStage<T>(
+    task: ResearchTopicTask,
+    stage: FirstSearchStage,
+    update: Partial<StageState<T>>,
+  ): Promise<void> {
+    const current = task.stages[stage] ?? { status: 'idle' as const };
+    const next: StageState<unknown> = { ...current, ...update };
+    if (update.status === 'running' && !next.startedAt) {
+      next.startedAt = new Date().toISOString();
+    }
+    if (['completed', 'failed'].includes(String(update.status))) {
+      next.finishedAt = new Date().toISOString();
+    }
+    task.stages[stage] = next;
+    task.updatedAt = new Date().toISOString();
+  }
+
+  /** Writes a stage's JSON payload next to the other first-search artifacts. */
+  private async persistStageArtifact(
+    runId: string,
+    name: string,
+    payload: unknown,
+  ): Promise<void> {
+    try {
+      const directory = join(OUTPUT_ROOT, runId, 'first-search');
+      await mkdir(directory, { recursive: true });
+      await writeFile(
+        join(directory, name),
+        JSON.stringify(payload, null, 2),
+        'utf8',
+      );
+    } catch {
+      // Artifact persistence is best-effort; the in-memory stage state remains.
+    }
+  }
 
   async onModuleInit(): Promise<void> {
     try {
@@ -70,6 +143,8 @@ export class ResearchTopicService implements OnModuleInit {
       updatedAt: now,
       cancelRequested: false,
       candidateStatus: 'idle',
+      stages: createEmptyStages(),
+      warnings: [],
     };
     this.tasks.set(runId, task);
     void this.execute(task, input);
@@ -170,10 +245,14 @@ export class ResearchTopicService implements OnModuleInit {
     return papers.map((paper) => ({ ...paper, year: paper.publicationYear, sourceUrl: paper.landingUrl, openAccessUrl: paper.pdfUrl, isOpenAccess: Boolean(paper.isOpenAccess), pdfUrl: paper.pdfUrl }));
   }
 
-  private async searchAdaptivePapers(input: string, target: number, sourceQueries: Array<Record<string, unknown>>, task?: ResearchTopicTask, dateFilter?: string, translatedTerms: string[] = []): Promise<ResearchTopicPaper[]> {
+  private async searchAdaptivePapers(input: string, target: number, sourceQueries: Array<Record<string, unknown>>, task?: ResearchTopicTask, dateFilter?: string, translatedTerms: string[] = [], plansOverride?: OpenAlexQueryPlan[]): Promise<ResearchTopicPaper[]> {
     const papers: ResearchTopicPaper[] = [];
     const seenKeys = new Set<string>();
-    const plans = buildOpenAlexQueryPlans(input, { translatedTerms });
+    // The AI planner's tiers are preferred; the deterministic fallback only
+    // runs when no planner output was supplied.
+    const plans = plansOverride?.length
+      ? plansOverride
+      : buildOpenAlexQueryPlans(input, { translatedTerms });
     for (const [planIndex, plan] of plans.entries()) {
       let cursor: string | null | undefined = '*';
       let page = 0;
@@ -311,7 +390,109 @@ export class ResearchTopicService implements OnModuleInit {
       }
       const translation = await translateResearchInterest(input.researchInterest);
       sourceQueries.push({ source: 'query-translation', status: translation.status, terms: translation.terms, reason: translation.reason ?? null });
-      const papers = await this.searchAdaptivePapers(input.researchInterest, input.targetCount, sourceQueries, task, dateFilter, translation.terms);
+
+      const currentYear = new Date().getUTCFullYear();
+      const yearFrom = input.yearRange?.from ?? currentYear - 4;
+      const yearTo = input.yearRange?.to ?? currentYear;
+
+      // ---- stage: query-plan -------------------------------------------------
+      await this.setStage(task, 'query-plan', { status: 'running' });
+      let aiPlans: OpenAlexQueryPlan[] | undefined;
+      let arxivQuery = '';
+      if (this.aiFactory) {
+        const planned = await buildOpenAlexQueryPlansWithAi(
+          this.aiFactory,
+          input.researchInterest,
+          { translatedTerms: translation.terms, yearFrom, yearTo },
+        );
+        aiPlans = planned.plans;
+        if (planned.plan) {
+          arxivQuery = toArxivQuery(planned.plan);
+          const artifact: QueryPlanArtifact = {
+            ...planned.plan,
+            openalexOql: planned.plans[0]?.oql ?? '',
+            arxivQuery,
+          };
+          await this.setStage(task, 'query-plan', {
+            status: 'completed',
+            data: artifact,
+            provider: planned.plan.provider,
+            fallbackUsed: planned.plan.fallbackUsed,
+          });
+          await this.persistStageArtifact(task.runId, 'query-plan.json', artifact);
+          if (planned.plan.fallbackUsed) task.warnings.push(TOPIC_WARNINGS.aiFallbackUsed);
+        } else {
+          // The planner degraded to keyword extraction — record why, do not hide it.
+          task.warnings.push(TOPIC_WARNINGS.queryPlanFallback);
+          await this.setStage(task, 'query-plan', {
+            status: 'completed',
+            data: { source: 'fallback', reason: planned.reason ?? null },
+          });
+          await this.persistStageArtifact(task.runId, 'query-plan.json', {
+            source: 'fallback',
+            reason: planned.reason ?? null,
+            plans: planned.plans,
+          });
+        }
+      } else {
+        task.warnings.push(TOPIC_WARNINGS.queryPlanFallback);
+        await this.setStage(task, 'query-plan', {
+          status: 'completed',
+          data: { source: 'fallback', reason: 'AI provider 未接入' },
+        });
+      }
+
+      // ---- stage: search -----------------------------------------------------
+      await this.setStage(task, 'search', { status: 'running' });
+      const [openAlexPapers, arxivPapers] = await Promise.all([
+        this.searchAdaptivePapers(
+          input.researchInterest,
+          input.targetCount,
+          sourceQueries,
+          task,
+          dateFilter,
+          translation.terms,
+          aiPlans,
+        ),
+        arxivQuery
+          ? searchArxiv(arxivQuery, { maxResults: 100 }).catch((error) => {
+              sourceQueries.push({
+                source: 'arXiv',
+                query: arxivQuery,
+                status: 'failed',
+                reason: safeErrorMessage(error),
+              });
+              return [];
+            })
+          : Promise.resolve([]),
+      ]);
+
+      if (arxivPapers.length) {
+        sourceQueries.push({
+          source: 'arXiv',
+          query: arxivQuery,
+          returned: arxivPapers.length,
+          status: 'completed',
+        });
+      }
+
+      const papers = mergeTopicPapers(openAlexPapers, arxivPapers, yearFrom, yearTo);
+      await this.setStage(task, 'search', {
+        status: 'completed',
+        data: {
+          openalex: openAlexPapers.length,
+          arxiv: arxivPapers.length,
+          merged: papers.length,
+          yearFrom,
+          yearTo,
+        },
+      });
+
+      if (papers.length < MIN_ACCEPTABLE_COUNT) {
+        // Record the shortfall instead of padding the pool with fabricated data.
+        task.warnings.push(TOPIC_WARNINGS.insufficientResults);
+      }
+
       if (task.cancelRequested) task.status = 'cancelled';
       task.papers = papers;
       task.counts.papers = papers.length;
@@ -416,6 +597,7 @@ export class ResearchTopicService implements OnModuleInit {
         runId, researchInterest: undefined, researchContext: undefined, status: manifest.status, files: manifest.files, errors: manifest.errors ?? [], papers,
         counts: manifest.counts, createdAt: manifest.createdAt, updatedAt: manifest.createdAt,
         cancelRequested: false, candidateStatus: 'idle',
+        stages: createEmptyStages(), warnings: manifest.warnings ?? [],
       };
       try {
         const input = JSON.parse(await readFile(join(directory, 'input.json'), 'utf8')) as { researchInterest?: string; context?: string };
@@ -567,4 +749,65 @@ export function validateFirstSearchInput(value: unknown): FirstSearchInput {
 function deduplicationKey(paper: ResearchTopicPaper): string {
   const doi = paper.doi.trim().toLowerCase().replace(/^https?:\/\/doi\.org\//, '');
   return doi ? `doi:${doi}` : `openalex:${paper.openalexId.toLowerCase()}`;
+}
+
+/** Converts an arXiv entry into the topic module's paper shape. */
+function arxivPaperToTopicPaper(paper: ArxivPaper): ResearchTopicPaper {
+  return {
+    openalexId: `arxiv:${paper.arxivId}`,
+    title: paper.title,
+    authors: paper.authors,
+    institutions: [],
+    source: paper.primaryCategory
+      ? `arXiv (${paper.primaryCategory})`
+      : 'arXiv',
+    publicationYear: paper.published
+      ? Number(paper.published.slice(0, 4)) || null
+      : null,
+    citedByCount: 0,
+    abstract: paper.abstract,
+    doi: '',
+    landingUrl: paper.id,
+    sourceStatus: 'openalex_public_api',
+    isOpenAccess: true,
+    pdfUrl: paper.pdfUrl,
+  };
+}
+
+/**
+ * Merges OpenAlex and arXiv results into one deduplicated pool.
+ *
+ * Deduplication prefers DOI, then OpenAlex id, then arXiv id; the arXiv entry
+ * is dropped when an OpenAlex record for the same work is already present.
+ * Papers outside the year window are excluded rather than silently kept.
+ */
+export function mergeTopicPapers(
+  openAlexPapers: ResearchTopicPaper[],
+  arxivPapers: ArxivPaper[],
+  yearFrom: number,
+  yearTo: number,
+): ResearchTopicPaper[] {
+  const merged: ResearchTopicPaper[] = [];
+  const seen = new Set<string>();
+
+  const inWindow = (paper: ResearchTopicPaper): boolean =>
+    paper.publicationYear === null ||
+    (paper.publicationYear >= yearFrom && paper.publicationYear <= yearTo);
+
+  const push = (paper: ResearchTopicPaper): void => {
+    if (!paper.title || !inWindow(paper)) return;
+    const key = deduplicationKey(paper);
+    // arXiv entries carry no DOI, so a normalized title is the only way to spot
+    // the same work arriving from both sources.
+    const titleKey = `title:${paper.title.toLowerCase().replace(/[^a-z0-9]+/g, '')}`;
+    if (seen.has(key) || seen.has(titleKey)) return;
+    seen.add(key);
+    seen.add(titleKey);
+    merged.push(paper);
+  };
+
+  for (const paper of openAlexPapers) push(paper);
+  for (const paper of arxivPapers) push(arxivPaperToTopicPaper(paper));
+
+  return merged;
 }

@@ -16,7 +16,7 @@ OpenAlex 与 Scopus 都实现同一个“第一次文献检索”任务。来源
 }
 ```
 
-`sourcePolicy` 表达来源选择，不等于权限已具备。第一次检索的 `selection.targetCount` 必须为 300–800，默认 300；第二阶段核心文献打包的 `selection.targetCount` 必须为 100–300，默认 100。来源可以扩展自己的配置，例如 OpenAlex 的会议 source、OQL 或分页选项；Scopus 的 API 版本、检索字段和权限状态也必须作为适配器配置保存。
+`sourcePolicy` 表达来源选择，不等于权限已具备。第一次检索的 `selection.targetCount` 必须为 100–800，默认 300，低于 100 记 `insufficient_results`；第二阶段核心文献打包的 `selection.targetCount` 必须为 100–300，默认 100。来源可以扩展自己的配置，例如 OpenAlex 的会议 source、OQL 或分页选项；Scopus 的 API 版本、检索字段和权限状态也必须作为适配器配置保存。
 
 ## 状态
 
