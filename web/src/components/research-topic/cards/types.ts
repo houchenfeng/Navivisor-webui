@@ -68,8 +68,92 @@ export type CandidateTopic = {
   rationale: string;
 };
 
+/** One combination tried during core-literature retrieval (T29). */
+export type CoreCombinationHit = {
+  id: 'A+B+C' | 'A+B' | 'A+C' | 'B+C' | 'A';
+  reason: string;
+  oql: string;
+  found: number;
+  accepted: number;
+};
+
+export type SeedPaper = {
+  refId: string;
+  title: string;
+  venue: string;
+  year: number | null;
+  citedByCount: number;
+  openalexWorkId: string | null;
+};
+
+export type ReverseCitationHit = {
+  seedWorkId: string;
+  title: string;
+  venue: string;
+  year: number | null;
+};
+
+export type PaperScore = {
+  refId: string;
+  title: string;
+  score: 0 | 1 | 2 | 3 | 4 | 5;
+  relevant: boolean;
+  reason: string;
+  transferable: boolean;
+  baselineCandidate: boolean;
+};
+
+export type FallbackAttempt = {
+  index: number;
+  kind: 'combination' | 'year-window' | 'document-type' | 'score-threshold';
+  label: string;
+  found: number;
+  accepted: number;
+  stopped: boolean;
+};
+
+export type BaselineCandidate = {
+  title: string;
+  method: string;
+  metrics: string;
+  dataset: string;
+  codeUrl: string;
+  whyTransferable: string;
+  /** True when this came from the mechanical citation-count pick. */
+  fallback: boolean;
+};
+
+export type PdfDownloadReport = {
+  succeeded: number;
+  failed: number;
+  failures: Array<{ refId: string; reason: string }>;
+};
+
+export type BatchPrepSummary = {
+  totalPapers: number;
+  batchSize: number;
+  batchCount: number;
+  firstRefId: string;
+  lastRefId: string;
+};
+
+export type BatchAnalysisEntry = {
+  index: number;
+  refIdRange: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  error?: string;
+  /** Optional preview extracted from the matrix artifact. */
+  matrixPreview?: string;
+};
+
 /** Narrows an opaque stage payload without throwing on a shape mismatch. */
 export function asStageData<T>(value: unknown): T | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as T;
+}
+
+/** Formats a 0..1 ratio as a percentage, tolerating an out-of-range value. */
+export function formatRatio(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return `${(Math.min(1, Math.max(0, value)) * 100).toFixed(1)}%`;
 }
