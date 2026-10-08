@@ -32,6 +32,11 @@ import {
   runRelevanceCheck,
 } from './relevance-feedback';
 import { runVenueTiering } from './venue-tiering';
+import {
+  CANDIDATE_SYSTEM,
+  buildCandidatePrompt,
+  renderCandidateMarkdown,
+} from './candidate-topics';
 import { runLandscapeAnalysis } from './landscape-analysis';
 import {
   deriveResearchGaps,
@@ -303,76 +308,77 @@ export class ResearchTopicService implements OnModuleInit {
   }
 
   private async executeCandidateGeneration(task: ResearchTopicTask): Promise<void> {
-    const inputPath = join(OUTPUT_ROOT, task.runId, 'first-search', 'first-search-papers.csv');
+    const firstSearchDir = join(OUTPUT_ROOT, task.runId, 'first-search');
+    const inputPath = join(firstSearchDir, 'first-search-papers.csv');
     const outputDirectory = join(OUTPUT_ROOT, task.runId, 'candidates');
-    const outputPath = join(outputDirectory, 'codex-output.json');
-    try {
-      await mkdir(outputDirectory, { recursive: true });
-    } catch (error) {
-      task.candidateStatus = 'failed';
-      task.candidateError = `无法准备 Codex CLI 输出目录：${error instanceof Error ? error.message : '未知错误'}`;
-      task.updatedAt = new Date().toISOString();
-      await this.persistCandidateState(task);
-      return;
-    }
+
     task.candidateStatus = 'running';
     task.updatedAt = new Date().toISOString();
     await this.persistCandidateState(task);
 
-    const prompt = [
-      '你是启航科研智能体的开题候选课题分析器。',
-      `请读取本地 CSV：${inputPath}`,
-      `用户最初填写的研究方向：${task.researchInterest ?? '未保存'}`,
-      task.researchContext ? `用户补充上下文：${task.researchContext}` : '用户没有补充上下文。',
-      'CSV 是第一环节从 OpenAlex 公开 API 检索并去重后的文献元数据，可能有几百条；只能把它当作证据，不得补写不存在的论文、作者、DOI、指标或实验结果。',
-      '请生成且只生成三个候选课题，分类必须分别为“偏可行”“偏创新”“较平衡”。每个课题必须严格包含：title、oneSentenceDefinition、researchDesign、expectedInnovation、rationale。',
-      'oneSentenceDefinition 是一句话定义；researchDesign 必须具体写出技术路线、数据集、对比/消融实验和评测指标；expectedInnovation 要写成待验证的候选创新性与实际价值；rationale 必须引用 CSV 中可定位的论文标题或 OpenAlex ID，如果摘要或证据不足，要明确写“待核验”，不能猜测。',
-      '请只输出一个 JSON 对象，不要 Markdown，不要解释。格式：{"candidates":[{"label":"偏可行","title":"...","oneSentenceDefinition":"...","researchDesign":"...","expectedInnovation":"...","rationale":"..."},{"label":"偏创新",...},{"label":"较平衡",...}]}',
-    ].join('\n');
+    try {
+      await mkdir(outputDirectory, { recursive: true });
+      if (!this.aiFactory) throw new Error('AI_PROVIDER_UNAVAILABLE');
 
-    await new Promise<void>((resolve) => {
-      const child = spawn('codex', [
-        'exec',
-        '--cd', process.cwd(),
-        '--sandbox', 'read-only',
-        '--skip-git-repo-check',
-        '--output-last-message', outputPath,
-        prompt,
-      ], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
-      let stderr = '';
-      child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
-      child.on('error', (error) => {
-        task.candidateStatus = 'failed';
-        task.candidateError = error.message.includes('ENOENT') ? '本机未找到 Codex CLI，请先确认 codex 已加入 PATH。' : `Codex CLI 启动失败：${error.message}`;
-        task.updatedAt = new Date().toISOString();
-        void this.persistCandidateState(task);
-        resolve();
+      // Upstream analysis is advisory: a run that skipped it still produces
+      // candidates, just with less grounding.
+      const gaps = await this.readOptionalArtifact(firstSearchDir, 'research-gaps.md');
+      const landscape = await this.readOptionalArtifact(firstSearchDir, 'landscape.md');
+      const venueTiers = await this.readOptionalArtifact(firstSearchDir, 'venue-tiers.md');
+
+      const prompt = buildCandidatePrompt({
+        direction: task.researchInterest ?? '未保存',
+        context: task.researchContext,
+        csvPath: inputPath,
+        gapsMarkdown: gaps,
+        landscapeMarkdown: landscape,
+        venueTiersMarkdown: venueTiers,
       });
-      child.on('close', async (code) => {
-        if (code !== 0) {
-          task.candidateStatus = 'failed';
-          task.candidateError = `Codex CLI 未完成候选课题生成（退出码 ${code ?? '未知'}）。${stderr.trim() ? ` ${stderr.trim().slice(-300)}` : ''}`;
-          task.updatedAt = new Date().toISOString();
-          await this.persistCandidateState(task);
-          resolve();
-          return;
-        }
-        try {
-          const raw = await readFile(outputPath, 'utf8');
-          const parsed = parseCandidates(raw);
-          task.candidates = parsed;
-          task.candidateStatus = 'completed';
-          task.updatedAt = new Date().toISOString();
-          await this.persistCandidateState(task);
-        } catch (error) {
-          task.candidateStatus = 'failed';
-          task.candidateError = error instanceof Error ? error.message : 'Codex 输出无法解析，请重试。';
-          task.updatedAt = new Date().toISOString();
-          await this.persistCandidateState(task);
-        }
-        resolve();
+
+      const completion = await this.aiFactory.complete(prompt, {
+        system: CANDIDATE_SYSTEM,
+        timeoutMs: 300_000,
       });
-    });
+
+      const parsed = parseCandidates(completion.text);
+      task.candidates = parsed;
+      task.candidateStatus = 'completed';
+      task.updatedAt = new Date().toISOString();
+
+      // Keep the raw model output next to the rendered view for auditing.
+      await writeFile(join(outputDirectory, 'codex-output.json'), completion.text, 'utf8');
+      await this.persistStageArtifact(
+        task.runId,
+        'candidate-topics.md',
+        renderCandidateMarkdown(parsed, task.researchInterest ?? ''),
+      );
+      await this.setStage(task, 'candidates', {
+        status: 'completed',
+        data: parsed,
+        provider: completion.provider,
+        fallbackUsed: completion.fallbackUsed,
+      });
+      if (completion.fallbackUsed) this.pushWarning(task, TOPIC_WARNINGS.aiFallbackUsed);
+      await this.persistCandidateState(task);
+    } catch (error) {
+      task.candidateStatus = 'failed';
+      task.candidateError = safeErrorMessage(error);
+      task.updatedAt = new Date().toISOString();
+      await this.setStage(task, 'candidates', {
+        status: 'failed',
+        error: task.candidateError,
+      });
+      await this.persistCandidateState(task);
+    }
+  }
+
+  /** Reads an artifact when present; a missing file is not an error here. */
+  private async readOptionalArtifact(directory: string, name: string): Promise<string> {
+    try {
+      return await readFile(join(directory, name), 'utf8');
+    } catch {
+      return '';
+    }
   }
 
   async get(runId: string): Promise<ResearchTopicTask | undefined> {
