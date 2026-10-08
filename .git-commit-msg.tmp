@@ -1,0 +1,39 @@
+feat(core-literature): replace the single-byte PDF check with four (v0.15.0)
+
+The old check read five bytes and stopped. A five-byte file passed, and a
+truncated download passed too. That is worse than a reported failure: the file
+lands in pdf/, the analyst downstream opens it, finds nothing readable, and the
+paper gets blamed for being unparseable when it was never downloaded.
+
+validate_pdf_bytes now applies four checks, each returning a distinct reason so
+the failure report names the actual problem:
+
+1. `%PDF-` header — catches an HTML error page wearing a .pdf extension.
+2. Minimum size — catches a stub that is technically a header and nothing else.
+3. `%%EOF` within the last 2 KB — catches truncation. The window matters
+   because writers append metadata after the marker.
+4. `/Type` or `trailer` present — catches a header glued onto foreign bytes.
+   PDF 1.5+ cross-reference streams still carry `/Type`, so this does not
+   reject them.
+
+The same function now backs both paths. Previously `valid_pdf` checked five
+bytes on disk while the download path checked the header only — two different
+standards, which meant a corrupt file left by an interrupted run was accepted
+as "already downloaded" and never refetched.
+
+All four new reasons are terminal: retrying a URL cannot fix bytes the server
+sent.
+
+Frontend: the card printed machine codes (`pdf_truncated`) at the operator.
+`describeDownloadFailure` maps each code to a sentence, matched by prefix so
+`unexpected_content_type:text/html` still resolves. The raw code is kept
+alongside the translation, but only when a translation exists — otherwise a
+reason already written in prose would print twice. The card's description of
+the checks was also stale (it still said "four checks" and listed the old
+ones) and now matches what the script actually does.
+
+Also swept research-topic for demo/mock/TODO residue: none found.
+
+Tests: 13 Python (stdlib unittest, no new dependency) + 3 frontend.
+Verification: frontend 276/276 (24 files), Python 13/13, `vite build` and
+`tsc --noEmit` clean.

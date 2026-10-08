@@ -13,17 +13,41 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 FIELDS = ["direction", "openalexId", "paper_id", "title", "authors", "source", "year", "doi", "abstract", "bibKey", "pdfPath", "pdf_path", "downloadStatus", "sourceUrl"]
-TERMINAL_PREFIXES = ("http_error_401", "http_error_403", "http_error_404", "http_error_410", "unexpected_content_type", "invalid_pdf_content", "pdf_too_large", "pdf_host_not_allowlisted", "pdf_url_not_https")
+TERMINAL_PREFIXES = ("http_error_401", "http_error_403", "http_error_404", "http_error_410", "unexpected_content_type", "invalid_pdf_content", "invalid_pdf_header", "pdf_too_small", "pdf_truncated", "pdf_no_structure", "pdf_too_large", "pdf_host_not_allowlisted", "pdf_url_not_https")
+# A real PDF is never this small; anything shorter is an error page wearing a
+# .pdf extension.
+MIN_PDF_BYTES = 1024
+# Writers may append metadata after %%EOF, so the marker is searched in the
+# tail rather than required to be the last bytes.
+PDF_EOF_WINDOW = 2048
 
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def text(value): return "; ".join(map(str, value)) if isinstance(value, list) else ("" if value is None else str(value))
 def bib_text(value): return " and ".join(map(str, value)) if isinstance(value, list) else text(value)
 def bib_escape(value): return bib_text(value).replace("\\", "\\textbackslash ").replace("{", "\\{").replace("}", "\\}").replace("&", "\\&").replace("%", "\\%").replace("_", "\\_")
+def validate_pdf_bytes(data):
+    """
+    Four checks, one per way a PDF download goes wrong.
+
+    Reading only the first five bytes accepts a five-byte file, and accepting a
+    truncated file is worse than reporting a failure: the analyst downstream
+    reads an empty document and reports a paper as unreadable rather than
+    undownloaded. Each check returns a distinct reason so the failure report
+    names the actual problem.
+    """
+    if not data.startswith(b"%PDF-"): return "invalid_pdf_header"
+    if len(data) < MIN_PDF_BYTES: return "pdf_too_small"
+    if b"%%EOF" not in data[-PDF_EOF_WINDOW:]: return "pdf_truncated"
+    # Every PDF carries typed objects (/Catalog, /Pages, or an /XRef stream).
+    # Their absence means the bytes are a stub with a PDF header glued on.
+    if b"/Type" not in data and b"trailer" not in data: return "pdf_no_structure"
+    return None
 def valid_pdf(path):
     try:
-        with path.open("rb") as handle: return handle.read(5) == b"%PDF-"
+        with path.open("rb") as handle: data = handle.read()
     except OSError: return False
+    return validate_pdf_bytes(data) is None
 def read_json(path, errors, label):
     try: return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc: errors.append(f"无法读取 {label}: {type(exc).__name__}"); return None
@@ -95,7 +119,8 @@ def download_one(url, target, pdf_policy):
             if length and int(length) > max_bytes: return "pdf_too_large", detail
             data = response.read(max_bytes + 1)
             if len(data) > max_bytes: return "pdf_too_large", detail
-            if not data.startswith(b"%PDF-"): return "invalid_pdf_content", detail
+            broken = validate_pdf_bytes(data)
+            if broken: return broken, detail
             temp = target.with_suffix(".part"); temp.write_bytes(data); temp.replace(target); detail["bytes"] = len(data)
             return "downloaded_oa", detail
     except urllib.error.HTTPError as exc: return f"http_error_{exc.code}", {"url": url, "attempted": True, "httpStatus": exc.code}

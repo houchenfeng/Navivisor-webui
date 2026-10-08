@@ -9,6 +9,37 @@ import { FileDown, FileX } from 'lucide-react';
 import { StageCard, type StageStatus } from './stage-card';
 import type { PdfDownloadReport } from './types';
 
+/**
+ * The script reports machine codes. Showing `pdf_truncated` to an operator is
+ * technically honest and practically useless, so each code gets a plain
+ * sentence. Codes are matched by prefix because several carry a suffix with the
+ * offending value, e.g. `unexpected_content_type:text/html`.
+ */
+const FAILURE_LABEL: Record<string, string> = {
+  http_error_401: '需要登录（401）',
+  http_error_403: '无访问权限（403）',
+  http_error_404: '链接失效（404）',
+  http_error_410: '资源已移除（410）',
+  unexpected_content_type: 'Content-Type 不是 PDF（多半是错误页或落地页）',
+  invalid_pdf_content: '内容不是 PDF',
+  invalid_pdf_header: '文件头不是 %PDF-（多半是 HTML 错误页）',
+  pdf_too_small: '文件过小，不像真实 PDF',
+  pdf_truncated: '文件被截断（缺少 %%EOF）',
+  pdf_no_structure: '缺少 PDF 结构（无 /Type 或 trailer）',
+  pdf_too_large: '超过体积上限',
+  pdf_host_not_allowlisted: '域名不在白名单内',
+  pdf_url_not_https: '非 HTTPS 链接',
+  download_failed: '下载失败',
+  retry_limit_reached: '重试次数用尽',
+  not_open_access: '非开放获取',
+  no_oa_pdf_url: '没有可用的开放获取 PDF 链接',
+};
+
+export function describeDownloadFailure(reason: string): string {
+  const prefix = reason.split(':')[0];
+  return FAILURE_LABEL[prefix] ?? reason;
+}
+
 export type PdfDownloadCardProps = {
   report: PdfDownloadReport | null;
   status: StageStatus;
@@ -59,8 +90,8 @@ export function PdfDownloadCard({
           </div>
 
           <p className="text-[10px] font-semibold text-[#8aa1c1]">
-            每条下载都经过「域名白名单 + Content-Type 为 PDF + 前 5 字节为 %PDF + 体积上限」四重校验；
-            未通过的条目不写入 pdf/ 目录，也不会被伪装成成功。
+            每条下载都要通过「HTTPS + 域名白名单 + Content-Type + %PDF 文件头 + 最小体积 + %%EOF 结尾 + PDF 结构」校验；
+            任一项未过都不写入 pdf/ 目录，也不会被伪装成成功 —— 残缺文件比明确的失败更难发现。
           </p>
 
           {report.failures.length ? (
@@ -69,14 +100,24 @@ export function PdfDownloadCard({
                 失败原因（{report.failures.length} 条）
               </summary>
               <ul className="mt-1.5 space-y-0.5">
-                {report.failures.map((failure) => (
-                  <li
-                    key={`${failure.refId}-${failure.reason}`}
-                    className="text-[11px] font-semibold leading-5 text-[#a08447]"
-                  >
-                    · <span className="font-mono">{failure.refId}</span>：{failure.reason}
-                  </li>
-                ))}
+                {report.failures.map((failure) => {
+                  const label = describeDownloadFailure(failure.reason);
+                  // A reason already in prose would otherwise be printed twice.
+                  const translated = label !== failure.reason;
+                  return (
+                    <li
+                      key={`${failure.refId}-${failure.reason}`}
+                      className="text-[11px] font-semibold leading-5 text-[#a08447]"
+                    >
+                      · <span className="font-mono">{failure.refId}</span>：{label}
+                      {translated ? (
+                        <span className="ml-1 font-mono text-[10px] text-[#b8a179]">
+                          {failure.reason}
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             </details>
           ) : null}

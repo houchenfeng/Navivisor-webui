@@ -6,7 +6,7 @@ import { BatchAnalysisCard, summarizeBatches } from './batch-analysis-card';
 import { BatchPrepCard } from './batch-prep-card';
 import { CoreQueryCard } from './core-query-card';
 import { FallbackLogCard, findNarrowingStep } from './fallback-log-card';
-import { PdfDownloadCard } from './pdf-download-card';
+import { PdfDownloadCard, describeDownloadFailure } from './pdf-download-card';
 import { RelevanceScoreCard } from './relevance-score-card';
 import { ReverseCitationCard } from './reverse-citation-card';
 import { SeedPapersCard } from './seed-papers-card';
@@ -236,7 +236,25 @@ describe('PdfDownloadCard', () => {
     );
     expect(screen.getByText(/RE003/)).toBeInTheDocument();
     expect(screen.getByText(/Content-Type 不是 application\/pdf/)).toBeInTheDocument();
-    expect(screen.getByText(/四重校验/)).toBeInTheDocument();
+    expect(screen.getByText(/不会被伪装成成功/)).toBeInTheDocument();
+  });
+});
+
+describe('describeDownloadFailure', () => {
+  it('translates a machine code into a sentence an operator can act on', () => {
+    expect(describeDownloadFailure('pdf_truncated')).toBe('文件被截断（缺少 %%EOF）');
+    expect(describeDownloadFailure('pdf_host_not_allowlisted')).toBe('域名不在白名单内');
+  });
+
+  it('matches by prefix so a code carrying a value still resolves', () => {
+    expect(describeDownloadFailure('unexpected_content_type:text/html')).toBe(
+      'Content-Type 不是 PDF（多半是错误页或落地页）',
+    );
+    expect(describeDownloadFailure('download_failed:Timeout')).toBe('下载失败');
+  });
+
+  it('falls back to the raw reason rather than hiding it', () => {
+    expect(describeDownloadFailure('something_new')).toBe('something_new');
   });
 });
 
