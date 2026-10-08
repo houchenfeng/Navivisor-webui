@@ -11,14 +11,17 @@
  */
 import type { AiProviderFactory } from './ai/ai-provider.factory';
 import { buildQueryPlan, type QueryPlan } from './query-planner';
-import { toOpenAlexOql } from './query-renderers';
+import { toOpenAlexFilter, toOpenAlexOql } from './query-renderers';
 
 export type OpenAlexQueryPlan = {
   tier: 'focused' | 'balanced' | 'broad';
   reason: string;
   includeTerms: string[];
   excludeTitleTerms: string[];
+  /** Human-readable query, archived with the run. Not sent to the API. */
   oql: string;
+  /** The `filter` value actually sent to OpenAlex. */
+  filter: string;
 };
 
 export type OpenAlexQueryOptions = {
@@ -119,21 +122,16 @@ export async function buildOpenAlexQueryPlansWithAi(
       yearTo: window.yearTo,
     });
 
-    const focused = toOpenAlexOql(plan, window.yearFrom, window.yearTo);
     const plans: OpenAlexQueryPlan[] = [
-      makePlanFromOql('focused', focused, plan.concepts.A, plan.exclusions, plan.rationale, window),
+      assemblePlan('focused', plan, plan.concepts.A, plan.exclusions, plan.rationale, window),
     ];
 
     // Widen by dropping the C group, then the B group, keeping the same window.
     if (plan.concepts.C.length) {
       plans.push(
-        makePlanFromOql(
+        assemblePlan(
           'balanced',
-          toOpenAlexOql(
-            { concepts: { ...plan.concepts, C: [] }, exclusions: plan.exclusions },
-            window.yearFrom,
-            window.yearTo,
-          ),
+          { concepts: { ...plan.concepts, C: [] }, exclusions: plan.exclusions },
           [...plan.concepts.A, ...plan.concepts.B],
           plan.exclusions,
           '放宽：去掉场景/模态限制以扩大召回。',
@@ -142,16 +140,12 @@ export async function buildOpenAlexQueryPlansWithAi(
       );
     }
     plans.push(
-      makePlanFromOql(
+      assemblePlan(
         'broad',
-        toOpenAlexOql(
-          {
-            concepts: { A: plan.concepts.A, B: [], C: [] },
-            exclusions: plan.exclusions,
-          },
-          window.yearFrom,
-          window.yearTo,
-        ),
+        {
+          concepts: { A: plan.concepts.A, B: [], C: [] },
+          exclusions: plan.exclusions,
+        },
         plan.concepts.A,
         plan.exclusions,
         '保底：只保留研究对象本体，避免完全无结果。',
@@ -177,31 +171,36 @@ function makePlan(
   window: { yearFrom: number; yearTo: number },
 ): OpenAlexQueryPlan {
   if (includeTerms.length === 0) throw new Error('NO_SEARCH_TERMS');
+  return assemblePlan(
+    tier,
+    { concepts: { A: includeTerms, B: [], C: [] }, exclusions: excludeTitleTerms },
+    includeTerms,
+    excludeTitleTerms,
+    reason,
+    window,
+  );
+}
+
+/**
+ * Renders both forms from the concept groups. The OQL is kept because the run
+ * archive and the UI show it; the filter is what gets sent.
+ */
+function assemblePlan(
+  tier: OpenAlexQueryPlan['tier'],
+  shape: Pick<QueryPlan, 'concepts' | 'exclusions'>,
+  includeTerms: string[],
+  excludeTitleTerms: string[],
+  reason: string,
+  window: { yearFrom: number; yearTo: number },
+): OpenAlexQueryPlan {
   return {
     tier,
     reason,
     includeTerms,
     excludeTitleTerms,
-    oql: toOpenAlexOql(
-      {
-        concepts: { A: includeTerms, B: [], C: [] },
-        exclusions: excludeTitleTerms,
-      },
-      window.yearFrom,
-      window.yearTo,
-    ),
+    oql: toOpenAlexOql(shape, window.yearFrom, window.yearTo),
+    filter: toOpenAlexFilter(shape, window.yearFrom, window.yearTo),
   };
-}
-
-function makePlanFromOql(
-  tier: OpenAlexQueryPlan['tier'],
-  oql: string,
-  includeTerms: string[],
-  excludeTitleTerms: string[],
-  reason: string,
-  _window: { yearFrom: number; yearTo: number },
-): OpenAlexQueryPlan {
-  return { tier, reason, includeTerms, excludeTitleTerms, oql };
 }
 
 function extractSearchTerms(input: string): string[] {

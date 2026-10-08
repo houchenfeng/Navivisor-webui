@@ -67,6 +67,38 @@ export function toOpenAlexOql(
 }
 
 /**
+ * Builds the value of OpenAlex's `filter` parameter.
+ *
+ * This is the string that actually goes on the wire. The OQL above is for
+ * humans and for the archive: OpenAlex has no `oql` request parameter at all,
+ * and sending the OQL as one returns HTTP 400, which silently yields nothing.
+ *
+ * Within a single field `|` means OR; repeating a field means AND. There is no
+ * NOT operator, so exclusions cannot be expressed here and are applied locally
+ * by the caller instead.
+ */
+export function toOpenAlexFilter(
+  plan: Pick<QueryPlan, 'concepts' | 'exclusions'>,
+  yearFrom: number,
+  yearTo: number,
+): string {
+  const parts: string[] = [];
+  for (const group of [plan.concepts.A, plan.concepts.B, plan.concepts.C]) {
+    const terms = nonEmpty(group);
+    if (!terms.length) continue;
+    parts.push(`title_and_abstract.search:${terms.map(filterTerm).join('|')}`);
+  }
+  parts.push(`from_publication_date:${yearFrom}-01-01`);
+  parts.push(`to_publication_date:${yearTo}-12-31`);
+  return parts.join(',');
+}
+
+/** `,` and `|` are structural in a filter value, so they cannot appear in a term. */
+function filterTerm(value: string): string {
+  return value.replace(/[,|]/g, ' ').trim();
+}
+
+/**
  * Builds an arXiv API query string.
  *
  * arXiv has no parenthesised boolean grouping, so precedence is expressed by

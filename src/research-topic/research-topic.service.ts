@@ -317,14 +317,19 @@ export class ResearchTopicService implements OnModuleInit {
       while (cursor && papers.length < target) {
         if (task?.cancelRequested) break;
         const currentCursor = cursor;
-        const params = new URLSearchParams({ oql: plan.oql, 'per-page': String(PAGE_SIZE), select: SELECT, cursor: currentCursor });
-        if (dateFilter) params.set('filter', dateFilter);
+        // OpenAlex has no `oql` request parameter — sending one is a 400 and
+        // yields nothing. The rendered `filter` is what travels.
+        const filter = [plan.filter, dateFilter].filter(Boolean).join(',');
+        const params = new URLSearchParams({ filter, 'per-page': String(PAGE_SIZE), select: SELECT, cursor: currentCursor });
         const payload = await this.request(`${OPENALEX_API_URL}?${params.toString()}`);
         total = typeof payload.meta?.count === 'number' ? payload.meta.count : total;
         const rawResults = payload.results ?? [];
         for (const rawWork of rawResults) {
           const paper = normalizeWork(rawWork);
           if (!paper.title || !paper.openalexId) continue;
+          // OpenAlex's filter has no NOT operator, so exclusions are applied
+          // here. They used to live only in the OQL string and never ran.
+          if (isExcludedTitle(paper.title, plan.excludeTitleTerms)) continue;
           const key = deduplicationKey(paper);
           if (seenKeys.has(key)) continue;
           seenKeys.add(key);
@@ -1139,6 +1144,19 @@ export function validateFirstSearchInput(value: unknown): FirstSearchInput {
     yearRange = { from, to };
   }
   return { researchInterest: input.researchInterest.trim(), context: typeof input.context === 'string' ? input.context.trim() : undefined, yearRange, targetCount: typeof input.targetCount === 'number' ? input.targetCount : DEFAULT_TARGET_COUNT };
+}
+
+/**
+ * Exclusions run here because OpenAlex's `filter` has no NOT operator.
+ * Substring match on the title, which is what the exclusion terms are written
+ * against.
+ */
+function isExcludedTitle(title: string, exclusions: string[] | undefined): boolean {
+  const haystack = title.toLowerCase();
+  return (exclusions ?? []).some((term) => {
+    const needle = term.trim().toLowerCase();
+    return needle.length > 0 && haystack.includes(needle);
+  });
 }
 
 function deduplicationKey(paper: ResearchTopicPaper): string {

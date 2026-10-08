@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   pickVersion,
   toArxivQuery,
+  toOpenAlexFilter,
   toOpenAlexOql,
   toScopusQuery,
 } from './query-renderers';
@@ -105,5 +106,55 @@ describe('pickVersion', () => {
   it('falls back to the other version when the requested one is blank', () => {
     const withBlank = plan({ openalex: { versionA: '', versionB: 'only-B' } });
     expect(pickVersion(withBlank, 'versionA').openalex).toBe('only-B');
+  });
+});
+
+describe('toOpenAlexFilter', () => {
+  it('uses the field name OpenAlex actually accepts', () => {
+    const filter = toOpenAlexFilter(plan(), 2022, 2026);
+    expect(filter).toContain('title_and_abstract.search:');
+    // The OQL spelling is for humans; sending it is a 400.
+    expect(filter).not.toContain('title/abstract has');
+  });
+
+  it('joins terms within a group with a pipe, which is OR', () => {
+    const filter = toOpenAlexFilter(plan(), 2022, 2026);
+    expect(filter).toContain('title_and_abstract.search:image geolocalization|image geolocation');
+  });
+
+  it('repeats the field to AND the concept groups', () => {
+    const filter = toOpenAlexFilter(plan(), 2022, 2026);
+    expect(filter.match(/title_and_abstract\.search:/g)).toHaveLength(3);
+  });
+
+  it('always carries the year window', () => {
+    const filter = toOpenAlexFilter(plan(), 2022, 2026);
+    expect(filter).toContain('from_publication_date:2022-01-01');
+    expect(filter).toContain('to_publication_date:2026-12-31');
+  });
+
+  it('skips empty groups instead of emitting an empty field', () => {
+    const filter = toOpenAlexFilter(
+      plan({ concepts: { A: ['geolocalization'], B: [], C: [] } }),
+      2022,
+      2026,
+    );
+    expect(filter.match(/title_and_abstract\.search:/g)).toHaveLength(1);
+  });
+
+  it('strips characters that would break the filter syntax', () => {
+    const filter = toOpenAlexFilter(
+      plan({ concepts: { A: ['a,b', 'c|d'], B: [], C: [] } }),
+      2022,
+      2026,
+    );
+    expect(filter).toContain('title_and_abstract.search:a b|c d');
+  });
+
+  it('leaves exclusions out, because the filter has no NOT operator', () => {
+    // They are applied locally instead; putting them here would be silently
+    // ignored by OpenAlex.
+    const filter = toOpenAlexFilter(plan(), 2022, 2026);
+    expect(filter).not.toContain('medical imaging');
   });
 });
