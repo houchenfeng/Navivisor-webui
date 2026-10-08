@@ -139,7 +139,13 @@ export type BatchPrepSummary = {
 
 export type BatchAnalysisEntry = {
   index: number;
-  refIdRange: string;
+  /**
+   * Optional because the backend reports batches by name before the ref-id
+   * range is known. A missing range must render as "unknown", never as a
+   * dangling separator.
+   */
+  refIdRange?: string;
+  name?: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   error?: string;
   /** Optional preview extracted from the matrix artifact. */

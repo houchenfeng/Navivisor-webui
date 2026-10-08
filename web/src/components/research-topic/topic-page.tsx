@@ -11,6 +11,7 @@ import { withBasePath } from '@/base-path';
 import { TopicPrimerDialog } from './topic-primer-dialog';
 import { buildOpenAlexQueryPlan } from './openalex-query';
 import type { ResearchTaskSnapshot } from './topic-workflow-contract';
+import { TopicProcessPanel } from './topic-process-panel';
 
 const steps = ['实验研究方向', '交叉研究候选课题选取', '核心参考文献'];
 const ACTIVE_RUN_KEY = 'navivisor:research-topic:active-run:v2';
@@ -271,6 +272,20 @@ export function TopicPage() {
       {page === 1 && <><div className="mt-5 flex flex-wrap items-start justify-end gap-2"><TopicPrimerDialog /></div><DirectionPage interest={interest} setInterest={updateInterest} context={context} setContext={updateContext} task={task} error={error} isRunning={isRunning} isComplete={isComplete} onRun={runSearch} onCancel={cancelSearch} onRetry={runSearch} onNext={() => setPage(2)} /></>}
       {page === 2 && <CandidatesPage task={task} selectedCandidate={selectedCandidate} setSelectedCandidate={setSelectedCandidate} error={error} onGenerate={generateCandidates} onBack={() => setPage(1)} onNext={startCoreLiterature} />}
       {page === 3 && (<CoreLiteraturePage task={task} artifacts={artifacts} projectId={projectId} error={error} onStart={startCoreLiterature} onBack={() => setPage(2)} />)}
+
+      {/*
+        The process panel renders every stage card. It only appears once a run
+        exists, because before that every card would be an empty state.
+      */}
+      {task ? (
+        <TopicProcessPanel
+          stages={task.stages}
+          warnings={task.warnings}
+          candidates={task.candidates ?? null}
+          selectedCandidateLabel={selectedCandidate}
+          onSelectCandidate={(candidate) => setSelectedCandidate(candidate.label)}
+        />
+      ) : null}
     </div>
   </main>;
 }

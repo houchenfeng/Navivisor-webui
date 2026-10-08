@@ -52,7 +52,7 @@ export function RelevanceScoreCard({
       status={status}
       error={error}
       collapsible
-      defaultOpen={false}
+      defaultOpen={(scores?.length ?? 0) > 0}
       onViewMarkdown={onViewMarkdown}
     >
       {scores?.length ? (

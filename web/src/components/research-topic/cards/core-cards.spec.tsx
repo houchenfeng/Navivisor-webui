@@ -56,8 +56,7 @@ describe('CoreQueryCard', () => {
 
 describe('SeedPapersCard', () => {
   it('flags a seed that cannot be walked because it has no OpenAlex id', async () => {
-    const user = userEvent.setup();
-    render(
+        render(
       <SeedPapersCard
         seeds={[
           {
@@ -80,7 +79,6 @@ describe('SeedPapersCard', () => {
         status="completed"
       />,
     );
-    await user.click(screen.getByRole('button', { name: '展开' }));
     expect(screen.getByText(/W123/)).toBeInTheDocument();
     expect(screen.getByText(/无 OpenAlex ID，无法做反向引用/)).toBeInTheDocument();
   });
@@ -114,8 +112,7 @@ describe('ReverseCitationCard', () => {
 
 describe('RelevanceScoreCard', () => {
   it('keeps unscored separate from rejected', async () => {
-    const user = userEvent.setup();
-    render(
+        render(
       <RelevanceScoreCard
         scores={[
           {
@@ -141,7 +138,6 @@ describe('RelevanceScoreCard', () => {
         status="completed"
       />,
     );
-    await user.click(screen.getByRole('button', { name: '展开' }));
     expect(screen.getByText('通过')).toBeInTheDocument();
     expect(screen.getByText('淘汰')).toBeInTheDocument();
     expect(screen.getByText('未判定成功')).toBeInTheDocument();

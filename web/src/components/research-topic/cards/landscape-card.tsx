@@ -63,7 +63,7 @@ export function LandscapeCard({
       fallbackUsed={fallbackUsed}
       provider={provider}
       collapsible
-      defaultOpen={false}
+      defaultOpen={Boolean(landscape)}
       onViewMarkdown={onViewMarkdown}
     >
       {landscape ? (

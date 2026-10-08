@@ -27,7 +27,7 @@ export function SeedPapersCard({
       status={status}
       error={error}
       collapsible
-      defaultOpen={false}
+      defaultOpen={(seeds?.length ?? 0) > 0}
       onViewMarkdown={onViewMarkdown}
     >
       {seeds?.length ? (

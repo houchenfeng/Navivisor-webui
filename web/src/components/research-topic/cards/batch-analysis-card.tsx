@@ -52,13 +52,17 @@ export function BatchAnalysisCard({
   status,
   onViewMarkdown,
 }: BatchAnalysisCardProps) {
+  const batchLabel = batch.refIdRange || batch.name || '编号区间未知';
+  // Batch indexes are zero-based on the wire but no one says "batch 00".
+  const batchNumber = batch.index + 1;
+
   return (
     <StageCard
-      title={`第 ${String(batch.index).padStart(2, '0')} 批 · ${batch.refIdRange}`}
+      title={`第 ${String(batchNumber).padStart(2, '0')} 批 · ${batchLabel}`}
       status={status}
       error={batch.error}
       collapsible
-      defaultOpen={batch.status === 'failed'}
+      defaultOpen={batch.status === 'failed' || batch.status === 'running'}
       onViewMarkdown={onViewMarkdown}
     >
       <div className="space-y-2">
